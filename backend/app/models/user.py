@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, Boolean, ForeignKey, Enum
+from sqlalchemy import String, Boolean, ForeignKey, Enum, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,9 @@ class UserRole(str, PyEnum):
 
 class User(BaseModel):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("gym_id", "email", name="uq_users_gym_email"),
+    )
 
     gym_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("gyms.id"), nullable=False, index=True

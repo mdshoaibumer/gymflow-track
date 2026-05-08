@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CreditCard, CalendarCheck } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, CalendarCheck, Bell, Wrench, Rocket, Receipt } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
   { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/attendance", label: "Attendance", icon: CalendarCheck },
+  { href: "/equipment", label: "Equipment", icon: Wrench },
+  { href: "/notifications", label: "Reminders", icon: Bell },
+  { href: "/billing/manage", label: "Billing", icon: Receipt },
+  { href: "/setup", label: "Setup Wizard", icon: Rocket },
 ];
 
 export function Sidebar() {

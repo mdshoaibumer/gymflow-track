@@ -15,6 +15,7 @@ class Gym(BaseModel):
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Relationships
-    users = relationship("User", back_populates="gym", lazy="selectin")
-    members = relationship("Member", back_populates="gym", lazy="selectin")
+    # Relationships — use lazy="raise" to prevent accidental N+1 queries.
+    # Always load related data explicitly via joinedload/selectinload in queries.
+    users = relationship("User", back_populates="gym", lazy="raise")
+    members = relationship("Member", back_populates="gym", lazy="raise")

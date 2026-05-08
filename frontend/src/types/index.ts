@@ -6,3 +6,13 @@ export interface PaginatedResponse<T> {
   items: T[];
   total: number;
 }
+
+export type UserRole = "owner" | "admin" | "staff";
+
+export interface DecodedToken {
+  sub: string;
+  gym_id: string;
+  role: UserRole;
+  exp: number;
+  type: "access" | "refresh";
+}

@@ -1,18 +1,33 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authService } from "@/services/auth.service";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { saveTokens } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Integrate with auth service
-    setLoading(false);
+    setError(null);
+
+    try {
+      const response = await authService.login({ email, password });
+      saveTokens(response.access_token, response.refresh_token);
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,6 +39,12 @@ export default function LoginPage() {
             Sign in to your GymFlow account
           </p>
         </div>
+
+        {error && (
+          <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

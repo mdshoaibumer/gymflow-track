@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authService } from "@/services/auth.service";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { saveTokens } = useAuth();
   const [formData, setFormData] = useState({
     gym_name: "",
     owner_name: "",
@@ -13,6 +18,7 @@ export default function RegisterPage() {
     city: "",
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -21,8 +27,21 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Integrate with auth service
-    setLoading(false);
+    setError(null);
+
+    try {
+      const payload = {
+        ...formData,
+        city: formData.city || undefined,
+      };
+      const response = await authService.register(payload);
+      saveTokens(response.access_token, response.refresh_token);
+      router.push("/setup");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,6 +53,12 @@ export default function RegisterPage() {
             Get started in under 10 minutes
           </p>
         </div>
+
+        {error && (
+          <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

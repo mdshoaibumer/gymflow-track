@@ -1,0 +1,90 @@
+# ==============================================================
+# GymFlow — Production Docker Compose
+# ==============================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# For VPS/Hetzner deployment. NOT for Railway/Render (they build
+# from Dockerfile directly).
+#
+# Prerequisites:
+#   - Copy .env.production with real secrets
+#   - Run migrations: docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+#   - Set up SSL via Caddy/nginx reverse proxy (not included here)
+#
+# Architecture:
+#   - PostgreSQL with persistent volume
+#   - Backend: Production uvicorn (no reload, no debug)
+#   - Frontend: Next.js standalone (pre-built, no dev server)
+#   - No volume mounts (immutable containers)
+#   - Health checks enable auto-restart on failure
+# ==============================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gymflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-gymflow}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gymflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not exposed to host — only accessible within Docker network
+    expose:
+      - "5432"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflow}
+      - DATABASE_URL_SYNC=postgresql://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflow}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS:?Set CORS_ORIGINS to your frontend URL}
+      - WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER:-log_only}
+      - WHATSAPP_API_KEY=${WHATSAPP_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  pgdata:

@@ -1,4 +1,9 @@
-version: "3.8"
+# ==============================================================
+# GymFlow — Development Docker Compose
+# ==============================================================
+# Usage: docker compose up
+# Hot-reload enabled for both backend and frontend.
+# ==============================================================
 
 services:
   db:
@@ -23,6 +28,9 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
     depends_on:
       db:
         condition: service_healthy
@@ -31,16 +39,18 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file:
-      - ./frontend/.env.local
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     command: npm run dev
 
 volumes:

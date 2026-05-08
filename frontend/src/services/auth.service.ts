@@ -20,6 +20,16 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface CurrentUserResponse {
+  id: string;
+  gym_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "owner" | "admin" | "staff";
+  is_active: boolean;
+}
+
 export const authService = {
   login: (data: LoginPayload) =>
     apiClient<TokenResponse>("/auth/login", { method: "POST", body: data }),
@@ -32,4 +42,8 @@ export const authService = {
       method: "POST",
       body: { refresh_token },
     }),
+
+  /** Validate token server-side and get current user profile. */
+  getMe: (token: string) =>
+    apiClient<CurrentUserResponse>("/auth/me", { token }),
 };

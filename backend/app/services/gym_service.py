@@ -1,8 +1,8 @@
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError
 from app.models.gym import Gym
 from app.repositories.gym_repository import GymRepository
 from app.schemas.gym import GymUpdateRequest
@@ -16,10 +16,7 @@ class GymService:
     async def get_gym(self, gym_id: UUID) -> Gym:
         gym = await self.gym_repo.get_by_id(gym_id)
         if not gym:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Gym not found",
-            )
+            raise NotFoundError("Gym not found")
         return gym
 
     async def update_gym(self, gym_id: UUID, data: GymUpdateRequest) -> Gym:
