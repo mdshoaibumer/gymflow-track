@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.timezone import today_ist
 from app.core.dependencies import CurrentUser, get_current_user, require_owner
+from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.billing import (
     BillingHistoryResponse,
     BillingMetricsResponse,
@@ -193,8 +194,23 @@ async def verify_payment(
             subscription_status=subscription.status.value,
             message="Payment verified. Your subscription is now active!",
         )
+    except (NotFoundError, ValidationError) as e:
+        # Domain errors: invoice not found, signature mismatch, etc.
+        logger.warning(
+            "Payment verification failed for gym %s: %s",
+            current_user.gym_id, e.detail,
+        )
+        return PaymentVerifyResponse(
+            verified=False,
+            subscription_status="unknown",
+            message=e.detail,
+        )
     except Exception as e:
-        logger.error(f"Payment verification failed: {e}")
+        # Unexpected system errors — log full traceback, return safe message
+        logger.exception(
+            "Unexpected error during payment verification for gym %s",
+            current_user.gym_id,
+        )
         return PaymentVerifyResponse(
             verified=False,
             subscription_status="unknown",
