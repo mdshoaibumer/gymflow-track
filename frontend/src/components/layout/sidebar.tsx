@@ -18,22 +18,37 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/store/ui-store";
+import { useAuthStore } from "@/store/auth-store";
+import type { UserRole } from "@/types";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  /** Roles allowed to see this item. Omit for all roles. */
+  roles?: UserRole[];
+}
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
   { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/notifications", label: "Reminders", icon: Bell },
-  { href: "/billing/manage", label: "Billing", icon: Receipt },
-  { href: "/setup", label: "Setup Wizard", icon: Rocket },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/billing/manage", label: "Billing", icon: Receipt, roles: ["owner"] },
+  { href: "/setup", label: "Setup Wizard", icon: Rocket, roles: ["owner", "admin"] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 
 function SidebarContent() {
   const pathname = usePathname();
   const { setSidebarOpen } = useUIStore();
+  const role = useAuthStore((s) => s.role);
+
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || (role && item.roles.includes(role))
+  );
 
   return (
     <>
@@ -51,7 +66,7 @@ function SidebarContent() {
         </Button>
       </div>
       <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
