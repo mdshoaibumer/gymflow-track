@@ -23,9 +23,11 @@ export interface ImportRowPreview {
   name: string;
   phone: string;
   email: string | null;
+  gender: string | null;
   membership_plan: string | null;
   membership_start: string | null;
   membership_end: string | null;
+  amount_paid: number | null;
   status: "valid" | "duplicate" | "invalid";
   errors: string[];
 }
@@ -35,6 +37,12 @@ export interface ImportPreview {
   valid: number;
   duplicates: number;
   invalid: number;
+  column_mappings?: Array<{
+    csv_column: string;
+    target_field: string;
+    confidence: number;
+    match_method: string;
+  }>;
   rows: ImportRowPreview[];
 }
 
@@ -94,7 +102,6 @@ export const onboardingService = {
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -120,7 +127,6 @@ export const onboardingService = {
       {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
         },
       }
     );

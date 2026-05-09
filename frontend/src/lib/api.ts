@@ -122,6 +122,7 @@ api.interceptors.response.use(
 type RequestOptions = {
   method?: string;
   body?: unknown;
+  /** @deprecated Token is now managed by the request interceptor from localStorage. This param is ignored. */
   token?: string;
   _skipRefresh?: boolean;
 };
@@ -130,18 +131,15 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body } = options;
 
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+  // Auth header is set automatically by the request interceptor from localStorage.
+  // Do NOT set it here — avoids stale token conflicts between Zustand state and localStorage.
 
   const response = await api.request<T>({
     url: endpoint,
     method,
     data: body,
-    headers,
   });
 
   return response.data;
