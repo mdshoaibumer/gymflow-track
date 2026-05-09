@@ -112,6 +112,22 @@ class MemberRepository:
         )
         return list(result.scalars().all())
 
+    async def count_expiring_soon(self, gym_id: UUID, within_days: int = 7) -> int:
+        """Count members whose membership expires within N days (still ACTIVE)."""
+        today = today_ist()
+        end_date = today + timedelta(days=within_days)
+        result = await self.db.execute(
+            select(func.count()).select_from(Member).where(
+                Member.gym_id == gym_id,
+                Member.is_deleted == False,  # noqa: E712
+                Member.membership_status == MembershipStatus.ACTIVE,
+                Member.membership_end.isnot(None),
+                Member.membership_end >= today,
+                Member.membership_end <= end_date,
+            )
+        )
+        return result.scalar_one()
+
     async def get_expired_not_synced(self, gym_id: UUID) -> list[Member]:
         """Members with membership_end in the past but status still ACTIVE."""
         today = today_ist()
