@@ -171,8 +171,15 @@ class AuthService:
     #
     # ************************************************************
     async def login(self, data: LoginRequest) -> TokenResponse:
-        user = await self.user_repo.get_by_email(data.email)
-        if not user or not verify_password(data.password, user.password_hash):
+        # Multi-tenant safe: same email can exist in different gyms
+        users = await self.user_repo.get_all_by_email(data.email)
+        user = None
+        for candidate in users:
+            if verify_password(data.password, candidate.password_hash):
+                user = candidate
+                break
+
+        if not user:
             raise AuthenticationError("Invalid email or password")
 
         if not user.is_active:
