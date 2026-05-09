@@ -40,7 +40,9 @@ from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  
 from app.models.user import User, UserRole
 
 # Test database URL — uses a separate database to avoid polluting dev data
-TEST_DATABASE_URL = settings.DATABASE_URL.replace("/gymflow", "/gymflow_test")
+# We only replace the database name at the end of the URL
+_base_url, _db_name = settings.DATABASE_URL.rsplit("/", 1)
+TEST_DATABASE_URL = f"{_base_url}/gymflow_test"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)

@@ -15,15 +15,15 @@ depends_on = None
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
     op.execute(
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_members_name_trgm "
+        "CREATE INDEX IF NOT EXISTS ix_members_name_trgm "
         "ON members USING gin (name gin_trgm_ops)"
     )
     op.execute(
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_members_phone_trgm "
+        "CREATE INDEX IF NOT EXISTS ix_members_phone_trgm "
         "ON members USING gin (phone gin_trgm_ops)"
     )
     op.execute(
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_members_email_trgm "
+        "CREATE INDEX IF NOT EXISTS ix_members_email_trgm "
         "ON members USING gin (email gin_trgm_ops)"
     )
 
