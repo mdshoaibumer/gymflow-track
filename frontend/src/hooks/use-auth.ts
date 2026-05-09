@@ -16,8 +16,14 @@ export function useAuth() {
   useEffect(() => {
     store.initialize();
 
-    const token = useAuthStore.getState().token;
+    const state = useAuthStore.getState();
+    const token = state.token;
     if (!token) return;
+
+    // Skip /auth/me if profile was already fetched (prevents duplicate calls
+    // when multiple components mount useAuth simultaneously)
+    if (state._profileFetched) return;
+    store.markProfileFetched();
 
     authService
       .getMe(token)
@@ -25,11 +31,13 @@ export function useAuth() {
         store.setUser(profile);
       })
       .catch((err) => {
-        // Only logout on 401 (invalid/expired token).
-        // Network errors or server issues should not force logout.
+        // 401 = invalid/expired token → logout
         if (axios.isAxiosError(err) && err.response?.status === 401) {
           store.logout();
+          return;
         }
+        // Network/server errors: keep auth state from JWT but stop loading spinner
+        store.setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -40,7 +48,14 @@ export function useAuth() {
       const detail = (e as CustomEvent).detail;
       if (detail?.accessToken) {
         store.updateToken(detail.accessToken);
-        authService.getMe(detail.accessToken).then(store.setUser).catch(() => {});
+        authService
+          .getMe(detail.accessToken)
+          .then(store.setUser)
+          .catch(() => {
+            // Profile refresh failed after token refresh — user data may be stale
+            // but auth state is still valid from the new token
+            store.setLoading(false);
+          });
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

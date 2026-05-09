@@ -30,6 +30,9 @@ interface AuthState {
   isOwner: boolean;
   isAdminOrAbove: boolean;
 
+  // Tracks whether the /auth/me profile fetch has been initiated
+  _profileFetched: boolean;
+
   // Actions
   initialize: () => void;
   setUser: (user: CurrentUserResponse) => void;
@@ -37,6 +40,7 @@ interface AuthState {
   updateToken: (accessToken: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
+  markProfileFetched: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -47,6 +51,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   role: null,
   isOwner: false,
   isAdminOrAbove: false,
+  _profileFetched: false,
 
   initialize: () => {
     if (typeof window === "undefined") {
@@ -116,8 +121,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       role: null,
       isOwner: false,
       isAdminOrAbove: false,
+      _profileFetched: false,
     });
   },
 
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading) => set({ isLoading: loading }),
+
+  markProfileFetched: () => set({ _profileFetched: true }),
 }));
