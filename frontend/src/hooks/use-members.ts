@@ -9,12 +9,15 @@ import {
 } from "@/services/member.service";
 import { toast } from "sonner";
 
-export function useMembers(params: ListMembersParams = {}) {
+export function useMembers(
+  params: ListMembersParams = {},
+  options?: { enabled?: boolean }
+) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["members", params],
     queryFn: () => memberService.list(token!, params),
-    enabled: !!token,
+    enabled: !!token && (options?.enabled ?? true),
     staleTime: 15_000,
   });
 }

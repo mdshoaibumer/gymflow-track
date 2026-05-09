@@ -16,6 +16,7 @@ import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { formatPaise } from "@/lib/utils";
@@ -34,7 +35,11 @@ export default function PaymentsPage() {
     limit: PAGE_SIZE,
   });
 
-  const { data: membersData } = useMembers({ skip: 0, limit: 500 });
+  // Only load members when the payment form is visible (for the member dropdown)
+  const { data: membersData } = useMembers(
+    { skip: 0, limit: 500 },
+    { enabled: showForm }
+  );
 
   const payments = paymentsData?.payments ?? [];
   const total = paymentsData?.total ?? 0;
@@ -58,14 +63,6 @@ export default function PaymentsPage() {
     setShowForm(false);
   };
 
-  const memberMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const m of members) {
-      map.set(m.id, m.name);
-    }
-    return map;
-  }, [members]);
-
   const columns = useMemo<ColumnDef<Payment>[]>(
     () => [
       {
@@ -82,7 +79,7 @@ export default function PaymentsPage() {
         header: "Member",
         cell: ({ row }) => (
           <span className="font-medium">
-            {row.original.member_name || memberMap.get(row.original.member_id) || "—"}
+            {row.original.member_name || "—"}
           </span>
         ),
       },
@@ -110,7 +107,7 @@ export default function PaymentsPage() {
         cell: ({ row }) => <StatusBadge status={row.original.payment_status} />,
       },
     ],
-    [memberMap]
+    []
   );
 
   const table = useReactTable({
