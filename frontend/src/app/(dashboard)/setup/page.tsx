@@ -39,7 +39,9 @@ export default function SetupPage() {
         setStatus(s);
         if (s.onboarding_complete) setStep("done");
       })
-      .catch(() => {})
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load setup status");
+      })
       .finally(() => setLoading(false));
   }, [token]);
 

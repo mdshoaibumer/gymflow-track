@@ -47,12 +47,9 @@ def _to_response(attendance: Attendance) -> AttendanceResponse:
     """Convert attendance model to response, including eager-loaded member info."""
     member_name = None
     member_phone = None
-    try:
-        if attendance.member:
-            member_name = attendance.member.name
-            member_phone = attendance.member.phone
-    except Exception:
-        pass  # Relationship not loaded — skip
+    if hasattr(attendance, "member") and attendance.member is not None:
+        member_name = attendance.member.name
+        member_phone = attendance.member.phone
 
     return AttendanceResponse(
         id=attendance.id,
