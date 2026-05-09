@@ -28,6 +28,7 @@ Grace Period Design:
 import logging
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
+from app.core.timezone import today_ist
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -156,7 +157,7 @@ async def create_trial_subscription(
     Default to Starter plan — they can upgrade during or after trial.
     """
     plan = await get_plan_by_tier(db, plan_tier)
-    today = date.today()
+    today = today_ist()
 
     # Check if gym already has a subscription
     existing = await get_subscription(db, gym_id)
@@ -196,7 +197,7 @@ async def start_subscription(
     After payment, verify_and_activate() completes the flow.
     """
     plan = await get_plan_by_tier(db, plan_tier)
-    today = date.today()
+    today = today_ist()
     period_end = _next_period_end(today, BillingInterval.MONTHLY)
 
     subscription = await get_subscription(db, gym_id)
@@ -432,7 +433,7 @@ async def check_trial_expirations(db: AsyncSession) -> int:
 
     Called by scheduler. Returns count of expired trials.
     """
-    today = date.today()
+    today = today_ist()
     result = await db.execute(
         select(GymSubscription).where(
             GymSubscription.status == BillingStatus.TRIAL,
@@ -458,7 +459,7 @@ async def check_subscription_expirations(db: AsyncSession) -> int:
     - CANCELLED + past period end → EXPIRED
     - ACTIVE + past period end (should have renewed) → PAST_DUE
     """
-    today = date.today()
+    today = today_ist()
     count = 0
 
     # Cancelled subscriptions past their period
@@ -509,12 +510,12 @@ def get_access_level(subscription: GymSubscription | None) -> str:
 
     if subscription.status == BillingStatus.CANCELLED:
         # Still in paid period?
-        if subscription.current_period_end and subscription.current_period_end >= date.today():
+        if subscription.current_period_end and subscription.current_period_end >= today_ist():
             return "full"
         # Grace period after cancellation
         if subscription.current_period_end:
             grace_end = subscription.current_period_end + timedelta(days=GRACE_PERIOD_DAYS)
-            if date.today() <= grace_end:
+            if today_ist() <= grace_end:
                 return "read_only"
         return "locked"
 
@@ -522,11 +523,11 @@ def get_access_level(subscription: GymSubscription | None) -> str:
         # Grace period after expiration
         if subscription.current_period_end:
             grace_end = subscription.current_period_end + timedelta(days=GRACE_PERIOD_DAYS)
-            if date.today() <= grace_end:
+            if today_ist() <= grace_end:
                 return "read_only"
         if subscription.trial_end:
             grace_end = subscription.trial_end + timedelta(days=GRACE_PERIOD_DAYS)
-            if date.today() <= grace_end:
+            if today_ist() <= grace_end:
                 return "read_only"
         return "locked"
 

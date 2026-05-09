@@ -46,4 +46,16 @@ export const authService = {
   /** Validate token server-side and get current user profile. */
   getMe: (token: string) =>
     apiClient<CurrentUserResponse>("/auth/me", { token }),
+
+  forgotPassword: (email: string) =>
+    apiClient<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: { email },
+    }),
+
+  resetPassword: (token: string, new_password: string) =>
+    apiClient<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: { token, new_password },
+    }),
 };

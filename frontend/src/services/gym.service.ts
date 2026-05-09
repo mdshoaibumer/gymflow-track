@@ -3,11 +3,12 @@ import { apiClient } from "@/lib/api";
 export interface Gym {
   id: string;
   name: string;
+  slug: string;
   phone: string | null;
   email: string | null;
   address: string | null;
   city: string | null;
-  created_at: string;
+  is_active: boolean;
 }
 
 export interface GymUpdatePayload {

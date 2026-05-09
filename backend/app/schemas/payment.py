@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.payment import PaymentMethod, PaymentStatus
 
@@ -30,8 +30,28 @@ class PaymentResponse(BaseModel):
     payment_date: date
     notes: str | None
     created_by: UUID | None
+    member_name: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_member_name(cls, data):
+        """Pull member.name from the ORM relationship when available."""
+        if hasattr(data, "member") and data.member is not None:
+            data = dict(
+                id=data.id,
+                gym_id=data.gym_id,
+                member_id=data.member_id,
+                amount_in_paise=data.amount_in_paise,
+                payment_method=data.payment_method,
+                payment_status=data.payment_status,
+                payment_date=data.payment_date,
+                notes=data.notes,
+                created_by=data.created_by,
+                member_name=data.member.name,
+            )
+        return data
 
 
 class PaymentListResponse(BaseModel):

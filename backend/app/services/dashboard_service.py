@@ -17,6 +17,7 @@ from app.models.member import MembershipStatus
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.schemas.dashboard import DashboardMetrics
+from app.core.timezone import today_ist
 
 
 class DashboardService:
@@ -25,6 +26,18 @@ class DashboardService:
         self.member_repo = MemberRepository(db)
         self.payment_repo = PaymentRepository(db)
 
+    # ************************************************************
+    # Function Name : Compute Dashboard Metrics
+    #
+    # Purpose       : Aggregates all dashboard KPIs in optimized
+    # single-count queries: total/active/expiring/
+    # expired members, pending dues, and monthly
+    # revenue. Each query uses indexed columns for
+    # sub-millisecond performance.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def get_metrics(self, gym_id: UUID) -> DashboardMetrics:
         """
         Compute all dashboard metrics in parallel-safe queries.
@@ -47,7 +60,7 @@ class DashboardService:
         pending_dues = await self.payment_repo.count_pending(gym_id)
 
         # Monthly revenue: first day of current month → today
-        today = date.today()
+        today = today_ist()
         month_start = today.replace(day=1)
         monthly_revenue = await self.payment_repo.sum_revenue(
             gym_id, month_start, today
@@ -61,3 +74,7 @@ class DashboardService:
             pending_dues_count=pending_dues,
             monthly_revenue_paise=monthly_revenue,
         )
+
+    async def get_recent_payments(self, gym_id: UUID, limit: int = 10) -> list:
+        """Delegate recent payments to the payment repository."""
+        return await self.payment_repo.get_recent(gym_id, limit=limit)

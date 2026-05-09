@@ -1,25 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { billingService, type BillingMetrics } from "@/services/billing.service";
+import { useBillingMetrics } from "@/hooks/use-billing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function BillingMetricsPage() {
-  const { token, isOwner } = useAuth();
-  const [metrics, setMetrics] = useState<BillingMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!token || !isOwner) return;
-    billingService
-      .getMetrics(token)
-      .then(setMetrics)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [token, isOwner]);
+  const { isOwner } = useAuth();
+  const { data: metrics, isLoading } = useBillingMetrics();
 
   if (!isOwner) {
     return (
@@ -29,7 +18,7 @@ export default function BillingMetricsPage() {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

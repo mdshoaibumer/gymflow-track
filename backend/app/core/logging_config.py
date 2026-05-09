@@ -132,6 +132,7 @@ def sanitize_dict(data: dict[str, Any]) -> dict[str, Any]:
     """
     Redact sensitive fields from a dictionary before logging.
     Used for request/response body logging in debug mode.
+    Recursively handles nested dicts and lists.
     """
     sanitized = {}
     for key, value in data.items():
@@ -139,6 +140,11 @@ def sanitize_dict(data: dict[str, Any]) -> dict[str, Any]:
             sanitized[key] = "***REDACTED***"
         elif isinstance(value, dict):
             sanitized[key] = sanitize_dict(value)
+        elif isinstance(value, list):
+            sanitized[key] = [
+                sanitize_dict(item) if isinstance(item, dict) else item
+                for item in value
+            ]
         else:
             sanitized[key] = value
     return sanitized

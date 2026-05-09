@@ -22,7 +22,11 @@ from starlette.responses import JSONResponse
 MAX_BODY_BYTES = 1_048_576  # 1 MB
 
 # Paths that need larger body limits (e.g. CSV upload)
-_EXEMPT_PATHS = frozenset({"/api/v1/onboarding/import/upload"})
+_EXEMPT_PATHS = frozenset({
+    "/api/v1/onboarding/import/upload",
+    "/api/v1/onboarding/import/detect",
+    "/api/v1/onboarding/import/preview",
+})
 
 
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):

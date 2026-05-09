@@ -1,3 +1,6 @@
+"""Member management service — CRUD and lifecycle operations for gym members."""
+
+import logging
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,8 +10,11 @@ from app.models.member import Member
 from app.repositories.member_repository import MemberRepository
 from app.schemas.member import MemberCreateRequest, MemberListResponse, MemberUpdateRequest
 
-# Fields that must NOT be set via generic update — they have dedicated lifecycle APIs
-_PROTECTED_FIELDS = frozenset({"membership_status"})
+logger = logging.getLogger("gymflow.members")
+
+# Fields that must NOT be set via generic update — they have dedicated lifecycle APIs.
+# membership_start/end/plan drive status computation and must go through renewal flow.
+_PROTECTED_FIELDS = frozenset({"membership_status", "membership_start", "membership_end", "membership_plan"})
 
 
 class MemberService:
@@ -16,6 +22,17 @@ class MemberService:
         self.db = db
         self.member_repo = MemberRepository(db)
 
+    # ************************************************************
+    # Function Name : Create New Gym Member
+    #
+    # Purpose       : Registers a new member in the gym after checking
+    # for duplicate phone numbers within the same
+    # tenant. Phone uniqueness is enforced at the
+    # business layer to provide clear error messages.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def create_member(self, gym_id: UUID, data: MemberCreateRequest) -> Member:
         # Check for duplicate phone within same gym
         existing = await self.member_repo.get_by_phone_and_gym(data.phone, gym_id)
@@ -25,12 +42,34 @@ class MemberService:
         member = Member(gym_id=gym_id, **data.model_dump())
         return await self.member_repo.create(member)
 
+    # ************************************************************
+    # Function Name : Retrieve Single Member by ID
+    #
+    # Purpose       : Fetches a member record scoped to the given gym.
+    # Raises NotFoundError if the member does not exist
+    # or belongs to a different tenant, ensuring strict
+    # tenant isolation.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def get_member(self, member_id: UUID, gym_id: UUID) -> Member:
         member = await self.member_repo.get_by_id(member_id, gym_id)
         if not member:
             raise NotFoundError("Member not found")
         return member
 
+    # ************************************************************
+    # Function Name : List Members with Pagination and Search
+    #
+    # Purpose       : Returns a paginated list of members for the given
+    # gym, with optional full-text search on name or
+    # phone. Returns both the member list and total
+    # count for frontend pagination.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def list_members(
         self, gym_id: UUID, skip: int = 0, limit: int = 50, search: str | None = None
     ) -> MemberListResponse:
@@ -38,6 +77,18 @@ class MemberService:
         total = await self.member_repo.count_by_gym(gym_id, search)
         return MemberListResponse(members=members, total=total)
 
+    # ************************************************************
+    # Function Name : Update Member Profile
+    #
+    # Purpose       : Updates editable member fields while protecting
+    # lifecycle fields (membership_status, dates, plan)
+    # that must be changed through the membership
+    # management API. Validates phone uniqueness on
+    # phone number changes.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def update_member(
         self, member_id: UUID, gym_id: UUID, data: MemberUpdateRequest
     ) -> Member:
@@ -65,6 +116,17 @@ class MemberService:
 
         return await self.member_repo.update(member)
 
+    # ************************************************************
+    # Function Name : Soft-Delete Gym Member
+    #
+    # Purpose       : Marks a member as deleted (soft-delete) rather
+    # than permanently removing the record. Preserves
+    # historical data for payment records, attendance
+    # logs, and audit trails.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def delete_member(self, member_id: UUID, gym_id: UUID) -> None:
         member = await self.get_member(member_id, gym_id)
         member.is_deleted = True

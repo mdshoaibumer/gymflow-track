@@ -62,9 +62,7 @@ async def get_notification_stats(
     )
     sent_today = await repo.count_sent_today(current_user.gym_id, today_start)
     failed = await repo.count_failed_unresolved(current_user.gym_id)
-    upcoming = await repo.count_by_gym(
-        current_user.gym_id, status=NotificationStatus.PENDING
-    )
+    upcoming = await repo.count_upcoming_scheduled(current_user.gym_id, today_start)
 
     return NotificationStats(
         pending_count=pending,
@@ -108,15 +106,14 @@ async def cancel_notification(
     db: AsyncSession = Depends(get_db),
 ):
     """Cancel a pending notification. OWNER and ADMIN only."""
-    from app.core.exceptions import NotFoundError
+    from app.core.exceptions import NotFoundError, ValidationError
 
     repo = NotificationRepository(db)
     notification = await repo.get_by_id(notification_id, current_user.gym_id)
     if not notification:
         raise NotFoundError("Notification not found")
     if notification.status != NotificationStatus.PENDING:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Can only cancel pending notifications")
+        raise ValidationError("Can only cancel pending notifications")
 
     return await repo.mark_cancelled(notification)
 

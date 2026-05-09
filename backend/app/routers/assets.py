@@ -8,7 +8,6 @@ RBAC:
 - Status transitions: ADMIN+
 """
 
-from datetime import date
 from uuid import UUID
 import logging
 
@@ -18,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin, require_owner
 from app.models.asset import AssetCategory, AssetStatus
+from app.core.timezone import today_ist
 from app.repositories.asset_repository import AssetRepository, MaintenanceRepository
 from app.schemas.asset import (
     AssetDashboardStats,
@@ -97,7 +97,7 @@ async def get_upcoming_maintenance(
     db: AsyncSession = Depends(get_db),
 ):
     """Get maintenance records with upcoming next_service_date."""
-    today = date.today()
+    today = today_ist()
     repo = MaintenanceRepository(db)
     records = await repo.get_upcoming(current_user.gym_id, today, days, limit)
     count = await repo.count_upcoming(current_user.gym_id, today, days)
@@ -111,7 +111,7 @@ async def get_overdue_maintenance(
     db: AsyncSession = Depends(get_db),
 ):
     """Get maintenance records that are past their next_service_date."""
-    today = date.today()
+    today = today_ist()
     repo = MaintenanceRepository(db)
     records = await repo.get_overdue(current_user.gym_id, today, limit)
     count = await repo.count_overdue(current_user.gym_id, today)

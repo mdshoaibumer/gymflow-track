@@ -38,6 +38,17 @@ from app.services.billing_service import create_trial_subscription
 logger = logging.getLogger("gymflow.auth")
 
 
+# ************************************************************
+# Function Name : Hash Authentication Token
+#
+# Purpose       : Produces a SHA-256 digest of a raw token string
+# so that tokens are never stored in plaintext in
+# the database. Used for refresh tokens and
+# password-reset tokens.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def _hash_token(token: str) -> str:
     """SHA-256 hash a token for storage. Tokens are never stored in plaintext."""
     return hashlib.sha256(token.encode()).hexdigest()
@@ -49,6 +60,18 @@ class AuthService:
         self.gym_repo = GymRepository(db)
         self.user_repo = UserRepository(db)
 
+    # ************************************************************
+    # Function Name : Retrieve Authenticated User Profile
+    #
+    # Purpose       : Fetches the full user profile from the database
+    # for the currently authenticated user. Validates
+    # that the user still exists, is active, and
+    # belongs to the expected gym (prevents cross-
+    # tenant session hijacking).
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def get_current_user_profile(self, user_id: UUID, gym_id: UUID) -> CurrentUserResponse:
         """
         Fetch the authenticated user's profile from DB.
@@ -69,11 +92,22 @@ class AuthService:
 
         return CurrentUserResponse.model_validate(user)
 
+    # ************************************************************
+    # Function Name : Register New Gym and Owner Account
+    #
+    # Purpose       : Creates a new gym entity with a unique slug,
+    # registers the first user as the OWNER, provisions
+    # a trial subscription, and returns JWT tokens for
+    # immediate authentication. This is the primary
+    # onboarding entry point for new customers.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def register_gym(self, data: GymRegisterRequest) -> TokenResponse:
-        # Check if email already exists
-        existing_user = await self.user_repo.get_by_email(data.email)
-        if existing_user:
-            raise AlreadyExistsError("Email already registered")
+        # Note: email uniqueness is per-gym (UniqueConstraint gym_id+email).
+        # We don't block registration globally — the DB constraint handles
+        # same-email-same-gym collisions via IntegrityError below.
 
         # Generate slug from gym name
         slug = self._generate_slug(data.gym_name)
@@ -102,19 +136,40 @@ class AuthService:
         )
         user = await self.user_repo.create(user)
 
-        # Create trial subscription for the new gym
-        await create_trial_subscription(self.db, gym.id)
+        try:
+            # Create trial subscription for the new gym
+            await create_trial_subscription(self.db, gym.id)
 
-        # Generate tokens and track refresh token
-        access_token = create_access_token(user.id, gym.id, user.role.value)
-        raw_refresh = create_refresh_token(user.id, gym.id, user.role.value)
-        await self._store_refresh_token(user.id, raw_refresh)
+            # Generate tokens and track refresh token
+            access_token = create_access_token(user.id, gym.id, user.role.value)
+            raw_refresh = create_refresh_token(user.id, gym.id, user.role.value)
+            await self._store_refresh_token(user.id, raw_refresh)
 
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=raw_refresh,
-        )
+            # Flush to trigger unique constraints before returning
+            await self.db.flush()
 
+            return TokenResponse(
+                access_token=access_token,
+                refresh_token=raw_refresh,
+            )
+        except Exception as e:
+            err_str = str(e).lower()
+            if "uq_users_gym_email" in err_str or "unique" in err_str:
+                raise AlreadyExistsError("Email already registered")
+            raise
+
+    # ************************************************************
+    # Function Name : Authenticate User Login
+    #
+    # Purpose       : Validates user credentials (email + password),
+    # checks that the account is active, then issues
+    # a fresh pair of access and refresh JWT tokens.
+    # Failed attempts raise AuthenticationError for
+    # generic error messaging (prevents user enumeration).
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def login(self, data: LoginRequest) -> TokenResponse:
         user = await self.user_repo.get_by_email(data.email)
         if not user or not verify_password(data.password, user.password_hash):
@@ -132,6 +187,18 @@ class AuthService:
             refresh_token=raw_refresh,
         )
 
+    # ************************************************************
+    # Function Name : Refresh Authentication Token
+    #
+    # Purpose       : Validates the provided refresh token, rotates it
+    # (revokes old, issues new), and returns a fresh
+    # token pair. Implements reuse detection — if a
+    # revoked token is reused, ALL user sessions are
+    # revoked as a security safeguard against token theft.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def refresh_token(self, data: RefreshRequest) -> TokenResponse:
         payload = decode_token(data.refresh_token)
         if payload is None or payload.get("type") != "refresh":
@@ -145,12 +212,30 @@ class AuthService:
         result = await self.db.execute(
             select(RefreshToken).where(
                 RefreshToken.token_hash == token_hash,
-                RefreshToken.revoked == False,  # noqa: E712
             )
         )
         stored_token = result.scalar_one_or_none()
+
         if not stored_token:
             raise AuthenticationError("Refresh token revoked or invalid")
+
+        # Reuse detection: if a revoked token is re-presented, an attacker
+        # may have stolen it. Revoke ALL tokens for this user as a safeguard.
+        if stored_token.revoked:
+            await self.db.execute(
+                update(RefreshToken)
+                .where(
+                    RefreshToken.user_id == user_id,
+                    RefreshToken.revoked == False,  # noqa: E712
+                )
+                .values(revoked=True)
+            )
+            await self.db.flush()
+            logger.warning(
+                f"Refresh token reuse detected for user {user_id} — "
+                f"all sessions revoked (potential token theft)"
+            )
+            raise AuthenticationError("Refresh token reuse detected — all sessions revoked")
 
         if stored_token.expires_at < datetime.now(timezone.utc):
             raise AuthenticationError("Refresh token expired")
@@ -177,6 +262,17 @@ class AuthService:
             refresh_token=new_refresh,
         )
 
+    # ************************************************************
+    # Function Name : Logout and Revoke Refresh Tokens
+    #
+    # Purpose       : Revokes either a specific refresh token (single
+    # device logout) or all tokens for the user (logout
+    # from all devices). Used on explicit logout and
+    # after password reset for security.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def logout(self, user_id: UUID, refresh_token: str | None = None) -> None:
         """
         Revoke refresh tokens for the user.
@@ -205,6 +301,18 @@ class AuthService:
             )
             logger.info(f"Revoked ALL refresh tokens for user {user_id}")
 
+    # ************************************************************
+    # Function Name : Initiate Password Reset Flow
+    #
+    # Purpose       : Generates a one-time password reset token valid
+    # for 1 hour. Returns a generic success message
+    # regardless of whether the email exists to prevent
+    # email enumeration attacks. Invalidates any
+    # previously issued reset tokens for the user.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def forgot_password(self, email: str) -> str:
         """
         Generate a password reset token.
@@ -245,14 +353,28 @@ class AuthService:
         self.db.add(reset_token)
         await self.db.flush()
 
-        # In production, send via email/SMS. For now, log it.
-        logger.info(
-            f"Password reset token generated for user {user.id}. "
-            f"Token (DEV ONLY): {raw_token}"
-        )
+        # Only log raw token in development — NEVER in production/staging
+        if settings.is_development:
+            logger.info(
+                f"Password reset token generated for user {user.id}. "
+                f"Token (DEV ONLY): {raw_token}"
+            )
+        else:
+            logger.info(f"Password reset token generated for user {user.id}")
 
         return "If an account exists with that email, a reset link has been sent."
 
+    # ************************************************************
+    # Function Name : Complete Password Reset
+    #
+    # Purpose       : Validates the reset token, updates the user's
+    # password hash, marks the token as used, and
+    # revokes all refresh tokens to force re-login on
+    # all devices. Single-use and time-limited (1 hour).
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def reset_password(self, token: str, new_password: str) -> str:
         """
         Reset password using a valid reset token.
@@ -308,3 +430,21 @@ class AuthService:
         )
         self.db.add(token_record)
         await self.db.flush()
+
+    @staticmethod
+    def _generate_slug(gym_name: str) -> str:
+        """
+        Generate a URL-friendly slug from a gym name.
+
+        Converts "Muscle Factory Gym" → "muscle-factory-gym".
+        Used for public-facing gym URLs and unique identification.
+        Handles Unicode, multiple spaces, and special characters.
+        """
+        slug = gym_name.lower().strip()
+        # Replace non-alphanumeric (except hyphens) with hyphens
+        slug = re.sub(r"[^a-z0-9]+", "-", slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip("-")
+        # Collapse consecutive hyphens
+        slug = re.sub(r"-{2,}", "-", slug)
+        return slug or "gym"

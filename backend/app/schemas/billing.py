@@ -23,11 +23,6 @@ class PlanResponse(BaseModel):
     sms_notifications_enabled: bool
     advanced_reports_enabled: bool
 
-    @property
-    def price_display(self) -> str:
-        """Human-readable price (e.g. '₹999/mo')"""
-        return f"₹{self.price_in_paise / 100:,.0f}/mo"
-
 
 # === Subscription Schemas ===
 

@@ -1,15 +1,13 @@
 import { create } from "zustand";
 import type { CurrentUserResponse } from "@/services/auth.service";
-import type { UserRole } from "@/types";
+import type { UserRole, DecodedToken } from "@/types";
+import { TOKEN_KEY, REFRESH_KEY } from "@/lib/api";
 
-const TOKEN_KEY = "gymflow_access_token";
-const REFRESH_KEY = "gymflow_refresh_token";
-
-function decodePayload(token: string): Record<string, unknown> | null {
+function decodePayload(token: string): DecodedToken | null {
   try {
     const base64 = token.split(".")[1];
     const json = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json);
+    return JSON.parse(json) as DecodedToken;
   } catch {
     return null;
   }
@@ -65,7 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const payload = decodePayload(stored);
-    const role = payload?.role as UserRole | undefined;
+    const role = payload?.role;
 
     set({
       token: stored,
@@ -91,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.setItem(REFRESH_KEY, refreshToken);
 
     const payload = decodePayload(accessToken);
-    const role = payload?.role as UserRole | undefined;
+    const role = payload?.role;
 
     set({
       token: accessToken,

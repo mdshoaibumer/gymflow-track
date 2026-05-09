@@ -30,6 +30,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.member import Member, MembershipStatus
+from app.core.timezone import today_ist
 from app.models.notification import (
     Notification,
     NotificationChannel,
@@ -80,7 +81,7 @@ class ReminderEngine:
         - Members expired today or yesterday → MEMBERSHIP_EXPIRED
         """
         created = 0
-        today = date.today()
+        today = today_ist()
 
         # 7-day warning
         target_7 = today + timedelta(days=7)
@@ -121,7 +122,7 @@ class ReminderEngine:
 
         payment_repo = PaymentRepository(self.db)
         created = 0
-        today = date.today()
+        today = today_ist()
 
         # Get members with pending payments
         # We use a targeted query to find distinct members with pending payments
@@ -153,7 +154,7 @@ class ReminderEngine:
         Called from the member creation event handler.
         Returns True if scheduled, False if already exists.
         """
-        today = date.today()
+        today = today_ist()
         return await self._schedule_if_new(
             gym_id, member, NotificationType.WELCOME, today
         )
@@ -165,7 +166,7 @@ class ReminderEngine:
         Schedule a renewal confirmation after successful payment.
         Called from the payment recorded event handler.
         """
-        today = date.today()
+        today = today_ist()
         return await self._schedule_if_new(
             gym_id, member, NotificationType.RENEWAL_CONFIRMATION, today
         )

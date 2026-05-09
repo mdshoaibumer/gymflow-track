@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asset import Asset, AssetStatus
 from app.repositories.asset_repository import MaintenanceRepository
+from app.core.timezone import today_ist
 
 logger = logging.getLogger("gymflow.maintenance")
 
@@ -41,7 +42,7 @@ class MaintenanceAlertService:
         self, gym_id: UUID, days_ahead: int = 30
     ) -> list[Asset]:
         """Get assets with warranty expiring within the next N days."""
-        today = date.today()
+        today = today_ist()
         cutoff = today + timedelta(days=days_ahead)
         result = await self.db.execute(
             select(Asset).where(
@@ -57,7 +58,7 @@ class MaintenanceAlertService:
 
     async def get_warranty_expired(self, gym_id: UUID) -> list[Asset]:
         """Get non-retired assets with expired warranty."""
-        today = date.today()
+        today = today_ist()
         result = await self.db.execute(
             select(Asset).where(
                 Asset.gym_id == gym_id,
@@ -74,7 +75,7 @@ class MaintenanceAlertService:
         Get a combined alerts summary for the dashboard.
         Returns counts and lists for overdue maintenance, warranty expiry, etc.
         """
-        today = date.today()
+        today = today_ist()
 
         overdue_count = await self.maintenance_repo.count_overdue(gym_id, today)
         upcoming_count = await self.maintenance_repo.count_upcoming(gym_id, today)

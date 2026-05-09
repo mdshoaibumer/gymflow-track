@@ -24,6 +24,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.timezone import today_ist
 from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
 from app.models.member import Member, MembershipStatus
 from app.repositories.attendance_repository import AttendanceRepository
@@ -39,6 +40,18 @@ class AttendanceService:
         self.attendance_repo = AttendanceRepository(db)
         self.member_repo = MemberRepository(db)
 
+    # ************************************************************
+    # Function Name : Process QR-Based Member Check-In
+    #
+    # Purpose       : Validates an HMAC-signed QR token, verifies the
+    # member belongs to the requesting gym, confirms
+    # active membership, and creates an attendance
+    # record. Handles deduplication (same member, same
+    # day) by returning the existing record.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def check_in_by_qr(
         self, gym_id: UUID, qr_token: str, recorded_by: UUID | None = None
     ) -> Attendance:
@@ -80,6 +93,18 @@ class AttendanceService:
             recorded_by=recorded_by,
         )
 
+    # ************************************************************
+    # Function Name : Process Manual Staff Check-In
+    #
+    # Purpose       : Records attendance when a staff member manually
+    # checks in a gym member (e.g., forgot QR card,
+    # walk-in). Applies the same business rules as
+    # QR check-in: active membership required, daily
+    # deduplication enforced.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def check_in_manual(
         self, gym_id: UUID, member_id: UUID, recorded_by: UUID
     ) -> Attendance:
@@ -169,7 +194,7 @@ class AttendanceService:
             raise ValidationError(msg)
 
         # 3. Check for duplicate today
-        today = date.today()
+        today = today_ist()
         existing = await self.attendance_repo.get_today_for_member(
             gym_id, member_id, today
         )

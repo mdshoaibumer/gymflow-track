@@ -17,7 +17,8 @@ RBAC:
 - QR generation requires ADMIN+
 """
 
-from datetime import date, timedelta, datetime, timezone
+from datetime import date, timedelta
+from app.core.timezone import today_ist
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -142,7 +143,7 @@ async def get_today_attendance(
     Get today's attendance — the reception desk view.
     Returns members checked in today, ordered by most recent first.
     """
-    today = date.today()
+    today = today_ist()
     repo = AttendanceRepository(db)
     records = await repo.list_today(current_user.gym_id, today, skip, limit)
     total = await repo.count_today(current_user.gym_id, today)
@@ -158,7 +159,7 @@ async def get_attendance_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Attendance metrics for dashboard cards."""
-    today = date.today()
+    today = today_ist()
     week_start = today - timedelta(days=today.weekday())
     repo = AttendanceRepository(db)
 
@@ -181,7 +182,7 @@ async def get_attendance_trend(
     db: AsyncSession = Depends(get_db),
 ):
     """Daily attendance counts for the last N days (chart data)."""
-    today = date.today()
+    today = today_ist()
     start = today - timedelta(days=days - 1)
     repo = AttendanceRepository(db)
     raw = await repo.count_by_date_range(current_user.gym_id, start, today)

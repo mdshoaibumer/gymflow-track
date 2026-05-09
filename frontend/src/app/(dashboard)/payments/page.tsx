@@ -16,8 +16,8 @@ import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatusBadge } from "@/components/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentFormValues } from "@/lib/validations/payment";
 
@@ -81,7 +81,7 @@ export default function PaymentsPage() {
         header: "Member",
         cell: ({ row }) => (
           <span className="font-medium">
-            {memberMap.get(row.original.member_id) || "—"}
+            {row.original.member_name || memberMap.get(row.original.member_id) || "—"}
           </span>
         ),
       },
@@ -106,7 +106,7 @@ export default function PaymentsPage() {
       {
         accessorKey: "payment_status",
         header: "Status",
-        cell: ({ row }) => <PaymentStatusBadge status={row.original.payment_status} />,
+        cell: ({ row }) => <StatusBadge status={row.original.payment_status} />,
       },
     ],
     [memberMap]
@@ -251,20 +251,5 @@ export default function PaymentsPage() {
         </>
       )}
     </motion.div>
-  );
-}
-
-function PaymentStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, "success" | "destructive" | "warning" | "secondary"> = {
-    completed: "success",
-    pending: "warning",
-    failed: "destructive",
-    refunded: "secondary",
-  };
-
-  return (
-    <Badge variant={variants[status] || "secondary"} className="capitalize">
-      {status}
-    </Badge>
   );
 }

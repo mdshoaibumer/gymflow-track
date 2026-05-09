@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.timezone import today_ist
 
 from app.models.member import Member, MembershipStatus
 
@@ -42,7 +43,9 @@ class MemberRepository:
         )
 
         if search:
-            search_pattern = f"%{search}%"
+            # Escape SQL ILIKE wildcards to prevent unintended pattern matching
+            escaped = search.replace("%", "\\%").replace("_", "\\_")
+            search_pattern = f"%{escaped}%"
             query = query.where(
                 or_(
                     Member.name.ilike(search_pattern),
@@ -63,7 +66,8 @@ class MemberRepository:
         )
 
         if search:
-            search_pattern = f"%{search}%"
+            escaped = search.replace("%", "\\%").replace("_", "\\_")
+            search_pattern = f"%{escaped}%"
             query = query.where(
                 or_(
                     Member.name.ilike(search_pattern),
@@ -94,7 +98,7 @@ class MemberRepository:
 
     async def get_expiring_soon(self, gym_id: UUID, within_days: int = 7) -> list[Member]:
         """Members whose membership expires within N days (still ACTIVE)."""
-        today = date.today()
+        today = today_ist()
         end_date = today + timedelta(days=within_days)
         result = await self.db.execute(
             select(Member).where(
@@ -110,7 +114,7 @@ class MemberRepository:
 
     async def get_expired_not_synced(self, gym_id: UUID) -> list[Member]:
         """Members with membership_end in the past but status still ACTIVE."""
-        today = date.today()
+        today = today_ist()
         result = await self.db.execute(
             select(Member).where(
                 Member.gym_id == gym_id,

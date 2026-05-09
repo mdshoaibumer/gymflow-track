@@ -21,13 +21,13 @@ Security:
 
 import json
 import logging
-from datetime import date
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.timezone import today_ist
 from app.core.dependencies import CurrentUser, get_current_user, require_owner
 from app.schemas.billing import (
     BillingHistoryResponse,
@@ -101,7 +101,7 @@ async def get_subscription(
 
     # Compute days remaining
     days_remaining = None
-    today = date.today()
+    today = today_ist()
     if sub.trial_end and sub.status.value == "trial":
         days_remaining = max(0, (sub.trial_end - today).days)
     elif sub.current_period_end:

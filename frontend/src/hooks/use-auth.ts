@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { authService } from "@/services/auth.service";
 import { onAuthRefreshed } from "@/lib/api";
+import axios from "axios";
 
 /**
  * Auth hook backed by Zustand store.
@@ -23,8 +24,12 @@ export function useAuth() {
       .then((profile) => {
         store.setUser(profile);
       })
-      .catch(() => {
-        store.logout();
+      .catch((err) => {
+        // Only logout on 401 (invalid/expired token).
+        // Network errors or server issues should not force logout.
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          store.logout();
+        }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

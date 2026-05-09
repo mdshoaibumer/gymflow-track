@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.core.events import emit, PaymentRecorded, MembershipRenewed
+from app.core.timezone import today_ist
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
@@ -29,6 +30,19 @@ class PaymentService:
         self.member_repo = MemberRepository(db)
         self.membership_service = MembershipService(db)
 
+    # ************************************************************
+    # Function Name : Record Member Payment
+    #
+    # Purpose       : Records a payment for a gym member with full
+    # tenant isolation. When a completed payment
+    # includes membership dates, it automatically
+    # triggers membership renewal. Emits domain
+    # events for future notification integrations
+    # (WhatsApp receipts, SMS confirmations).
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def record_payment(
         self, gym_id: UUID, user_id: UUID, data: PaymentCreateRequest
     ) -> Payment:
@@ -52,7 +66,7 @@ class PaymentService:
             amount_in_paise=data.amount_in_paise,
             payment_method=data.payment_method,
             payment_status=data.payment_status or PaymentStatus.COMPLETED,
-            payment_date=data.payment_date or date.today(),
+            payment_date=data.payment_date or today_ist(),
             notes=data.notes,
             created_by=user_id,
         )

@@ -44,7 +44,6 @@ Usage:
 """
 
 from dataclasses import dataclass, field
-from difflib import SequenceMatcher
 import re
 
 

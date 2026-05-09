@@ -1,19 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  billingService,
-  type Plan,
-  type Subscription,
-} from "@/services/billing.service";
+import { usePlans, useSubscription, useSubscribe, useVerifyPayment } from "@/hooks/use-billing";
+import { billingService } from "@/services/billing.service";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const PLAN_FEATURES: Record<string, string[]> = {
   starter: [
@@ -44,53 +39,31 @@ const PLAN_FEATURES: Record<string, string[]> = {
 
 export default function PricingPage() {
   const { token, isOwner } = useAuth();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [planList, sub] = await Promise.all([
-          billingService.getPlans(),
-          token ? billingService.getSubscription(token) : null,
-        ]);
-        setPlans(planList);
-        setSubscription(sub);
-      } catch {
-        // Plans are public, this shouldn't fail
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [token]);
+  const { data: plans = [], isLoading: plansLoading } = usePlans();
+  const { data: subscription } = useSubscription();
+  const subscribeMutation = useSubscribe();
+  const verifyMutation = useVerifyPayment();
 
   const handleSubscribe = async (tier: string) => {
     if (!token || !isOwner) return;
-    setSubscribing(tier);
 
     try {
-      const result = await billingService.subscribe(token, tier);
+      const result = await subscribeMutation.mutateAsync(tier);
 
       if (result.razorpay_order_id && result.razorpay_key_id) {
         openRazorpayCheckout(result);
       } else {
-        const verification = await billingService.verifyPayment(token, {
+        const verification = await verifyMutation.mutateAsync({
           razorpay_payment_id: `mock_pay_${Date.now()}`,
           razorpay_order_id: result.razorpay_order_id || "mock",
           razorpay_signature: "mock_signature",
         });
         if (verification.verified) {
-          toast.success("Subscription activated! Refreshing...");
           setTimeout(() => window.location.reload(), 1500);
         }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Subscription failed");
-    } finally {
-      setSubscribing(null);
     }
   };
 
@@ -121,13 +94,12 @@ export default function PricingPage() {
         razorpay_signature: string;
       }) => {
         try {
-          const verification = await billingService.verifyPayment(token!, {
+          const verification = await verifyMutation.mutateAsync({
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_order_id: response.razorpay_order_id,
             razorpay_signature: response.razorpay_signature,
           });
           if (verification.verified) {
-            toast.success("Payment successful! Your subscription is now active.");
             setTimeout(() => window.location.reload(), 1500);
           } else {
             toast.error("Payment verification failed. Please contact support.");
@@ -141,7 +113,7 @@ export default function PricingPage() {
     rzp.open();
   };
 
-  if (loading) {
+  if (plansLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -227,12 +199,12 @@ export default function PricingPage() {
                     variant={isPopular ? "default" : "outline"}
                     className="w-full"
                     onClick={() => handleSubscribe(plan.tier)}
-                    disabled={!isOwner || subscribing !== null}
+                    disabled={!isOwner || subscribeMutation.isPending}
                   >
-                    {subscribing === plan.tier ? (
+                    {subscribeMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {subscribing === plan.tier
+                    {subscribeMutation.isPending
                       ? "Processing..."
                       : isCurrentPlan
                         ? "Renew"

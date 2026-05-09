@@ -10,7 +10,6 @@ from app.schemas.dashboard import (
 )
 from app.services.dashboard_service import DashboardService
 from app.services.membership_service import MembershipService
-from app.repositories.payment_repository import PaymentRepository
 
 router = APIRouter()
 
@@ -51,5 +50,5 @@ async def get_recent_payments(
     db: AsyncSession = Depends(get_db),
 ):
     """Most recent completed payments for the dashboard feed."""
-    repo = PaymentRepository(db)
-    return await repo.get_recent(current_user.gym_id, limit=limit)
+    service = DashboardService(db)
+    return await service.get_recent_payments(current_user.gym_id, limit=limit)

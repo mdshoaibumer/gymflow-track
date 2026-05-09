@@ -28,6 +28,7 @@ import logging
 import random
 import re
 from datetime import date, timedelta
+from app.core.timezone import today_ist
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, func
@@ -132,7 +133,7 @@ async def seed_demo_data(
     Idempotent-ish: checks if demo data already exists (by member count).
     """
     result = {"members_created": 0, "payments_created": 0, "equipment_created": 0}
-    today = date.today()
+    today = today_ist()
 
     if include_members:
         # Check if gym already has members (don't double-seed)
@@ -541,7 +542,7 @@ async def commit_csv_import(
 
             # Determine membership status from dates
             status = MembershipStatus.ACTIVE
-            if end_date and end_date < date.today():
+            if end_date and end_date < today_ist():
                 status = MembershipStatus.EXPIRED
             elif not start_date and not end_date:
                 status = MembershipStatus.PENDING

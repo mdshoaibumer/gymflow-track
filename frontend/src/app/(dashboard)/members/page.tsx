@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   useReactTable,
   getCoreRowModel,
@@ -17,9 +18,9 @@ import { MemberForm, memberToFormValues } from "@/components/members/member-form
 import { DeleteConfirmDialog } from "@/components/members/delete-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/status-badge";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
@@ -83,7 +84,9 @@ export default function MembersPage() {
         accessorKey: "name",
         header: "Name",
         cell: ({ row }) => (
-          <span className="font-medium">{row.original.name}</span>
+          <Link href={`/members/${row.original.id}`} className="font-medium text-primary hover:underline">
+            {row.original.name}
+          </Link>
         ),
       },
       {
@@ -335,22 +338,6 @@ export default function MembersPage() {
         />
       )}
     </motion.div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const variants: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
-    active: "success",
-    expired: "destructive",
-    frozen: "warning",
-    pending: "secondary",
-    cancelled: "outline",
-  };
-
-  return (
-    <Badge variant={variants[status] || "secondary"} className="capitalize">
-      {status}
-    </Badge>
   );
 }
 

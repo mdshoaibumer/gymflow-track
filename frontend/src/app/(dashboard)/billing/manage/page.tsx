@@ -1,58 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  billingService,
-  type Subscription,
-  type BillingHistory,
-} from "@/services/billing.service";
+import { useSubscription, useBillingHistory, useCancelSubscription } from "@/hooks/use-billing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
 export default function BillingManagePage() {
-  const { token, isOwner } = useAuth();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [history, setHistory] = useState<BillingHistory | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([
-      billingService.getSubscription(token),
-      billingService.getHistory(token),
-    ])
-      .then(([sub, hist]) => {
-        setSubscription(sub);
-        setHistory(hist);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [token]);
+  const { isOwner } = useAuth();
+  const { data: subscription, isLoading: subLoading } = useSubscription();
+  const { data: history } = useBillingHistory();
+  const cancelMutation = useCancelSubscription();
 
   const handleCancel = async () => {
-    if (!token || !confirm("Are you sure you want to cancel? You'll retain access until the end of your billing period.")) return;
-    setCancelling(true);
-    try {
-      const result = await billingService.cancel(token);
-      toast.success(result.message);
-      const sub = await billingService.getSubscription(token);
-      setSubscription(sub);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Cancellation failed");
-    } finally {
-      setCancelling(false);
-    }
+    if (!confirm("Are you sure you want to cancel? You'll retain access until the end of your billing period.")) return;
+    cancelMutation.mutate();
   };
 
-  if (loading) {
+  if (subLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -145,10 +113,10 @@ export default function BillingManagePage() {
                       variant="outline"
                       className="text-destructive hover:text-destructive"
                       onClick={handleCancel}
-                      disabled={cancelling}
+                      disabled={cancelMutation.isPending}
                     >
-                      {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {cancelling ? "Cancelling..." : "Cancel Subscription"}
+                      {cancelMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {cancelMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
                     </Button>
                   )}
                 </div>

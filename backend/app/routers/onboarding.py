@@ -18,6 +18,7 @@ CSV Import Flow (recommended):
 4. POST /import/upload — Final import with confirmed mappings
 """
 
+import json
 import logging
 from uuid import UUID
 
@@ -27,6 +28,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin, require_owner
+from app.core.exceptions import ValidationError
+from app.models.member import Member
 from app.schemas.onboarding import (
     ColumnDetectResponse,
     DemoDataRequest,
@@ -43,7 +46,6 @@ from app.services.onboarding_service import (
     create_feedback,
     detect_csv_columns,
     get_onboarding_status,
-    parse_csv_preview,
     parse_csv_with_mapping,
     seed_demo_data,
 )
@@ -51,6 +53,28 @@ from app.services.onboarding_service import (
 logger = logging.getLogger("gymflow.onboarding")
 
 router = APIRouter()
+
+
+def _parse_column_overrides(column_overrides: str | None) -> dict[str, str | None] | None:
+    """Parse column_overrides JSON query param into a dict."""
+    if not column_overrides:
+        return None
+    try:
+        override_list = json.loads(column_overrides)
+        return {
+            item["target_field"]: item.get("csv_column")
+            for item in override_list
+        }
+    except (json.JSONDecodeError, KeyError, TypeError):
+        raise ValidationError("Invalid column_overrides format")
+
+
+async def _get_existing_phones(db: AsyncSession, gym_id: UUID) -> set[str]:
+    """Fetch existing member phone numbers for duplicate detection."""
+    result = await db.execute(
+        select(Member.phone).where(Member.gym_id == gym_id)
+    )
+    return {row[0] for row in result.all()}
 
 
 # === Setup Wizard ===
@@ -185,26 +209,8 @@ async def import_preview(
     """
     csv_text = await _read_csv_upload(file)
 
-    # Parse column overrides if provided
-    overrides_dict: dict[str, str | None] | None = None
-    if column_overrides:
-        import json
-        try:
-            override_list = json.loads(column_overrides)
-            overrides_dict = {
-                item["target_field"]: item.get("csv_column")
-                for item in override_list
-            }
-        except (json.JSONDecodeError, KeyError, TypeError):
-            from app.core.exceptions import ValidationError
-            raise ValidationError("Invalid column_overrides format")
-
-    # Get existing phones for duplicate detection
-    from app.models.member import Member
-    result = await db.execute(
-        select(Member.phone).where(Member.gym_id == current_user.gym_id)
-    )
-    existing_phones = {row[0] for row in result.all()}
+    overrides_dict = _parse_column_overrides(column_overrides)
+    existing_phones = await _get_existing_phones(db, current_user.gym_id)
 
     preview = parse_csv_with_mapping(
         csv_text, current_user.gym_id, existing_phones, overrides_dict
@@ -232,25 +238,8 @@ async def import_upload(
     """
     csv_text = await _read_csv_upload(file)
 
-    # Parse column overrides if provided
-    overrides_dict: dict[str, str | None] | None = None
-    if column_overrides:
-        import json
-        try:
-            override_list = json.loads(column_overrides)
-            overrides_dict = {
-                item["target_field"]: item.get("csv_column")
-                for item in override_list
-            }
-        except (json.JSONDecodeError, KeyError, TypeError):
-            from app.core.exceptions import ValidationError
-            raise ValidationError("Invalid column_overrides format")
-
-    from app.models.member import Member
-    result = await db.execute(
-        select(Member.phone).where(Member.gym_id == current_user.gym_id)
-    )
-    existing_phones = {row[0] for row in result.all()}
+    overrides_dict = _parse_column_overrides(column_overrides)
+    existing_phones = await _get_existing_phones(db, current_user.gym_id)
 
     preview = parse_csv_with_mapping(
         csv_text, current_user.gym_id, existing_phones, overrides_dict
@@ -311,17 +300,17 @@ async def pilot_metrics(
     Owner-only. Shows gym-level usage for the current gym.
     NOT a cross-gym admin panel — that comes later.
     """
-    from app.models.member import Member
+    from app.models.member import Member, MembershipStatus
     from app.models.payment import Payment
     from app.models.attendance import Attendance
     from app.models.notification import Notification
     from app.models.asset import Asset
     from app.models.feedback import Feedback as FeedbackModel
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
 
     gym_id = current_user.gym_id
     today = datetime.now(timezone.utc).date()
-    week_ago = today - __import__("datetime").timedelta(days=7)
+    week_ago = today - timedelta(days=7)
 
     # Members
     total_members = (await db.execute(
@@ -331,16 +320,15 @@ async def pilot_metrics(
     active_members = (await db.execute(
         select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
-            Member.membership_status == "active",
+            Member.membership_status == MembershipStatus.ACTIVE,
         )
     )).scalar_one()
 
     # Members added this week
-    from app.models.base import BaseModel as BM
     members_this_week = (await db.execute(
         select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
-            Member.created_at >= str(week_ago),
+            Member.created_at >= week_ago,
         )
     )).scalar_one()
 
@@ -349,7 +337,7 @@ async def pilot_metrics(
     payments_this_month = (await db.execute(
         select(func.count()).select_from(Payment).where(
             Payment.gym_id == gym_id,
-            Payment.created_at >= str(month_start),
+            Payment.created_at >= month_start,
         )
     )).scalar_one()
 

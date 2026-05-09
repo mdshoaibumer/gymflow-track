@@ -15,6 +15,7 @@ export interface Payment {
   payment_date: string;
   notes: string | null;
   created_by: string | null;
+  member_name: string | null;
 }
 
 export interface PaymentListResponse {

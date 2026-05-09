@@ -37,23 +37,26 @@ class NotificationProcessor:
 
     async def process_pending(self, batch_size: int = 50) -> dict:
         """
-        Process a batch of pending notifications.
+        Process pending notifications in batches until none remain.
 
         Returns:
             Dict with sent/failed counts for logging.
         """
         now = datetime.now(timezone.utc)
-        pending = await self.notification_repo.get_pending_due(now, limit=batch_size)
-
         sent = 0
         failed = 0
 
-        for notification in pending:
-            success = await self._send_notification(notification)
-            if success:
-                sent += 1
-            else:
-                failed += 1
+        while True:
+            pending = await self.notification_repo.get_pending_due(now, limit=batch_size)
+            if not pending:
+                break
+
+            for notification in pending:
+                success = await self._send_notification(notification)
+                if success:
+                    sent += 1
+                else:
+                    failed += 1
 
         if sent or failed:
             logger.info(

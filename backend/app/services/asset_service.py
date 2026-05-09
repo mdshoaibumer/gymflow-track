@@ -33,6 +33,7 @@ from datetime import date
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.timezone import today_ist
 
 from app.core.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.models.asset import (
@@ -74,6 +75,17 @@ class AssetService:
 
     # === Asset CRUD ===
 
+    # ************************************************************
+    # Function Name : Register New Equipment Asset
+    #
+    # Purpose       : Creates a new equipment asset in the gym's
+    # inventory with an initial ACTIVE status. Validates
+    # that the asset code is unique within the gym to
+    # prevent duplicate equipment entries.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def create_asset(
         self,
         gym_id: UUID,
@@ -109,6 +121,17 @@ class AssetService:
         )
         return await self.asset_repo.create(asset)
 
+    # ************************************************************
+    # Function Name : Update Equipment Asset Details
+    #
+    # Purpose       : Modifies equipment metadata (name, manufacturer,
+    # notes, etc.) without changing the lifecycle
+    # status. Asset code changes are validated for
+    # uniqueness within the gym.
+    #
+    # Author        : Mohammed Shoaib U
+    #
+    # ************************************************************
     async def update_asset(
         self,
         gym_id: UUID,
@@ -252,7 +275,7 @@ class AssetService:
 
     async def get_dashboard_stats(self, gym_id: UUID) -> dict:
         """Aggregated equipment stats for the dashboard."""
-        today = date.today()
+        today = today_ist()
         month_start = today.replace(day=1)
         # Last day of month
         if today.month == 12:

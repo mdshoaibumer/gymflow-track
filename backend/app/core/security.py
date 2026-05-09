@@ -9,14 +9,47 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# ************************************************************
+# Function Name : Hash User Password
+#
+# Purpose       : Generates a bcrypt hash of the user's plaintext
+# password for secure database storage. Uses the
+# passlib CryptContext with automatic salt generation.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
+# ************************************************************
+# Function Name : Verify User Password
+#
+# Purpose       : Compares a plaintext password attempt against the
+# stored bcrypt hash. Returns True if the password
+# matches, False otherwise. Uses constant-time
+# comparison internally to prevent timing attacks.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
+# ************************************************************
+# Function Name : Create Short-Lived Access Token
+#
+# Purpose       : Generates a JWT access token containing the user's
+# identity, gym scope, and role. Expires after a
+# configurable period (default 30 min). The role is
+# embedded in the token to eliminate per-request DB
+# lookups for authorization checks.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     """
     Create a short-lived access token containing identity + role.
@@ -39,6 +72,17 @@ def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+# ************************************************************
+# Function Name : Create Long-Lived Refresh Token
+#
+# Purpose       : Generates a JWT refresh token for session
+# continuity. Expires after a configurable period
+# (default 7 days). Used to obtain new access tokens
+# without requiring the user to re-enter credentials.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def create_refresh_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     """
     Create a long-lived refresh token.
@@ -59,6 +103,18 @@ def create_refresh_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+# ************************************************************
+# Function Name : Decode and Validate JWT Token
+#
+# Purpose       : Decodes a JWT token and validates its signature
+# and expiration. Returns the payload dict if valid,
+# None if the token is expired, tampered, or
+# malformed. Used by both access and refresh token
+# validation paths.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def decode_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(

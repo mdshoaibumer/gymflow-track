@@ -35,6 +35,18 @@ class CurrentUser:
         return self.role in (UserRole.OWNER, UserRole.ADMIN)
 
 
+# ************************************************************
+# Function Name : Extract and Validate Current User from JWT
+#
+# Purpose       : FastAPI dependency that extracts the authenticated
+# user from the Authorization header JWT. Validates
+# token type, parses identity claims, and checks a
+# lightweight cache to detect disabled/deleted users
+# within ~60 seconds of account changes.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
 ) -> CurrentUser:
@@ -119,10 +131,29 @@ async def _check_user_active(user_id: UUID) -> None:
     except HTTPException:
         raise
     except Exception:
-        # DB error — don't block the request, let downstream handle it
-        pass
+        # DB error — log for visibility. Allow request to proceed since
+        # access token was already validated; downstream routes still
+        # enforce tenant isolation. Blocking here on transient DB errors
+        # would cause cascading 401s for all users.
+        import logging
+        logging.getLogger("gymflow.auth").warning(
+            f"Active-user check failed for user {user_id} — DB unreachable, "
+            "allowing request based on valid access token"
+        )
 
 
+# ************************************************************
+# Function Name : Role-Based Access Control Factory
+#
+# Purpose       : Creates a FastAPI dependency that enforces role-
+# based access control at the route level. Returns
+# a dependency function that verifies the current
+# user has one of the allowed roles (OWNER, ADMIN,
+# or STAFF) before granting access to the endpoint.
+#
+# Author        : Mohammed Shoaib U
+#
+# ************************************************************
 def require_role(*allowed_roles: UserRole):
     """
     Factory that creates a dependency enforcing role-based access.

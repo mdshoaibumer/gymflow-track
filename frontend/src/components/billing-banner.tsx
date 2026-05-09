@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { billingService, type Subscription } from "@/services/billing.service";
+import { useSubscription } from "@/hooks/use-billing";
 
 /**
  * Billing status banner — shows contextual alerts across all dashboard pages.
@@ -17,16 +16,8 @@ import { billingService, type Subscription } from "@/services/billing.service";
  * We inform, not threaten. The value speaks for itself.
  */
 export function BillingBanner() {
-  const { token, isOwner } = useAuth();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    billingService
-      .getSubscription(token)
-      .then(setSubscription)
-      .catch(() => {});
-  }, [token]);
+  const { isOwner } = useAuth();
+  const { data: subscription } = useSubscription();
 
   if (!subscription) return null;
 

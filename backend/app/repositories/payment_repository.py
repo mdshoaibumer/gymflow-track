@@ -1,8 +1,9 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.payment import Payment, PaymentStatus
 
@@ -49,10 +50,11 @@ class PaymentRepository:
 
         result = await self.db.execute(
             query.order_by(Payment.payment_date.desc(), Payment.created_at.desc())
+            .options(joinedload(Payment.member))
             .offset(skip)
             .limit(limit)
         )
-        return list(result.scalars().all())
+        return list(result.scalars().unique().all())
 
     async def count_by_gym(
         self,
@@ -117,9 +119,10 @@ class PaymentRepository:
         return result.scalar_one()
 
     async def get_recent(self, gym_id: UUID, limit: int = 10) -> list[Payment]:
-        """Most recent payments for dashboard display."""
+        """Most recent payments for dashboard display. Eager-loads member to prevent N+1."""
         result = await self.db.execute(
             select(Payment)
+            .options(joinedload(Payment.member))
             .where(
                 Payment.gym_id == gym_id,
                 Payment.payment_status == PaymentStatus.COMPLETED,
@@ -127,7 +130,7 @@ class PaymentRepository:
             .order_by(Payment.payment_date.desc(), Payment.created_at.desc())
             .limit(limit)
         )
-        return list(result.scalars().all())
+        return list(result.scalars().unique().all())
 
     async def count_pending(self, gym_id: UUID) -> int:
         """Count payments with PENDING status — dues not yet collected."""

@@ -1,4 +1,4 @@
-import { apiClient, API_URL } from "@/lib/api";
+import { apiClient, api } from "@/lib/api";
 
 // === Onboarding ===
 
@@ -88,17 +88,17 @@ export const onboardingService = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${API_URL}/onboarding/import/preview`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: "Upload failed" }));
-      throw new Error(err.detail || `HTTP ${response.status}`);
-    }
-    return response.json();
+    const response = await api.post<ImportPreview>(
+      "/onboarding/import/preview",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
   },
 
   commitImport: async (
@@ -114,17 +114,17 @@ export const onboardingService = {
       skip_invalid: String(options?.skip_invalid ?? true),
     });
 
-    const response = await fetch(`${API_URL}/onboarding/import/upload?${params}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: "Import failed" }));
-      throw new Error(err.detail || `HTTP ${response.status}`);
-    }
-    return response.json();
+    const response = await api.post<ImportResult>(
+      `/onboarding/import/upload?${params}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
   },
 
   submitFeedback: (token: string, data: FeedbackPayload) =>

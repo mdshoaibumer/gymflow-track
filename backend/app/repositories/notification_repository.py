@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import (
@@ -170,6 +170,19 @@ class NotificationRepository:
             .where(
                 Notification.gym_id == gym_id,
                 Notification.status == NotificationStatus.FAILED,
+            )
+        )
+        return result.scalar_one()
+
+    async def count_upcoming_scheduled(self, gym_id: UUID, after: datetime) -> int:
+        """Count future-scheduled pending notifications (upcoming, not yet due)."""
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(Notification)
+            .where(
+                Notification.gym_id == gym_id,
+                Notification.status == NotificationStatus.PENDING,
+                Notification.scheduled_for > after,
             )
         )
         return result.scalar_one()

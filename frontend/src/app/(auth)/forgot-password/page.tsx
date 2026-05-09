@@ -3,20 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { authService } from "@/services/auth.service";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Password reset is not yet available — show honest message
-    setSubmitted(true);
+    setLoading(true);
+    try {
+      await authService.forgotPassword(email);
+    } catch {
+      // Show success regardless to prevent email enumeration
+    } finally {
+      setLoading(false);
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -34,7 +43,7 @@ export default function ForgotPasswordPage() {
             </Link>
             <CardTitle className="text-xl">Reset Password</CardTitle>
             <CardDescription>
-              Password reset is coming soon
+              Enter your email to receive a password reset link
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -44,9 +53,14 @@ export default function ForgotPasswordPage() {
                   <Mail className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Password reset is not yet available. Please contact your gym
-                  administrator or reach out to{" "}
-                  <strong>support@gymflow.in</strong> for assistance.
+                  If an account exists with <strong>{email}</strong>, you&apos;ll
+                  receive password reset instructions. Check your email/SMS.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Have a reset token?{" "}
+                  <Link href="/reset-password" className="text-primary hover:underline">
+                    Reset your password here
+                  </Link>
                 </p>
                 <Button variant="outline" asChild className="w-full">
                   <Link href="/login">
@@ -69,7 +83,8 @@ export default function ForgotPasswordPage() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Send Reset Link
                   </Button>
                 </form>
