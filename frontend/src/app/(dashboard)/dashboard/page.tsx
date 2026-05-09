@@ -26,6 +26,7 @@ import { DashboardCard } from "@/components/layout/dashboard-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPaise } from "@/lib/utils";
 import {
   useDashboardMetrics,
   useExpiringMembers,
@@ -102,7 +103,7 @@ export default function DashboardPage() {
         />
         <DashboardCard
           title="Revenue (Month)"
-          value={`₹${((metrics?.monthly_revenue_paise ?? 0) / 100).toLocaleString("en-IN")}`}
+          value={formatPaise(metrics?.monthly_revenue_paise ?? 0)}
           description="Current month"
           icon={IndianRupee}
           loading={metricsLoading}
@@ -318,7 +319,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <p className="text-sm font-semibold">
-                      ₹{(p.amount_in_paise / 100).toLocaleString("en-IN")}
+                      {formatPaise(p.amount_in_paise)}
                     </p>
                   </div>
                 ))}

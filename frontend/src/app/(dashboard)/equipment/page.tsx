@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
@@ -26,6 +26,7 @@ import type {
 } from "@/services/asset.service";
 import { assetFormSchema, type AssetFormValues } from "@/lib/validations/asset";
 import { DashboardCard } from "@/components/layout/dashboard-card";
+import { formatPaise } from "@/lib/utils";
 import { RoleGate } from "@/components/role-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,12 +94,19 @@ export default function EquipmentPage() {
   const [filterStatus, setFilterStatus] = useState<AssetStatus | "">("");
   const [filterCategory, setFilterCategory] = useState<AssetCategory | "">("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [modal, setModal] = useState<ModalState>({ type: "none" });
+
+  // Debounce search input to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const { data: assetsData, isLoading } = useAssets({
     status: filterStatus || undefined,
     category: filterCategory || undefined,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
   });
   const { data: stats } = useAssetStats();
 
@@ -162,7 +170,7 @@ export default function EquipmentPage() {
           />
           <DashboardCard
             title="Maintenance Cost"
-            value={`₹${(stats.maintenance_cost_this_month_paise / 100).toLocaleString("en-IN")}`}
+            value={formatPaise(stats.maintenance_cost_this_month_paise)}
             description="This month"
           />
         </div>
@@ -729,7 +737,7 @@ function HistoryDialog({
                 </div>
                 <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
                   {r.cost_in_paise > 0 && (
-                    <span>₹{(r.cost_in_paise / 100).toLocaleString("en-IN")}</span>
+                    <span>{formatPaise(r.cost_in_paise)}</span>
                   )}
                   {r.vendor_name && <span>{r.vendor_name}</span>}
                   {r.next_service_date && (

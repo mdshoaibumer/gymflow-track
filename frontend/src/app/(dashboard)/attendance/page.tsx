@@ -127,6 +127,7 @@ export default function AttendancePage() {
                 onChange={(e) => setQrInput(e.target.value)}
                 placeholder="Scan QR code here..."
                 disabled={checkInQR.isPending}
+                aria-label="QR code token"
                 autoFocus
               />
               <Button
@@ -156,6 +157,7 @@ export default function AttendancePage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search member name or phone..."
               disabled={checkInManual.isPending}
+              aria-label="Search members for check-in"
             />
             {searchResults.length > 0 && (
               <div className="mt-2 divide-y rounded-md border">

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { formatPaise } from "@/lib/utils";
 import { usePlans, useSubscription, useSubscribe, useVerifyPayment } from "@/hooks/use-billing";
 import { billingService } from "@/services/billing.service";
 import { Button } from "@/components/ui/button";
@@ -58,9 +59,7 @@ export default function PricingPage() {
           razorpay_order_id: result.razorpay_order_id || "mock",
           razorpay_signature: "mock_signature",
         });
-        if (verification.verified) {
-          setTimeout(() => window.location.reload(), 1500);
-        }
+        // Query invalidation handled by useVerifyPayment hook
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Subscription failed");
@@ -99,11 +98,10 @@ export default function PricingPage() {
             razorpay_order_id: response.razorpay_order_id,
             razorpay_signature: response.razorpay_signature,
           });
-          if (verification.verified) {
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
+          if (!verification.verified) {
             toast.error("Payment verification failed. Please contact support.");
           }
+          // Query invalidation handled by useVerifyPayment hook
         } catch {
           toast.error("Payment verification failed. Please contact support.");
         }
@@ -171,7 +169,7 @@ export default function PricingPage() {
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
                   <span className="text-3xl font-bold">
-                    ₹{(plan.price_in_paise / 100).toLocaleString("en-IN")}
+                    {formatPaise(plan.price_in_paise)}
                   </span>
                   <span className="text-muted-foreground">/month</span>
                 </div>

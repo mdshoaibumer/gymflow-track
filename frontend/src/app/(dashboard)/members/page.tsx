@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
+import { formatPaise } from "@/lib/utils";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
@@ -115,7 +116,7 @@ export default function MembersPage() {
         header: "Paid",
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            ₹{(row.original.amount_paid / 100).toLocaleString("en-IN")}
+            {formatPaise(row.original.amount_paid)}
           </span>
         ),
       },
@@ -197,6 +198,7 @@ export default function MembersPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or phone..."
           className="pl-9"
+          aria-label="Search members"
         />
       </div>
 

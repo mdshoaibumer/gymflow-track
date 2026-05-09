@@ -22,6 +22,8 @@ export default function SettingsPage() {
 
   const [form, setForm] = useState<GymUpdatePayload>({});
 
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   // Populate form when gym data loads
   useEffect(() => {
     if (gym) {
@@ -36,6 +38,16 @@ export default function SettingsPage() {
   }, [gym]);
 
   const handleSave = async () => {
+    // Basic validation
+    if (!form.name || form.name.trim().length < 2) {
+      setValidationError("Gym name must be at least 2 characters");
+      return;
+    }
+    if (form.phone && !/^[6-9]\d{9}$/.test(form.phone)) {
+      setValidationError("Enter a valid 10-digit Indian mobile number");
+      return;
+    }
+    setValidationError(null);
     await updateMutation.mutateAsync(form);
   };
 
@@ -125,14 +137,19 @@ export default function SettingsPage() {
                 />
               </div>
               {isOwner && (
-                <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
+                <>
+                  {validationError && (
+                    <p className="text-sm text-destructive">{validationError}</p>
                   )}
-                  Save Changes
-                </Button>
+                  <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                </>
               )}
             </div>
           )}

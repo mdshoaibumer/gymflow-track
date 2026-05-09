@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck } from "lucide-react";
 import { useMember } from "@/hooks/use-members";
+import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +92,7 @@ export default function MemberDetailPage({
             </div>
             <div>
               <span className="text-muted-foreground">Amount Paid: </span>
-              ₹{(member.amount_paid / 100).toLocaleString("en-IN")}
+              {formatPaise(member.amount_paid)}
             </div>
           </CardContent>
         </Card>
@@ -171,7 +172,7 @@ export default function MemberDetailPage({
                         {new Date(p.payment_date).toLocaleDateString("en-IN")}
                       </td>
                       <td className="px-4 py-2 font-medium">
-                        ₹{((p.amount_in_paise ?? 0) / 100).toLocaleString("en-IN")}
+                        {formatPaise(p.amount_in_paise ?? 0)}
                       </td>
                       <td className="px-4 py-2 capitalize">{p.payment_method?.replace("_", " ")}</td>
                       <td className="px-4 py-2">

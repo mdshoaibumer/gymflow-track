@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-billing";
 
@@ -27,15 +28,15 @@ export function BillingBanner() {
   if (is_trial && days_remaining !== null && days_remaining <= 7) {
     return (
       <div className={`px-4 py-2 text-sm text-center ${
-        days_remaining <= 2 ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-800"
+        days_remaining <= 2 ? "bg-red-50 dark:bg-red-950/50 text-red-800 dark:text-red-200" : "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200"
       }`}>
         {days_remaining === 0
           ? "Your free trial expires today! "
           : `${days_remaining} day${days_remaining !== 1 ? "s" : ""} left in your free trial. `}
         {isOwner && (
-          <a href="/billing" className="font-medium underline">
+          <Link href="/billing" className="font-medium underline">
             Subscribe now
-          </a>
+          </Link>
         )}
       </div>
     );
@@ -44,12 +45,12 @@ export function BillingBanner() {
   // Past due
   if (status === "past_due") {
     return (
-      <div className="bg-red-50 px-4 py-2 text-sm text-center text-red-800">
+      <div className="bg-red-50 dark:bg-red-950/50 px-4 py-2 text-sm text-center text-red-800 dark:text-red-200">
         Payment overdue. We&apos;re retrying automatically.{" "}
         {isOwner && (
-          <a href="/billing/manage" className="font-medium underline">
+          <Link href="/billing/manage" className="font-medium underline">
             Update payment
-          </a>
+          </Link>
         )}
       </div>
     );
@@ -58,15 +59,15 @@ export function BillingBanner() {
   // Cancelled but still active
   if (status === "cancelled" || cancel_at_period_end) {
     return (
-      <div className="bg-amber-50 px-4 py-2 text-sm text-center text-amber-800">
+      <div className="bg-amber-50 dark:bg-amber-950/50 px-4 py-2 text-sm text-center text-amber-800 dark:text-amber-200">
         Your subscription is cancelled. Access continues until{" "}
         {current_period_end
           ? new Date(current_period_end).toLocaleDateString("en-IN")
           : "the end of your billing period"}.{" "}
         {isOwner && (
-          <a href="/billing" className="font-medium underline">
+          <Link href="/billing" className="font-medium underline">
             Resubscribe
-          </a>
+          </Link>
         )}
       </div>
     );
@@ -75,12 +76,12 @@ export function BillingBanner() {
   // Expired
   if (status === "expired") {
     return (
-      <div className="bg-red-50 px-4 py-2 text-sm text-center text-red-800">
+      <div className="bg-red-50 dark:bg-red-950/50 px-4 py-2 text-sm text-center text-red-800 dark:text-red-200">
         Your subscription has expired. Some features are restricted.{" "}
         {isOwner && (
-          <a href="/billing" className="font-medium underline">
+          <Link href="/billing" className="font-medium underline">
             Reactivate now
-          </a>
+          </Link>
         )}
       </div>
     );

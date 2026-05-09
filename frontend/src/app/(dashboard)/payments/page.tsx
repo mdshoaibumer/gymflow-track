@@ -18,6 +18,7 @@ import { PaymentForm } from "@/components/payments/payment-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
+import { formatPaise } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentFormValues } from "@/lib/validations/payment";
 
@@ -90,7 +91,7 @@ export default function PaymentsPage() {
         header: "Amount",
         cell: ({ row }) => (
           <span className="font-semibold">
-            ₹{(row.original.amount_in_paise / 100).toLocaleString("en-IN")}
+            {formatPaise(row.original.amount_in_paise)}
           </span>
         ),
       },

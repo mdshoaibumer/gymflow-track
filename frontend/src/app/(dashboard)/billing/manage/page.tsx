@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { CreditCard, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { formatPaise } from "@/lib/utils";
 import { useSubscription, useBillingHistory, useCancelSubscription } from "@/hooks/use-billing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +46,7 @@ export default function BillingManagePage() {
               <div>
                 <CardTitle>{subscription.plan.name} Plan</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  ₹{(subscription.plan.price_in_paise / 100).toLocaleString("en-IN")}/month
+                  {formatPaise(subscription.plan.price_in_paise)}/month
                 </p>
               </div>
               <SubscriptionStatusBadge status={subscription.status} />
@@ -166,7 +167,7 @@ export default function BillingManagePage() {
                         {new Date(inv.period_end).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                       </td>
                       <td className="px-4 py-2 font-medium">
-                        ₹{(inv.amount_in_paise / 100).toLocaleString("en-IN")}
+                        {formatPaise(inv.amount_in_paise)}
                       </td>
                       <td className="px-4 py-2">
                         <InvoiceStatusBadge status={inv.status} />

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { formatPaise } from "@/lib/utils";
 import { useBillingMetrics } from "@/hooks/use-billing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -47,7 +48,7 @@ export default function BillingMetricsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Monthly Recurring Revenue"
-          value={`₹${(metrics.mrr_in_paise / 100).toLocaleString("en-IN")}`}
+          value={formatPaise(metrics.mrr_in_paise)}
           sublabel="MRR"
         />
         <MetricCard
