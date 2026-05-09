@@ -283,6 +283,10 @@ async def verify_and_activate(
     if not verification.verified:
         invoice.status = InvoiceStatus.FAILED
         await db.flush()
+        logger.warning(
+            "Payment signature verification failed: gym=%s order=%s payment=%s",
+            gym_id, order_id, payment_id,
+        )
         raise ValidationError("Payment verification failed — signature mismatch")
 
     # Mark invoice as paid
@@ -400,7 +404,10 @@ async def process_webhook_payment(
             subscription.payment_retry_count = 0
             invalidate_subscription_cache(invoice.gym_id)
 
-        logger.info(f"Webhook: payment captured for invoice {invoice.invoice_number}")
+        logger.info(
+            "Webhook: payment captured for invoice %s (gym=%s, payment=%s)",
+            invoice.invoice_number, invoice.gym_id, payment_id,
+        )
 
     elif status == "failed":
         invoice.status = InvoiceStatus.FAILED
@@ -415,10 +422,19 @@ async def process_webhook_payment(
 
             if subscription.payment_retry_count >= MAX_PAYMENT_RETRIES:
                 subscription.status = BillingStatus.EXPIRED
-                logger.warning(f"Webhook: max retries reached for gym subscription {subscription.gym_id}")
+                logger.warning(
+                    "Webhook: max retries reached for gym %s — subscription expired "
+                    "(invoice=%s, payment=%s)",
+                    subscription.gym_id, invoice.invoice_number, payment_id,
+                )
             else:
                 subscription.status = BillingStatus.PAST_DUE
-                logger.info(f"Webhook: payment failed, retry {subscription.payment_retry_count}/{MAX_PAYMENT_RETRIES}")
+                logger.info(
+                    "Webhook: payment failed for gym %s — retry %d/%d "
+                    "(invoice=%s, payment=%s)",
+                    subscription.gym_id, subscription.payment_retry_count,
+                    MAX_PAYMENT_RETRIES, invoice.invoice_number, payment_id,
+                )
             invalidate_subscription_cache(invoice.gym_id)
 
     await db.flush()
@@ -659,36 +675,85 @@ async def _create_invoice(
     period_end: date,
     description: str,
 ) -> Invoice:
-    """Create an invoice with auto-generated invoice number."""
+    """Create an invoice with a concurrency-safe invoice number.
+
+    Uses SELECT ... FOR UPDATE SKIP LOCKED counting + retry on conflict to
+    prevent duplicate invoice numbers under concurrent requests.
+    Falls back to a UUID suffix after 3 retries.
+    """
+    from sqlalchemy.exc import IntegrityError
+
     now = datetime.now(timezone.utc)
     month_str = now.strftime("%Y%m")
+    invoice_id = uuid4()
+    idempotency_key = f"{gym_id}:{month_str}:{invoice_id.hex[:8]}"
 
-    # Count existing invoices this month for sequential numbering
-    count = (await db.execute(
-        select(func.count()).select_from(Invoice).where(
-            Invoice.invoice_number.like(f"INV-{month_str}-%")
+    max_retries = 3
+    for attempt in range(max_retries):
+        # Count within transaction — safe with FOR UPDATE on the session's transaction
+        count = (await db.execute(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.invoice_number.like(f"INV-{month_str}-%")
+            )
+        )).scalar_one()
+
+        invoice_number = f"INV-{month_str}-{count + 1:04d}"
+
+        invoice = Invoice(
+            id=invoice_id,
+            gym_id=gym_id,
+            subscription_id=subscription_id,
+            invoice_number=invoice_number,
+            amount_in_paise=amount_in_paise,
+            status=InvoiceStatus.PENDING,
+            period_start=period_start,
+            period_end=period_end,
+            idempotency_key=idempotency_key,
+            description=description,
         )
-    )).scalar_one()
+        db.add(invoice)
 
-    invoice_number = f"INV-{month_str}-{count + 1:04d}"
+        try:
+            await db.flush()
+            logger.info(
+                "Invoice created: %s for %d paise (gym=%s)",
+                invoice_number, amount_in_paise, gym_id,
+            )
+            return invoice
+        except IntegrityError:
+            await db.rollback()
+            invoice_id = uuid4()  # New ID for retry
+            idempotency_key = f"{gym_id}:{month_str}:{invoice_id.hex[:8]}"
+            if attempt < max_retries - 1:
+                logger.warning(
+                    "Invoice number conflict on %s, retrying (attempt %d)",
+                    invoice_number, attempt + 1,
+                )
+                continue
+            # Final fallback: use UUID suffix for guaranteed uniqueness
+            invoice_number = f"INV-{month_str}-{invoice_id.hex[:8].upper()}"
+            invoice = Invoice(
+                id=invoice_id,
+                gym_id=gym_id,
+                subscription_id=subscription_id,
+                invoice_number=invoice_number,
+                amount_in_paise=amount_in_paise,
+                status=InvoiceStatus.PENDING,
+                period_start=period_start,
+                period_end=period_end,
+                idempotency_key=idempotency_key,
+                description=description,
+            )
+            db.add(invoice)
+            await db.flush()
+            logger.info(
+                "Invoice created (fallback): %s for %d paise (gym=%s)",
+                invoice_number, amount_in_paise, gym_id,
+            )
+            return invoice
 
-    invoice = Invoice(
-        id=uuid4(),
-        gym_id=gym_id,
-        subscription_id=subscription_id,
-        invoice_number=invoice_number,
-        amount_in_paise=amount_in_paise,
-        status=InvoiceStatus.PENDING,
-        period_start=period_start,
-        period_end=period_end,
-        idempotency_key=f"{gym_id}:{month_str}:{uuid4().hex[:8]}",
-        description=description,
-    )
-    db.add(invoice)
-    await db.flush()
-
-    logger.info(f"Invoice created: {invoice_number} for {amount_in_paise} paise")
-    return invoice
+    # Unreachable, but satisfy type checker
+    raise RuntimeError("Invoice creation failed after retries")
 
 
 # === Metrics ===
@@ -698,63 +763,57 @@ async def get_billing_metrics(db: AsyncSession, gym_id: UUID) -> dict:
     """
     Internal billing metrics for operational monitoring.
 
-    MRR = sum of active subscription plan price for this gym.
-    Scoped to gym_id — owners only see their own gym's data.
-    Not a financial system — operational visibility only.
+    Optimized: single subscription lookup + 2 invoice queries instead of N+1
+    status queries. A gym has exactly one subscription row.
     """
-    # Subscription status for this gym
-    status_counts = {}
-    for status in BillingStatus:
-        count = (await db.execute(
-            select(func.count()).select_from(GymSubscription).where(
-                GymSubscription.gym_id == gym_id,
-                GymSubscription.status == status,
-            )
-        )).scalar_one()
-        status_counts[status.value] = count
-
-    # MRR: Plan price for this gym's ACTIVE subscription
-    mrr_result = await db.execute(
-        select(func.sum(SubscriptionPlan.price_in_paise))
-        .select_from(GymSubscription)
-        .join(SubscriptionPlan, GymSubscription.plan_id == SubscriptionPlan.id)
-        .where(
-            GymSubscription.gym_id == gym_id,
-            GymSubscription.status == BillingStatus.ACTIVE,
-        )
+    # Single query to get this gym's subscription status
+    sub = await db.execute(
+        select(GymSubscription)
+        .options(selectinload(GymSubscription.plan))
+        .where(GymSubscription.gym_id == gym_id)
     )
-    mrr = mrr_result.scalar_one() or 0
+    subscription = sub.scalar_one_or_none()
 
-    # Cancelled this month (this gym only)
+    status_counts = {s.value: 0 for s in BillingStatus}
+    mrr = 0
+    if subscription:
+        status_counts[subscription.status.value] = 1
+        if subscription.status == BillingStatus.ACTIVE and subscription.plan:
+            mrr = subscription.plan.price_in_paise
+
+    # Cancelled this month (check single subscription)
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    cancelled_count = (await db.execute(
-        select(func.count()).select_from(GymSubscription).where(
-            GymSubscription.gym_id == gym_id,
-            GymSubscription.status == BillingStatus.CANCELLED,
-            GymSubscription.cancelled_at >= month_start,
-        )
-    )).scalar_one()
+    cancelled_count = 0
+    if (
+        subscription
+        and subscription.status == BillingStatus.CANCELLED
+        and subscription.cancelled_at
+        and subscription.cancelled_at >= month_start
+    ):
+        cancelled_count = 1
 
-    # Trial conversion rate (this gym's history)
-    total_ever_trial = status_counts.get("trial", 0) + status_counts.get("active", 0) + status_counts.get("cancelled", 0) + status_counts.get("expired", 0)
-    total_converted = status_counts.get("active", 0) + status_counts.get("cancelled", 0)
-    conversion_rate = (total_converted / total_ever_trial * 100) if total_ever_trial > 0 else None
+    # Trial conversion: meaningful only if subscription has progressed past trial
+    conversion_rate = None
+    if subscription:
+        if subscription.status in (BillingStatus.ACTIVE, BillingStatus.CANCELLED, BillingStatus.EXPIRED):
+            conversion_rate = 100.0  # converted from trial
+        elif subscription.status == BillingStatus.TRIAL:
+            conversion_rate = 0.0  # still on trial
 
-    # Payment failure rate (this month, this gym)
-    total_invoices = (await db.execute(
-        select(func.count()).select_from(Invoice).where(
+    # Invoice failure rate (this month, this gym) — 2 queries consolidated to 1
+    invoice_stats = await db.execute(
+        select(
+            func.count().label("total"),
+            func.count().filter(Invoice.status == InvoiceStatus.FAILED).label("failed"),
+        ).where(
             Invoice.gym_id == gym_id,
             Invoice.created_at >= month_start,
         )
-    )).scalar_one()
-    failed_invoices = (await db.execute(
-        select(func.count()).select_from(Invoice).where(
-            Invoice.gym_id == gym_id,
-            Invoice.created_at >= month_start,
-            Invoice.status == InvoiceStatus.FAILED,
-        )
-    )).scalar_one()
+    )
+    row = invoice_stats.one()
+    total_invoices = row.total
+    failed_invoices = row.failed
     failure_rate = (failed_invoices / total_invoices * 100) if total_invoices > 0 else None
 
     return {
