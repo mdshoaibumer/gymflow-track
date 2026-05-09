@@ -4,7 +4,7 @@ export interface Gym {
   id: string;
   name: string;
   slug: string;
-  phone: string | null;
+  phone: string;
   email: string | null;
   address: string | null;
   city: string | null;
