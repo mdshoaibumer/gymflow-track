@@ -15,8 +15,7 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Backend doesn't have password reset endpoint yet
-    // This is a UI-only page for when it's implemented
+    // Password reset is not yet available — show honest message
     setSubmitted(true);
   };
 
@@ -35,18 +34,19 @@ export default function ForgotPasswordPage() {
             </Link>
             <CardTitle className="text-xl">Reset Password</CardTitle>
             <CardDescription>
-              Enter your email and we&apos;ll send you a reset link
+              Password reset is coming soon
             </CardDescription>
           </CardHeader>
           <CardContent>
             {submitted ? (
               <div className="text-center space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  If an account exists with <strong>{email}</strong>, you&apos;ll
-                  receive a password reset link shortly.
+                  Password reset is not yet available. Please contact your gym
+                  administrator or reach out to{" "}
+                  <strong>support@gymflow.in</strong> for assistance.
                 </p>
                 <Button variant="outline" asChild className="w-full">
                   <Link href="/login">

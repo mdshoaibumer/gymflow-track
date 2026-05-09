@@ -19,9 +19,12 @@ Security:
 - /metrics is owner-only (operational visibility)
 """
 
+import json
 import logging
+from datetime import date
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -92,8 +95,6 @@ async def get_subscription(
     Returns null if no subscription exists (shouldn't happen — trial is auto-created).
     Includes computed fields: days_remaining, is_trial.
     """
-    from datetime import date
-
     sub = await billing_service.get_subscription(db, current_user.gym_id)
     if not sub:
         return None
@@ -227,15 +228,12 @@ async def razorpay_webhook(request: Request, db: AsyncSession = Depends(get_db))
     # Verify webhook is genuinely from Razorpay
     if not provider.verify_webhook_signature(body, signature):
         logger.warning("Webhook signature verification FAILED — rejecting")
-        from fastapi.responses import JSONResponse
         return JSONResponse(status_code=400, content={"status": "invalid_signature"})
 
-    import json
     try:
         payload = json.loads(body)
     except json.JSONDecodeError:
         logger.warning("Webhook: invalid JSON body")
-        from fastapi.responses import JSONResponse
         return JSONResponse(status_code=400, content={"status": "invalid_body"})
 
     event = provider.parse_webhook(payload)

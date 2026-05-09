@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.core.config import settings
@@ -155,8 +156,6 @@ async def health_check():
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        from fastapi.responses import JSONResponse
-
         return JSONResponse(
             status_code=503,
             content={"status": "unhealthy", "detail": "Database unreachable"},

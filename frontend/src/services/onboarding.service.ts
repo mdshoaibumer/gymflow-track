@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { apiClient, API_URL } from "@/lib/api";
 
 // === Onboarding ===
 
@@ -88,7 +88,6 @@ export const onboardingService = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
     const response = await fetch(`${API_URL}/onboarding/import/preview`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -110,7 +109,6 @@ export const onboardingService = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
     const params = new URLSearchParams({
       skip_duplicates: String(options?.skip_duplicates ?? true),
       skip_invalid: String(options?.skip_invalid ?? true),

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { Plus, Wrench, History, Pencil, CheckCircle, XCircle, Archive } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,6 +24,7 @@ import type {
   CreateMaintenancePayload,
   MaintenanceRecord,
 } from "@/services/asset.service";
+import { assetFormSchema, type AssetFormValues } from "@/lib/validations/asset";
 import { DashboardCard } from "@/components/layout/dashboard-card";
 import { RoleGate } from "@/components/role-gate";
 import { Button } from "@/components/ui/button";
@@ -411,17 +414,29 @@ function AssetFormDialog({
   onSubmit: (data: Partial<CreateAssetPayload>) => void;
   onClose: () => void;
 }) {
-  const [form, setForm] = useState<Partial<CreateAssetPayload>>({
-    name: asset?.name ?? "",
-    asset_code: asset?.asset_code ?? "",
-    category: asset?.category ?? "cardio",
-    manufacturer: asset?.manufacturer ?? "",
-    serial_number: asset?.serial_number ?? "",
-    purchase_date: asset?.purchase_date ?? "",
-    purchase_cost_in_paise: asset?.purchase_cost_in_paise ?? undefined,
-    warranty_expiry: asset?.warranty_expiry ?? "",
-    notes: asset?.notes ?? "",
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<AssetFormValues>({
+    resolver: zodResolver(assetFormSchema),
+    defaultValues: {
+      name: asset?.name ?? "",
+      asset_code: asset?.asset_code ?? "",
+      category: asset?.category ?? "cardio",
+      manufacturer: asset?.manufacturer ?? "",
+      serial_number: asset?.serial_number ?? "",
+      purchase_date: asset?.purchase_date ?? "",
+      purchase_cost_in_paise: asset?.purchase_cost_in_paise ?? undefined,
+      warranty_expiry: asset?.warranty_expiry ?? "",
+      notes: asset?.notes ?? "",
+    },
   });
+
+  const onFormSubmit = (data: AssetFormValues) => {
+    onSubmit(data as Partial<CreateAssetPayload>);
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -432,48 +447,55 @@ function AssetFormDialog({
             {asset ? "Update equipment details." : "Add a new piece of equipment to your gym."}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Name *</Label>
               <Input
-                value={form.name || ""}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                {...register("name")}
                 placeholder="Treadmill #1"
               />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Code *</Label>
               <Input
-                value={form.asset_code || ""}
-                onChange={(e) => setForm({ ...form, asset_code: e.target.value })}
+                {...register("asset_code")}
                 placeholder="TM-001"
               />
+              {errors.asset_code && (
+                <p className="text-xs text-destructive">{errors.asset_code.message}</p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category *</Label>
-              <Select
-                value={form.category || "cardio"}
-                onValueChange={(v) => setForm({ ...form, category: v as AssetCategory })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.category && (
+                <p className="text-xs text-destructive">{errors.category.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Manufacturer</Label>
-              <Input
-                value={form.manufacturer || ""}
-                onChange={(e) => setForm({ ...form, manufacturer: e.target.value })}
-              />
+              <Input {...register("manufacturer")} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -481,69 +503,68 @@ function AssetFormDialog({
               <Label>Purchase Date</Label>
               <Input
                 type="date"
-                value={form.purchase_date || ""}
-                onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
+                {...register("purchase_date")}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Cost (₹)</Label>
-              <Input
-                type="number"
-                value={
-                  form.purchase_cost_in_paise != null
-                    ? form.purchase_cost_in_paise / 100
-                    : ""
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    purchase_cost_in_paise: e.target.value
-                      ? Math.round(Number(e.target.value) * 100)
-                      : undefined,
-                  })
-                }
-                min="0"
-                step="1"
+              <Controller
+                name="purchase_cost_in_paise"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    type="number"
+                    value={
+                      field.value != null
+                        ? field.value / 100
+                        : ""
+                    }
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value
+                          ? Math.round(Number(e.target.value) * 100)
+                          : undefined
+                      )
+                    }
+                    min="0"
+                    step="1"
+                  />
+                )}
               />
+              {errors.purchase_cost_in_paise && (
+                <p className="text-xs text-destructive">{errors.purchase_cost_in_paise.message}</p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Serial Number</Label>
-              <Input
-                value={form.serial_number || ""}
-                onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
-              />
+              <Input {...register("serial_number")} />
             </div>
             <div className="space-y-1.5">
               <Label>Warranty Expiry</Label>
               <Input
                 type="date"
-                value={form.warranty_expiry || ""}
-                onChange={(e) => setForm({ ...form, warranty_expiry: e.target.value })}
+                {...register("warranty_expiry")}
               />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Notes</Label>
             <Textarea
-              value={form.notes || ""}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              {...register("notes")}
               rows={2}
             />
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => onSubmit(form)}
-            disabled={loading || !form.name || !form.asset_code}
-          >
-            {loading ? "Saving..." : asset ? "Update" : "Add"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : asset ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

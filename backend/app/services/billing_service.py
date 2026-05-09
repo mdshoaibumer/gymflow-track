@@ -552,7 +552,10 @@ async def check_member_limit(db: AsyncSession, gym_id: UUID) -> dict:
     max_members = plan.max_members if plan else 50
 
     current_count = (await db.execute(
-        select(func.count()).select_from(Member).where(Member.gym_id == gym_id)
+        select(func.count()).select_from(Member).where(
+            Member.gym_id == gym_id,
+            Member.is_deleted == False,  # noqa: E712
+        )
     )).scalar_one()
 
     return {
@@ -590,7 +593,10 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
     plan = plan_result.scalar_one()
 
     member_count = (await db.execute(
-        select(func.count()).select_from(Member).where(Member.gym_id == gym_id)
+        select(func.count()).select_from(Member).where(
+            Member.gym_id == gym_id,
+            Member.is_deleted == False,  # noqa: E712
+        )
     )).scalar_one()
 
     staff_count = (await db.execute(
