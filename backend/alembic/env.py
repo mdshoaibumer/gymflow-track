@@ -10,6 +10,12 @@ from app.models.base import Base
 from app.models.gym import Gym  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.member import Member  # noqa: F401
+from app.models.payment import Payment  # noqa: F401
+from app.models.notification import Notification  # noqa: F401
+from app.models.attendance import Attendance  # noqa: F401
+from app.models.asset import Asset, MaintenanceRecord  # noqa: F401
+from app.models.feedback import Feedback  # noqa: F401
+from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  # noqa: F401
 
 config = context.config
 

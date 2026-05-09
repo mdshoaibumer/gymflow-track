@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { billingService, type BillingMetrics } from "@/services/billing.service";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function BillingMetricsPage() {
   const { token, isOwner } = useAuth();
@@ -29,7 +32,7 @@ export default function BillingMetricsPage() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -39,11 +42,18 @@ export default function BillingMetricsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Billing Metrics</h1>
-      <p className="text-sm text-muted-foreground">
-        Internal operational metrics. Updated in real-time.
-      </p>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Billing Metrics</h1>
+        <p className="text-sm text-muted-foreground">
+          Internal operational metrics. Updated in real-time.
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
@@ -96,7 +106,7 @@ export default function BillingMetricsPage() {
           alert={(metrics.payment_failure_rate ?? 0) > 10}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -112,10 +122,15 @@ function MetricCard({
   alert?: boolean;
 }) {
   return (
-    <div className={`rounded-lg border p-4 ${alert ? "border-red-200 bg-red-50" : ""}`}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-2xl font-bold ${alert ? "text-red-700" : ""}`}>{value}</p>
-      <p className="text-xs text-muted-foreground">{sublabel}</p>
-    </div>
+    <Card className={alert ? "border-destructive/50" : ""}>
+      <CardContent className="pt-6">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className={`text-2xl font-bold ${alert ? "text-destructive" : ""}`}>{value}</p>
+          {alert && <AlertTriangle className="h-4 w-4 text-destructive" />}
+        </div>
+        <p className="text-xs text-muted-foreground">{sublabel}</p>
+      </CardContent>
+    </Card>
   );
 }

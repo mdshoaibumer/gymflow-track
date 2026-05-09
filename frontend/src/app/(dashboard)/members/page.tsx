@@ -1,43 +1,41 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Search, Pencil, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search, Pencil, Trash2, Plus, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  memberService,
-  type Member,
-  type CreateMemberPayload,
-} from "@/services/member.service";
+import { useMembers, useCreateMember, useUpdateMember, useDeleteMember } from "@/hooks/use-members";
+import type { Member, CreateMemberPayload } from "@/services/member.service";
 import { RoleGate } from "@/components/role-gate";
 import { MemberForm, memberToFormValues } from "@/components/members/member-form";
 import { DeleteConfirmDialog } from "@/components/members/delete-confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
 
 export default function MembersPage() {
-  const { token, isAdminOrAbove } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [total, setTotal] = useState(0);
+  const { isAdminOrAbove } = useAuth();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Debounce search input (300ms)
+  // Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -46,63 +44,39 @@ export default function MembersPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchMembers = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await memberService.list(token, {
-        skip: page * PAGE_SIZE,
-        limit: PAGE_SIZE,
-        search: debouncedSearch || undefined,
-      });
-      setMembers(data.members);
-      setTotal(data.total);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load members");
-    } finally {
-      setLoading(false);
-    }
-  }, [token, page, debouncedSearch]);
+  // TanStack Query
+  const { data, isLoading } = useMembers({
+    skip: page * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+  const members = data?.members ?? [];
+  const total = data?.total ?? 0;
 
-  // --- Create ---
+  const createMutation = useCreateMember();
+  const updateMutation = useUpdateMember();
+  const deleteMutation = useDeleteMember();
+
   const handleCreate = async (values: MemberFormValues) => {
-    if (!token) return;
     const payload = formValuesToPayload(values);
-    await memberService.create(token, payload);
+    await createMutation.mutateAsync(payload);
     setShowCreateForm(false);
-    fetchMembers();
   };
 
-  // --- Edit ---
   const handleEdit = async (values: MemberFormValues) => {
-    if (!token || !editingMember) return;
+    if (!editingMember) return;
     const payload = formValuesToPayload(values);
-    await memberService.replace(token, editingMember.id, payload);
+    await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
     setEditingMember(null);
-    fetchMembers();
   };
 
-  // --- Delete ---
   const handleDelete = async () => {
-    if (!token || !deletingMember) return;
-    setIsDeleting(true);
-    try {
-      await memberService.delete(token, deletingMember.id);
-      setDeletingMember(null);
-      fetchMembers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete member");
-    } finally {
-      setIsDeleting(false);
-    }
+    if (!deletingMember) return;
+    await deleteMutation.mutateAsync(deletingMember.id);
+    setDeletingMember(null);
   };
 
-  // --- Table columns ---
   const columns = useMemo<ColumnDef<Member>[]>(
     () => [
       {
@@ -131,9 +105,7 @@ export default function MembersPage() {
       {
         accessorKey: "membership_status",
         header: "Status",
-        cell: ({ row }) => (
-          <StatusBadge status={row.original.membership_status} />
-        ),
+        cell: ({ row }) => <StatusBadge status={row.original.membership_status} />,
       },
       {
         accessorKey: "amount_paid",
@@ -151,20 +123,22 @@ export default function MembersPage() {
               header: "",
               cell: ({ row }: { row: { original: Member } }) => (
                 <div className="flex justify-end gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
                     onClick={() => setEditingMember(row.original)}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Edit"
                   >
                     <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
                     onClick={() => setDeletingMember(row.original)}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               ),
             } as ColumnDef<Member>,
@@ -185,37 +159,41 @@ export default function MembersPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Members</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Members</h1>
           <p className="text-muted-foreground text-sm">
             {total} member{total !== 1 ? "s" : ""} in your gym
           </p>
         </div>
         <RoleGate allowed={["owner", "admin"]}>
-          <button
+          <Button
             onClick={() => {
               setShowCreateForm(true);
               setEditingMember(null);
             }}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
-            + Add Member
-          </button>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
         </RoleGate>
       </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
+        <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or phone..."
-          className="w-full rounded-md border border-input pl-9 pr-3 py-2 text-sm"
+          className="pl-9"
         />
       </div>
 
@@ -241,87 +219,106 @@ export default function MembersPage() {
         />
       )}
 
-      {/* Error */}
-      {error && (
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
       {/* Table */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="space-y-0">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 border-b px-4 py-4 last:border-0">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : members.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center text-muted-foreground">
-          {debouncedSearch
-            ? `No members matching "${debouncedSearch}"`
-            : "No members yet. Add your first member to get started."}
-        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <UserPlus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">
+              {debouncedSearch ? "No results found" : "No members yet"}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
+              {debouncedSearch
+                ? `No members matching "${debouncedSearch}"`
+                : "Add your first member to get started with GymFlow."}
+            </p>
+            {!debouncedSearch && (
+              <RoleGate allowed={["owner", "admin"]}>
+                <Button className="mt-4" onClick={() => setShowCreateForm(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Member
+                </Button>
+              </RoleGate>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="px-4 py-3 text-left font-medium"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </th>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/50">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="px-4 py-3 text-left font-medium text-muted-foreground"
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody className="divide-y">
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
+                  </thead>
+                  <tbody className="divide-y">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-4 py-3">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {page * PAGE_SIZE + 1}–
-                {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
               </p>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -332,34 +329,28 @@ export default function MembersPage() {
       {deletingMember && (
         <DeleteConfirmDialog
           memberName={deletingMember.name}
-          isDeleting={isDeleting}
+          isDeleting={deleteMutation.isPending}
           onConfirm={handleDelete}
           onCancel={() => setDeletingMember(null)}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
 
-// --- Helpers ---
-
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    expired: "bg-red-100 text-red-800",
-    frozen: "bg-yellow-100 text-yellow-800",
-    pending: "bg-blue-100 text-blue-800",
-    cancelled: "bg-gray-100 text-gray-600",
+  const variants: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
+    active: "success",
+    expired: "destructive",
+    frozen: "warning",
+    pending: "secondary",
+    cancelled: "outline",
   };
 
   return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-        styles[status] || "bg-gray-100 text-gray-800"
-      }`}
-    >
+    <Badge variant={variants[status] || "secondary"} className="capitalize">
       {status}
-    </span>
+    </Badge>
   );
 }
 

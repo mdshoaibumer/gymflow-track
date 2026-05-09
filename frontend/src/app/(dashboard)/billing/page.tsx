@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import {
   billingService,
   type Plan,
   type Subscription,
 } from "@/services/billing.service";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PLAN_FEATURES: Record<string, string[]> = {
   starter: [
@@ -38,13 +44,10 @@ const PLAN_FEATURES: Record<string, string[]> = {
 
 export default function PricingPage() {
   const { token, isOwner } = useAuth();
-  const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -67,29 +70,25 @@ export default function PricingPage() {
   const handleSubscribe = async (tier: string) => {
     if (!token || !isOwner) return;
     setSubscribing(tier);
-    setError(null);
-    setSuccess(null);
 
     try {
       const result = await billingService.subscribe(token, tier);
 
       if (result.razorpay_order_id && result.razorpay_key_id) {
-        // Open Razorpay Checkout
         openRazorpayCheckout(result);
       } else {
-        // Mock mode — auto-verify
         const verification = await billingService.verifyPayment(token, {
           razorpay_payment_id: `mock_pay_${Date.now()}`,
           razorpay_order_id: result.razorpay_order_id || "mock",
           razorpay_signature: "mock_signature",
         });
         if (verification.verified) {
-          setSuccess("Subscription activated! Refreshing...");
+          toast.success("Subscription activated! Refreshing...");
           setTimeout(() => window.location.reload(), 1500);
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Subscription failed");
+      toast.error(err instanceof Error ? err.message : "Subscription failed");
     } finally {
       setSubscribing(null);
     }
@@ -100,13 +99,12 @@ export default function PricingPage() {
     razorpay_key_id: string | null;
     amount_in_paise: number;
   }) => {
-    // Razorpay Checkout script must be loaded in the page
     const Razorpay = (window as unknown as Record<string, unknown>).Razorpay as
       | (new (opts: Record<string, unknown>) => { open: () => void })
       | undefined;
 
     if (!Razorpay) {
-      setError("Payment system not loaded. Please refresh and try again.");
+      toast.error("Payment system not loaded. Please refresh and try again.");
       return;
     }
 
@@ -129,13 +127,13 @@ export default function PricingPage() {
             razorpay_signature: response.razorpay_signature,
           });
           if (verification.verified) {
-            setSuccess("Payment successful! Your subscription is now active.");
+            toast.success("Payment successful! Your subscription is now active.");
             setTimeout(() => window.location.reload(), 1500);
           } else {
-            setError("Payment verification failed. Please contact support.");
+            toast.error("Payment verification failed. Please contact support.");
           }
         } catch {
-          setError("Payment verification failed. Please contact support.");
+          toast.error("Payment verification failed. Please contact support.");
         }
       },
       theme: { color: "#6366f1" },
@@ -146,47 +144,37 @@ export default function PricingPage() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       <div className="text-center">
-        <h1 className="text-2xl font-bold">Plans & Pricing</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Plans & Pricing</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Simple, transparent pricing for your gym. No hidden fees.
         </p>
       </div>
 
-      {error && (
-        <div className="mx-auto max-w-md rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="mx-auto max-w-md rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">
-          {success}
-        </div>
-      )}
-
       {/* Current plan indicator */}
       {subscription && (
-        <div className="mx-auto max-w-md rounded-md border bg-muted/50 px-4 py-3 text-center text-sm">
-          Current plan: <strong>{subscription.plan.name}</strong>
-          {subscription.is_trial && (
-            <span className="ml-2 text-amber-600">
-              (Trial — {subscription.days_remaining} days left)
-            </span>
-          )}
-          {subscription.status === "active" && (
-            <span className="ml-2 text-green-600">(Active)</span>
-          )}
-          {subscription.status === "past_due" && (
-            <span className="ml-2 text-red-600">(Payment overdue)</span>
-          )}
-        </div>
+        <Card className="mx-auto max-w-md">
+          <CardContent className="flex items-center justify-center gap-2 py-3 text-sm">
+            Current plan: <strong>{subscription.plan.name}</strong>
+            {subscription.is_trial && (
+              <Badge variant="warning">{subscription.days_remaining} days left (trial)</Badge>
+            )}
+            {subscription.status === "active" && <Badge variant="success">Active</Badge>}
+            {subscription.status === "past_due" && <Badge variant="destructive">Payment overdue</Badge>}
+          </CardContent>
+        </Card>
       )}
 
       {/* Plan cards */}
@@ -197,76 +185,64 @@ export default function PricingPage() {
           const features = PLAN_FEATURES[plan.tier] || [];
 
           return (
-            <div
+            <Card
               key={plan.id}
-              className={`relative rounded-lg border p-6 ${
-                isPopular ? "border-primary shadow-lg" : ""
-              }`}
+              className={`relative ${isPopular ? "border-primary shadow-lg" : ""}`}
             >
               {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
-                  Most Popular
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
                 </div>
               )}
-
-              <div className="text-center">
-                <h2 className="text-lg font-bold">{plan.name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {plan.description}
-                </p>
+              <CardHeader className="text-center">
+                <CardTitle>{plan.name}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
                   <span className="text-3xl font-bold">
                     ₹{(plan.price_in_paise / 100).toLocaleString("en-IN")}
                   </span>
                   <span className="text-muted-foreground">/month</span>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 mb-6">
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
 
-              <ul className="mt-6 space-y-2">
-                {features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <span className="mt-0.5 text-green-500">✓</span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-6">
                 {plan.tier === "enterprise" ? (
-                  <button
-                    disabled
-                    className="w-full rounded-md border px-4 py-2 text-sm text-muted-foreground"
-                  >
+                  <Button variant="outline" className="w-full" disabled>
                     Coming Soon
-                  </button>
+                  </Button>
                 ) : isCurrentPlan && subscription?.status === "active" ? (
-                  <button
-                    disabled
-                    className="w-full rounded-md bg-muted px-4 py-2 text-sm"
-                  >
+                  <Button variant="secondary" className="w-full" disabled>
                     Current Plan
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant={isPopular ? "default" : "outline"}
+                    className="w-full"
                     onClick={() => handleSubscribe(plan.tier)}
                     disabled={!isOwner || subscribing !== null}
-                    className={`w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 ${
-                      isPopular
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border hover:bg-accent"
-                    }`}
                   >
+                    {subscribing === plan.tier ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     {subscribing === plan.tier
                       ? "Processing..."
                       : isCurrentPlan
-                      ? "Renew"
-                      : subscription && !subscription.is_trial
-                      ? "Upgrade"
-                      : "Subscribe"}
-                  </button>
+                        ? "Renew"
+                        : subscription && !subscription.is_trial
+                          ? "Upgrade"
+                          : "Subscribe"}
+                  </Button>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
@@ -276,6 +252,6 @@ export default function PricingPage() {
           Only the gym owner can manage billing.
         </p>
       )}
-    </div>
+    </motion.div>
   );
 }

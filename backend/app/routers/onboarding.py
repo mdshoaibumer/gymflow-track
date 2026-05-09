@@ -4,11 +4,18 @@ Onboarding + pilot operations API.
 Endpoints:
 - GET /onboarding/status — setup wizard progress
 - POST /onboarding/demo-data — seed demo data
-- POST /onboarding/import/preview — CSV import preview
-- POST /onboarding/import/commit — commit the import
+- POST /onboarding/import/detect — upload CSV, auto-detect column mappings
+- POST /onboarding/import/preview — preview with confirmed mappings
+- POST /onboarding/import/upload — one-shot import with optional mapping overrides
 - POST /feedback — submit in-app feedback
 - GET /admin/metrics — internal pilot metrics (owner only)
 - PUT /admin/gyms/{id}/suspend — suspend a gym (internal)
+
+CSV Import Flow (recommended):
+1. POST /import/detect — Upload file, get auto-detected column mappings
+2. Frontend shows mapping UI with dropdowns for unmapped/low-confidence columns
+3. POST /import/preview — Re-upload with user-confirmed mappings, get row preview
+4. POST /import/upload — Final import with confirmed mappings
 """
 
 import logging
@@ -21,20 +28,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin, require_owner
 from app.schemas.onboarding import (
+    ColumnDetectResponse,
     DemoDataRequest,
     DemoDataResponse,
     FeedbackRequest,
     FeedbackResponse,
-    ImportCommitRequest,
     ImportPreviewResponse,
     ImportResultResponse,
+    ImportWithMappingRequest,
     OnboardingStatusResponse,
 )
 from app.services.onboarding_service import (
     commit_csv_import,
     create_feedback,
+    detect_csv_columns,
     get_onboarding_status,
     parse_csv_preview,
+    parse_csv_with_mapping,
     seed_demo_data,
 )
 
@@ -94,39 +104,100 @@ async def load_demo_data(
 # === CSV Import ===
 
 
-@router.post("/onboarding/import/preview", response_model=ImportPreviewResponse)
-async def import_preview(
+async def _read_csv_upload(file: UploadFile) -> str:
+    """Validate and read a CSV upload. Returns CSV text content."""
+    from app.core.exceptions import ValidationError
+
+    if not file.filename:
+        raise ValidationError("No file uploaded")
+
+    # Accept .csv and .txt (some users save CSV as .txt)
+    allowed_extensions = (".csv", ".txt")
+    if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+        raise ValidationError("Please upload a CSV file (.csv)")
+
+    content = await file.read()
+    if len(content) > 1_048_576:  # 1MB
+        raise ValidationError("File too large (max 1MB)")
+
+    if len(content) == 0:
+        raise ValidationError("File is empty")
+
+    # Try UTF-8 first, then Latin-1 (covers most Indian locale exports)
+    try:
+        return content.decode("utf-8-sig")  # utf-8-sig handles BOM from Excel
+    except UnicodeDecodeError:
+        try:
+            return content.decode("latin-1")
+        except UnicodeDecodeError:
+            raise ValidationError("Unable to read file. Please save as UTF-8 CSV.")
+
+
+@router.post("/onboarding/import/detect", response_model=ColumnDetectResponse)
+async def import_detect_columns(
     file: UploadFile = File(...),
     current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Upload a CSV and preview what will be imported.
+    Step 1: Upload CSV and auto-detect column mappings.
 
-    Step 1 of 2-phase import. Returns validation results:
-    - Which rows are valid
-    - Which are duplicates (phone already exists)
-    - Which have errors
+    Returns:
+    - mappings: auto-detected field→column assignments with confidence scores
+    - unmapped_columns: CSV columns we couldn't identify
+    - missing_required: required fields (name, phone) not found
+    - sample_data: first 3 rows for the user to verify
+    - target_fields: all available fields with labels (for dropdown UI)
 
-    Max file size: 1MB. Max rows: 500.
+    Frontend should show a mapping UI:
+    ┌─────────────────┬──────────────────┬────────────┐
+    │ Our Field       │ Your Column      │ Confidence │
+    ├─────────────────┼──────────────────┼────────────┤
+    │ Member Name *   │ [Member Name ▼]  │ ✅ 100%    │
+    │ Phone *         │ [WhatsApp No ▼]  │ ✅ 100%    │
+    │ Email           │ [— none — ▼]     │            │
+    │ Plan            │ [Package ▼]      │ ⚠️ 70%     │
+    │ Gender          │ [M/F ▼]          │ ⚠️ 50%     │
+    └─────────────────┴──────────────────┴────────────┘
     """
-    if not file.filename or not file.filename.endswith(".csv"):
-        from app.core.exceptions import ValidationError
-        raise ValidationError("Please upload a CSV file")
+    csv_text = await _read_csv_upload(file)
+    result = detect_csv_columns(csv_text)
+    return result
 
-    content = await file.read()
-    if len(content) > 1_048_576:  # 1MB
-        from app.core.exceptions import ValidationError
-        raise ValidationError("File too large (max 1MB)")
 
-    try:
-        csv_text = content.decode("utf-8")
-    except UnicodeDecodeError:
+@router.post("/onboarding/import/preview", response_model=ImportPreviewResponse)
+async def import_preview(
+    file: UploadFile = File(...),
+    column_overrides: str | None = Query(
+        None,
+        description='JSON string of column overrides: [{"target_field":"name","csv_column":"Full Name"}]',
+    ),
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Step 2: Upload CSV with confirmed column mappings and preview rows.
+
+    Accepts optional column_overrides (JSON query param) to fix any
+    auto-detection mistakes. If not provided, uses auto-detected mappings.
+
+    Returns per-row validation: valid, duplicate, or invalid with error details.
+    """
+    csv_text = await _read_csv_upload(file)
+
+    # Parse column overrides if provided
+    overrides_dict: dict[str, str | None] | None = None
+    if column_overrides:
+        import json
         try:
-            csv_text = content.decode("latin-1")
-        except UnicodeDecodeError:
+            override_list = json.loads(column_overrides)
+            overrides_dict = {
+                item["target_field"]: item.get("csv_column")
+                for item in override_list
+            }
+        except (json.JSONDecodeError, KeyError, TypeError):
             from app.core.exceptions import ValidationError
-            raise ValidationError("Unable to read file. Please save as UTF-8 CSV.")
+            raise ValidationError("Invalid column_overrides format")
 
     # Get existing phones for duplicate detection
     from app.models.member import Member
@@ -135,30 +206,10 @@ async def import_preview(
     )
     existing_phones = {row[0] for row in result.all()}
 
-    preview = parse_csv_preview(csv_text, current_user.gym_id, existing_phones)
+    preview = parse_csv_with_mapping(
+        csv_text, current_user.gym_id, existing_phones, overrides_dict
+    )
     return preview
-
-
-@router.post("/onboarding/import/commit", response_model=ImportResultResponse)
-async def import_commit(
-    data: ImportCommitRequest,
-    current_user: CurrentUser = Depends(require_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Commit a previously previewed import.
-
-    The frontend must re-send the rows from the preview response.
-    This endpoint re-validates and imports valid rows.
-
-    Note: In a real 2-phase import, you'd cache the preview server-side.
-    For MVP simplicity, the frontend holds the preview data and re-sends it.
-    This works fine for <500 member imports.
-    """
-    # For MVP simplicity, the /import/upload endpoint handles both parse+commit.
-    # This endpoint is kept for API completeness but redirects to the upload flow.
-    from app.core.exceptions import ValidationError
-    raise ValidationError("Use /onboarding/import/upload for one-step CSV import")
 
 
 @router.post("/onboarding/import/upload", response_model=ImportResultResponse)
@@ -166,32 +217,34 @@ async def import_upload(
     file: UploadFile = File(...),
     skip_duplicates: bool = Query(True),
     skip_invalid: bool = Query(True),
+    column_overrides: str | None = Query(
+        None,
+        description='JSON string of column overrides: [{"target_field":"name","csv_column":"Full Name"}]',
+    ),
     current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    One-shot CSV import: parse + commit in a single request.
+    One-shot CSV import: detect columns + parse + commit.
 
-    For pilot simplicity — upload CSV, import valid rows, skip bad ones.
-    Returns a summary of what was imported.
+    Accepts optional column_overrides for user-corrected mappings.
+    Without overrides, uses auto-detected column mappings.
     """
-    if not file.filename or not file.filename.endswith(".csv"):
-        from app.core.exceptions import ValidationError
-        raise ValidationError("Please upload a CSV file")
+    csv_text = await _read_csv_upload(file)
 
-    content = await file.read()
-    if len(content) > 1_048_576:
-        from app.core.exceptions import ValidationError
-        raise ValidationError("File too large (max 1MB)")
-
-    try:
-        csv_text = content.decode("utf-8")
-    except UnicodeDecodeError:
+    # Parse column overrides if provided
+    overrides_dict: dict[str, str | None] | None = None
+    if column_overrides:
+        import json
         try:
-            csv_text = content.decode("latin-1")
-        except UnicodeDecodeError:
+            override_list = json.loads(column_overrides)
+            overrides_dict = {
+                item["target_field"]: item.get("csv_column")
+                for item in override_list
+            }
+        except (json.JSONDecodeError, KeyError, TypeError):
             from app.core.exceptions import ValidationError
-            raise ValidationError("Unable to read file. Please save as UTF-8 CSV.")
+            raise ValidationError("Invalid column_overrides format")
 
     from app.models.member import Member
     result = await db.execute(
@@ -199,7 +252,9 @@ async def import_upload(
     )
     existing_phones = {row[0] for row in result.all()}
 
-    preview = parse_csv_preview(csv_text, current_user.gym_id, existing_phones)
+    preview = parse_csv_with_mapping(
+        csv_text, current_user.gym_id, existing_phones, overrides_dict
+    )
     import_result = await commit_csv_import(
         db, current_user.gym_id, preview["rows"],
         skip_duplicates=skip_duplicates,

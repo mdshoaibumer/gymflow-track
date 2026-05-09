@@ -31,7 +31,51 @@ class DemoDataResponse(BaseModel):
     equipment_created: int
 
 
-# === CSV Import ===
+# === CSV Import — Column Mapping ===
+
+
+class DetectedColumnMapping(BaseModel):
+    """A single auto-detected column mapping."""
+    csv_column: str
+    target_field: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    match_method: str  # "exact" | "keyword" | "content" | "manual"
+
+
+class ColumnDetectResponse(BaseModel):
+    """
+    Result of column auto-detection (Step 1).
+
+    Frontend shows this to the user with dropdowns to override mappings.
+    """
+    mappings: list[DetectedColumnMapping]
+    unmapped_columns: list[str]
+    missing_required: list[str]
+    all_csv_columns: list[str]
+    sample_data: list[dict[str, str]]
+    target_fields: list[dict[str, str]]  # [{field, label, required}, ...]
+
+
+class ColumnOverride(BaseModel):
+    """User override for a single column mapping."""
+    target_field: str
+    csv_column: str | None = None  # None = "skip this field"
+
+
+class ImportWithMappingRequest(BaseModel):
+    """
+    Request to preview or import with user-confirmed column mappings.
+
+    column_overrides: Only needed if the user changed auto-detected mappings.
+    If empty, auto-detected mappings are used as-is.
+    """
+    column_overrides: list[ColumnOverride] = []
+    skip_duplicates: bool = True
+    skip_invalid: bool = True
+
+
+# === CSV Import — Row Preview ===
+
 
 class ImportRowPreview(BaseModel):
     """Single row in the import preview."""
@@ -39,9 +83,11 @@ class ImportRowPreview(BaseModel):
     name: str
     phone: str
     email: str | None = None
+    gender: str | None = None
     membership_plan: str | None = None
     membership_start: str | None = None
     membership_end: str | None = None
+    amount_paid: int | None = None  # in paise
     status: str  # "valid" | "duplicate" | "invalid"
     errors: list[str] = []
 
@@ -52,6 +98,7 @@ class ImportPreviewResponse(BaseModel):
     valid: int
     duplicates: int
     invalid: int
+    column_mappings: list[DetectedColumnMapping]
     rows: list[ImportRowPreview]
 
 

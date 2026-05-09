@@ -1,24 +1,52 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useUIStore } from "@/store/ui-store";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
   const { role, user, logout } = useAuth();
   const router = useRouter();
+  const { toggleSidebar } = useUIStore();
 
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
 
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "GF";
+
   return (
-    <header className="flex h-16 items-center justify-between border-b px-4 md:px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 md:px-6">
       {/* Mobile menu button */}
-      <button className="md:hidden rounded-md p-2 hover:bg-accent">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={toggleSidebar}
+      >
         <Menu className="h-5 w-5" />
-      </button>
+      </Button>
 
       {/* Mobile logo */}
       <span className="text-lg font-bold text-primary md:hidden">GymFlow</span>
@@ -26,25 +54,44 @@ export function Header() {
       {/* Spacer for desktop */}
       <div className="hidden md:block" />
 
-      {/* User info + logout */}
-      <div className="flex items-center gap-3">
-        {user && (
-          <span className="hidden md:inline text-sm text-muted-foreground">
-            {user.name}
-          </span>
-        )}
-        {role && (
-          <span className="hidden sm:inline-flex rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary capitalize">
-            {role}
-          </span>
-        )}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
+      {/* Right section */}
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                {role && (
+                  <Badge variant="secondary" className="w-fit mt-1 capitalize">
+                    {role}
+                  </Badge>
+                )}
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
+              <User className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

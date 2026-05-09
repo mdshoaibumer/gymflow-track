@@ -184,7 +184,7 @@ async def delete_asset(
     await service.delete_asset(current_user.gym_id, asset_id)
     logger.info(
         "asset_deleted gym_id=%s asset_id=%s by_user=%s",
-        current_user.gym_id, asset_id, current_user.id,
+        current_user.gym_id, asset_id, current_user.user_id,
     )
 
 

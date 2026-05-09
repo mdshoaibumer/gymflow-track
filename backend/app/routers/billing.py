@@ -343,5 +343,5 @@ async def billing_metrics(
     Owner-only. Shows MRR, subscription counts, conversion rates.
     Lightweight — not a financial reporting system.
     """
-    metrics = await billing_service.get_billing_metrics(db)
+    metrics = await billing_service.get_billing_metrics(db, current_user.gym_id)
     return BillingMetricsResponse(**metrics)

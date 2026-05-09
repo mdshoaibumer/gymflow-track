@@ -1,69 +1,47 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, Receipt } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  paymentService,
-  type Payment,
-  type CreatePaymentPayload,
-} from "@/services/payment.service";
-import { memberService, type Member } from "@/services/member.service";
+import { usePayments, useCreatePayment } from "@/hooks/use-payments";
+import { useMembers } from "@/hooks/use-members";
+import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentFormValues } from "@/lib/validations/payment";
 
 const PAGE_SIZE = 20;
 
 export default function PaymentsPage() {
-  const { token, isAdminOrAbove } = useAuth();
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [total, setTotal] = useState(0);
+  const { isAdminOrAbove } = useAuth();
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
 
-  // Fetch members for the payment form dropdown
-  useEffect(() => {
-    if (!token) return;
-    memberService
-      .list(token, { skip: 0, limit: 500 })
-      .then((data) => setMembers(data.members))
-      .catch(() => {});
-  }, [token]);
+  const { data: paymentsData, isLoading } = usePayments({
+    skip: page * PAGE_SIZE,
+    limit: PAGE_SIZE,
+  });
 
-  const fetchPayments = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await paymentService.list(token, {
-        skip: page * PAGE_SIZE,
-        limit: PAGE_SIZE,
-      });
-      setPayments(data.payments);
-      setTotal(data.total);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load payments");
-    } finally {
-      setLoading(false);
-    }
-  }, [token, page]);
+  const { data: membersData } = useMembers({ skip: 0, limit: 500 });
 
-  useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+  const payments = paymentsData?.payments ?? [];
+  const total = paymentsData?.total ?? 0;
+  const members = membersData?.members ?? [];
+
+  const createMutation = useCreatePayment();
 
   const handleCreate = async (values: PaymentFormValues) => {
-    if (!token) return;
     const payload: CreatePaymentPayload = {
       member_id: values.member_id,
       amount_in_paise: Math.round(values.amount * 100),
@@ -75,12 +53,10 @@ export default function PaymentsPage() {
       membership_start: values.membership_start || undefined,
       membership_end: values.membership_end || undefined,
     };
-    await paymentService.create(token, payload);
+    await createMutation.mutateAsync(payload);
     setShowForm(false);
-    fetchPayments();
   };
 
-  // Map member_id to name for display
   const memberMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const m of members) {
@@ -122,9 +98,9 @@ export default function PaymentsPage() {
         accessorKey: "payment_method",
         header: "Method",
         cell: ({ row }) => (
-          <span className="rounded bg-muted px-2 py-0.5 text-xs capitalize">
+          <Badge variant="secondary" className="capitalize">
             {row.original.payment_method.replace("_", " ")}
-          </span>
+          </Badge>
         ),
       },
       {
@@ -147,23 +123,25 @@ export default function PaymentsPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Payments</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
           <p className="text-muted-foreground text-sm">
             {total} payment{total !== 1 ? "s" : ""} recorded
           </p>
         </div>
         <RoleGate allowed={["owner", "admin"]}>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
             Record Payment
-          </button>
+          </Button>
         </RoleGate>
       </div>
 
@@ -176,109 +154,117 @@ export default function PaymentsPage() {
         />
       )}
 
-      {/* Error */}
-      {error && (
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
       {/* Table */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 border-b px-4 py-4 last:border-0">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-18 rounded-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       ) : payments.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center text-muted-foreground">
-          No payments recorded yet. Record your first payment to get started.
-        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Receipt className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">No payments yet</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Record your first payment to get started.
+            </p>
+            <RoleGate allowed={["owner", "admin"]}>
+              <Button className="mt-4" onClick={() => setShowForm(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Record First Payment
+              </Button>
+            </RoleGate>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="px-4 py-3 text-left font-medium"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </th>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/50">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="px-4 py-3 text-left font-medium text-muted-foreground"
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody className="divide-y">
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
+                  </thead>
+                  <tbody className="divide-y">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-4 py-3">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {page * PAGE_SIZE + 1}–
-                {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
               </p>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    completed: "bg-green-100 text-green-800",
-    pending: "bg-yellow-100 text-yellow-800",
-    failed: "bg-red-100 text-red-800",
-    refunded: "bg-gray-100 text-gray-800",
+  const variants: Record<string, "success" | "destructive" | "warning" | "secondary"> = {
+    completed: "success",
+    pending: "warning",
+    failed: "destructive",
+    refunded: "secondary",
   };
 
   return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-        styles[status] || "bg-gray-100 text-gray-800"
-      }`}
-    >
+    <Badge variant={variants[status] || "secondary"} className="capitalize">
       {status}
-    </span>
+    </Badge>
   );
 }

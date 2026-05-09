@@ -111,7 +111,7 @@ async def delete_member(
     await service.delete_member(member_id, current_user.gym_id)
     logger.info(
         "member_deleted gym_id=%s member_id=%s by_user=%s",
-        current_user.gym_id, member_id, current_user.id,
+        current_user.gym_id, member_id, current_user.user_id,
     )
 
 

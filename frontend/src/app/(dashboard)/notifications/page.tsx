@@ -1,27 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Bell, RefreshCw, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  notificationService,
-  type Notification,
-  type NotificationStats,
-  type NotificationStatus,
-} from "@/services/notification.service";
+  useNotifications,
+  useNotificationStats,
+  useTriggerScan,
+  useCancelNotification,
+  useRetryFailed,
+} from "@/hooks/use-notifications";
+import type { NotificationStatus } from "@/services/notification.service";
 import { DashboardCard } from "@/components/layout/dashboard-card";
+import { RoleGate } from "@/components/role-gate";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const STATUS_LABELS: Record<NotificationStatus, string> = {
-  pending: "Pending",
-  sent: "Sent",
-  failed: "Failed",
-  cancelled: "Cancelled",
-};
-
-const STATUS_COLORS: Record<NotificationStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  sent: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-100 text-gray-800",
+const STATUS_VARIANTS: Record<NotificationStatus, "warning" | "success" | "destructive" | "secondary"> = {
+  pending: "warning",
+  sent: "success",
+  failed: "destructive",
+  cancelled: "secondary",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -34,106 +43,54 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const { token, user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [stats, setStats] = useState<NotificationStats | null>(null);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { isAdminOrAbove } = useAuth();
   const [filterStatus, setFilterStatus] = useState<NotificationStatus | "">("");
-  const [actionLoading, setActionLoading] = useState(false);
 
-  const isAdminOrAbove = user?.role === "owner" || user?.role === "admin";
+  const { data: listData, isLoading } = useNotifications({
+    status: filterStatus || undefined,
+    limit: 50,
+  });
+  const { data: stats } = useNotificationStats();
 
-  const fetchData = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const [listRes, statsRes] = await Promise.all([
-        notificationService.list(token, {
-          status: filterStatus || undefined,
-          limit: 50,
-        }),
-        notificationService.stats(token),
-      ]);
-      setNotifications(listRes.notifications);
-      setTotal(listRes.total);
-      setStats(statsRes);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
-  }, [token, filterStatus]);
+  const notifications = listData?.notifications ?? [];
+  const total = listData?.total ?? 0;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleTriggerScan = async () => {
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const result = await notificationService.triggerScan(token);
-      alert(`Scheduled ${result.reminders_scheduled} new reminder(s).`);
-      fetchData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to trigger scan");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRetryFailed = async () => {
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const result = await notificationService.retryFailed(token);
-      alert(`Reset ${result.reminders_scheduled} notification(s) for retry.`);
-      fetchData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to retry");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCancel = async (id: string) => {
-    if (!token) return;
-    try {
-      await notificationService.cancel(token, id);
-      fetchData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to cancel");
-    }
-  };
+  const scanMutation = useTriggerScan();
+  const cancelMutation = useCancelNotification();
+  const retryMutation = useRetryFailed();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">WhatsApp Reminders</h1>
+          <h1 className="text-2xl font-bold tracking-tight">WhatsApp Reminders</h1>
           <p className="text-sm text-muted-foreground">
             Automated renewal reminders and notification history.
           </p>
         </div>
-        {isAdminOrAbove && (
+        <RoleGate allowed={["owner", "admin"]}>
           <div className="flex gap-2">
-            <button
-              onClick={handleTriggerScan}
-              disabled={actionLoading}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            <Button
+              onClick={() => scanMutation.mutate()}
+              disabled={scanMutation.isPending}
             >
+              <RefreshCw className={`mr-2 h-4 w-4 ${scanMutation.isPending ? "animate-spin" : ""}`} />
               Scan Now
-            </button>
-            <button
-              onClick={handleRetryFailed}
-              disabled={actionLoading}
-              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => retryMutation.mutate()}
+              disabled={retryMutation.isPending}
             >
               Retry Failed
-            </button>
+            </Button>
           </div>
-        )}
+        </RoleGate>
       </div>
 
       {/* Stats Cards */}
@@ -153,6 +110,7 @@ export default function NotificationsPage() {
             title="Failed"
             value={String(stats.failed_count)}
             description="Needs attention"
+            icon={stats.failed_count > 0 ? AlertTriangle : undefined}
           />
           <DashboardCard
             title="Upcoming"
@@ -164,103 +122,132 @@ export default function NotificationsPage() {
 
       {/* Filter */}
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium">Filter by status:</label>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as NotificationStatus | "")}
-          className="rounded-md border px-3 py-1.5 text-sm"
+        <span className="text-sm font-medium">Filter:</span>
+        <Select
+          value={filterStatus || "all"}
+          onValueChange={(v) => setFilterStatus(v === "all" ? "" : (v as NotificationStatus))}
         >
-          <option value="">All</option>
-          <option value="pending">Pending</option>
-          <option value="sent">Sent</option>
-          <option value="failed">Failed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="sent">Sent</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
         <span className="text-xs text-muted-foreground">
           {total} total notification{total !== 1 ? "s" : ""}
         </span>
       </div>
 
       {/* Notification Table */}
-      {loading ? (
-        <div className="py-10 text-center text-muted-foreground">Loading...</div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 border-b px-4 py-4 last:border-0">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-8" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       ) : notifications.length === 0 ? (
-        <div className="py-10 text-center text-muted-foreground">
-          No notifications found.
-        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Bell className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">No notifications found</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click &quot;Scan Now&quot; to check for upcoming renewal reminders.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Scheduled</th>
-                <th className="px-4 py-3 text-left font-medium">Sent At</th>
-                <th className="px-4 py-3 text-left font-medium">Retries</th>
-                {isAdminOrAbove && (
-                  <th className="px-4 py-3 text-left font-medium">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {notifications.map((n) => (
-                <tr key={n.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <span className="font-medium">
-                      {TYPE_LABELS[n.notification_type] || n.notification_type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[n.status]}`}
-                    >
-                      {STATUS_LABELS[n.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(n.scheduled_for).toLocaleString("en-IN", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {n.sent_at
-                      ? new Date(n.sent_at).toLocaleString("en-IN", {
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Scheduled</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sent At</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Retries</th>
+                    {isAdminOrAbove && (
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {notifications.map((n) => (
+                    <tr key={n.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="font-medium">
+                          {TYPE_LABELS[n.notification_type] || n.notification_type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_VARIANTS[n.status]} className="capitalize">
+                          {n.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(n.scheduled_for).toLocaleString("en-IN", {
                           dateStyle: "medium",
                           timeStyle: "short",
-                        })
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {n.retry_count}
-                    {n.failure_reason && (
-                      <span
-                        className="ml-1 cursor-help text-red-500"
-                        title={n.failure_reason}
-                      >
-                        ⚠
-                      </span>
-                    )}
-                  </td>
-                  {isAdminOrAbove && (
-                    <td className="px-4 py-3">
-                      {n.status === "pending" && (
-                        <button
-                          onClick={() => handleCancel(n.id)}
-                          className="text-xs text-red-600 hover:underline"
-                        >
-                          Cancel
-                        </button>
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {n.sent_at
+                          ? new Date(n.sent_at).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {n.retry_count}
+                        {n.failure_reason && (
+                          <span
+                            className="ml-1 cursor-help text-destructive"
+                            title={n.failure_reason}
+                          >
+                            ⚠
+                          </span>
+                        )}
+                      </td>
+                      {isAdminOrAbove && (
+                        <td className="px-4 py-3">
+                          {n.status === "pending" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => cancelMutation.mutate(n.id)}
+                              disabled={cancelMutation.isPending}
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </td>
                       )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -257,67 +257,173 @@ def _validate_phone(phone: str) -> list[str]:
     return []
 
 
-def parse_csv_preview(
-    csv_content: str,
-    gym_id: UUID,
-    existing_phones: set[str],
-) -> dict:
-    """
-    Parse CSV content and return a preview with validation results.
+def _normalize_gender(raw: str) -> str | None:
+    """Normalize gender values to our enum."""
+    val = raw.strip().lower()
+    if val in ("male", "m", "पुरुष"):
+        return "male"
+    if val in ("female", "f", "महिला"):
+        return "female"
+    if val in ("other", "o", "अन्य"):
+        return "other"
+    return None
 
-    Expected CSV columns (flexible — matches by header name):
-    - name (required)
-    - phone (required)
-    - email (optional)
-    - membership_plan / plan (optional)
-    - membership_start / start_date (optional)
-    - membership_end / end_date (optional)
 
-    Duplicate detection: checks phone against existing members in the gym.
+def _parse_amount(raw: str) -> int | None:
     """
+    Parse an amount string to paise (integer).
+    "1500" → 150000, "1,500.00" → 150000, "₹1500" → 150000
+    """
+    if not raw:
+        return None
+    cleaned = re.sub(r"[₹$,\s]", "", raw.strip())
+    try:
+        amount = float(cleaned)
+        return int(amount * 100)  # Convert rupees to paise
+    except (ValueError, TypeError):
+        return None
+
+
+def detect_csv_columns(csv_content: str) -> dict:
+    """
+    Step 1: Parse CSV headers and auto-detect column mappings.
+
+    Returns detection result with:
+    - mappings: auto-detected field → column assignments with confidence
+    - unmapped_columns: columns we couldn't figure out
+    - missing_required: required fields not found
+    - sample_data: first few rows for user preview
+    - all_csv_columns: full list of headers
+    - target_fields: all available target fields with labels
+    """
+    from app.services.column_mapper import ColumnMapper, TARGET_FIELDS
+
     reader = csv.DictReader(io.StringIO(csv_content))
 
     if not reader.fieldnames:
         raise ValidationError("CSV file is empty or has no headers")
 
-    # Normalize column names (lowercase, strip whitespace)
-    header_map = {h.strip().lower().replace(" ", "_"): h for h in reader.fieldnames}
+    headers = [h.strip() for h in reader.fieldnames if h.strip()]
+    if not headers:
+        raise ValidationError("CSV file has no valid column headers")
 
-    # Find required columns
-    name_col = _find_column(header_map, ["name", "member_name", "full_name"])
-    phone_col = _find_column(header_map, ["phone", "mobile", "phone_number", "whatsapp"])
+    # Read sample rows for content-based detection
+    sample_rows: list[dict[str, str]] = []
+    for i, row in enumerate(reader):
+        if i >= 5:  # 5 sample rows is enough for content inference
+            break
+        sample_rows.append(dict(row))
 
-    if not name_col:
-        raise ValidationError("CSV must have a 'name' column")
-    if not phone_col:
-        raise ValidationError("CSV must have a 'phone' column")
+    # Run detection
+    mapper = ColumnMapper(headers)
+    result = mapper.detect(sample_rows=sample_rows)
 
-    # Find optional columns
-    email_col = _find_column(header_map, ["email", "email_address"])
-    plan_col = _find_column(header_map, ["membership_plan", "plan", "package"])
-    start_col = _find_column(header_map, ["membership_start", "start_date", "join_date", "joining_date"])
-    end_col = _find_column(header_map, ["membership_end", "end_date", "expiry_date", "expiry"])
+    return {
+        "mappings": [
+            {
+                "csv_column": m.csv_column,
+                "target_field": m.target_field,
+                "confidence": m.confidence,
+                "match_method": m.match_method,
+            }
+            for m in result.mappings.values()
+        ],
+        "unmapped_columns": result.unmapped_columns,
+        "missing_required": result.missing_required,
+        "all_csv_columns": headers,
+        "sample_data": result.sample_data[:3],
+        "target_fields": [
+            {"field": f, "label": info["label"], "required": info["required"]}
+            for f, info in TARGET_FIELDS.items()
+        ],
+    }
 
+
+def parse_csv_with_mapping(
+    csv_content: str,
+    gym_id: UUID,
+    existing_phones: set[str],
+    column_overrides: dict[str, str | None] | None = None,
+) -> dict:
+    """
+    Step 2: Parse CSV content using auto-detected + user-overridden column mappings.
+
+    Flow:
+    1. Auto-detect columns (same as detect_csv_columns)
+    2. Apply user overrides (if any)
+    3. Parse each row using the final mapping
+    4. Validate and return preview
+
+    column_overrides: {target_field: csv_column_name_or_None}
+    """
+    from app.services.column_mapper import (
+        ColumnMapper,
+        apply_mapping,
+        build_mapping_from_overrides,
+    )
+
+    reader = csv.DictReader(io.StringIO(csv_content))
+    if not reader.fieldnames:
+        raise ValidationError("CSV file is empty or has no headers")
+
+    headers = [h.strip() for h in reader.fieldnames if h.strip()]
+
+    # Re-read for sample detection
+    all_rows: list[dict[str, str]] = []
+    csv_reader = csv.DictReader(io.StringIO(csv_content))
+    for row in csv_reader:
+        all_rows.append(dict(row))
+        if len(all_rows) > 502:  # Max 500 data rows + buffer
+            break
+
+    # Auto-detect
+    mapper = ColumnMapper(headers)
+    detection = mapper.detect(sample_rows=all_rows[:5])
+
+    # Apply user overrides
+    final_mappings = detection.mappings
+    if column_overrides:
+        final_mappings = build_mapping_from_overrides(
+            detection.mappings, column_overrides
+        )
+
+    # Check required fields after overrides
+    if "name" not in final_mappings:
+        raise ValidationError(
+            "No 'name' column detected. Please map a column to 'Member Name'."
+        )
+    if "phone" not in final_mappings:
+        raise ValidationError(
+            "No 'phone' column detected. Please map a column to 'Phone / Mobile'."
+        )
+
+    # Parse rows with the final mapping
     rows = []
     valid = 0
     duplicates = 0
     invalid = 0
 
-    for i, raw_row in enumerate(reader, start=2):  # Start at 2 (row 1 is header)
-        if i > 502:  # Max 500 rows
+    for i, raw_row in enumerate(all_rows, start=2):  # Row 1 is header
+        if i > 502:
             break
 
-        name = (raw_row.get(header_map.get(name_col, ""), "") or "").strip()
-        phone_raw = (raw_row.get(header_map.get(phone_col, ""), "") or "").strip()
-        email = (raw_row.get(header_map.get(email_col, ""), "") or "").strip() if email_col else None
-        plan = (raw_row.get(header_map.get(plan_col, ""), "") or "").strip() if plan_col else None
-        start = (raw_row.get(header_map.get(start_col, ""), "") or "").strip() if start_col else None
-        end = (raw_row.get(header_map.get(end_col, ""), "") or "").strip() if end_col else None
+        mapped = apply_mapping(raw_row, final_mappings)
+
+        name = (mapped.get("name", "") or "").strip()
+        phone_raw = (mapped.get("phone", "") or "").strip()
+        email = mapped.get("email")
+        gender_raw = mapped.get("gender", "")
+        plan = mapped.get("membership_plan")
+        start = mapped.get("membership_start")
+        end = mapped.get("membership_end")
+        amount_raw = mapped.get("amount_paid", "")
 
         phone = _normalize_phone(phone_raw)
-        errors = []
+        gender = _normalize_gender(gender_raw) if gender_raw else None
+        amount_paise = _parse_amount(amount_raw) if amount_raw else None
+        errors: list[str] = []
 
-        # Validate
+        # Validate required fields
         if not name or len(name) < 2:
             errors.append("Name is required (min 2 characters)")
         if not phone_raw:
@@ -335,16 +441,18 @@ def parse_csv_preview(
         else:
             status = "valid"
             valid += 1
-            existing_phones.add(phone)  # Track within this import too
+            existing_phones.add(phone)
 
         rows.append({
             "row_number": i,
             "name": name,
             "phone": phone,
             "email": email or None,
+            "gender": gender,
             "membership_plan": plan or None,
             "membership_start": start or None,
             "membership_end": end or None,
+            "amount_paid": amount_paise,
             "status": status,
             "errors": errors,
         })
@@ -354,8 +462,29 @@ def parse_csv_preview(
         "valid": valid,
         "duplicates": duplicates,
         "invalid": invalid,
+        "column_mappings": [
+            {
+                "csv_column": m.csv_column,
+                "target_field": m.target_field,
+                "confidence": m.confidence,
+                "match_method": m.match_method,
+            }
+            for m in final_mappings.values()
+        ],
         "rows": rows,
     }
+
+
+def parse_csv_preview(
+    csv_content: str,
+    gym_id: UUID,
+    existing_phones: set[str],
+) -> dict:
+    """
+    Legacy preview function — kept for backward compatibility.
+    Delegates to parse_csv_with_mapping with no overrides.
+    """
+    return parse_csv_with_mapping(csv_content, gym_id, existing_phones)
 
 
 async def commit_csv_import(
@@ -394,17 +523,41 @@ async def commit_csv_import(
             start_date = _parse_date(row.get("membership_start")) if row.get("membership_start") else None
             end_date = _parse_date(row.get("membership_end")) if row.get("membership_end") else None
 
+            # Parse gender
+            gender_val = None
+            if row.get("gender"):
+                try:
+                    gender_val = Gender(row["gender"])
+                except ValueError:
+                    pass  # Skip invalid gender, don't block import
+
+            # Parse amount (already in paise from parse_csv_with_mapping, or raw string from legacy)
+            amount = 0
+            if row.get("amount_paid") is not None:
+                if isinstance(row["amount_paid"], int):
+                    amount = row["amount_paid"]
+                elif isinstance(row["amount_paid"], str):
+                    amount = _parse_amount(row["amount_paid"]) or 0
+
+            # Determine membership status from dates
+            status = MembershipStatus.ACTIVE
+            if end_date and end_date < date.today():
+                status = MembershipStatus.EXPIRED
+            elif not start_date and not end_date:
+                status = MembershipStatus.PENDING
+
             member = Member(
                 id=uuid4(),
                 gym_id=gym_id,
                 name=row["name"],
                 phone=row["phone"],
                 email=row.get("email"),
+                gender=gender_val,
                 membership_plan=row.get("membership_plan"),
                 membership_start=start_date,
                 membership_end=end_date,
-                membership_status=MembershipStatus.ACTIVE,
-                amount_paid=0,
+                membership_status=status,
+                amount_paid=amount,
             )
             db.add(member)
             imported += 1
@@ -449,13 +602,6 @@ async def create_feedback(
 
 
 # === Helpers ===
-
-def _find_column(header_map: dict[str, str], candidates: list[str]) -> str | None:
-    """Find the first matching column name from a list of candidates."""
-    for c in candidates:
-        if c in header_map:
-            return c
-    return None
 
 
 def _parse_date(value: str | None) -> date | None:

@@ -668,55 +668,63 @@ async def _create_invoice(
 # === Metrics ===
 
 
-async def get_billing_metrics(db: AsyncSession) -> dict:
+async def get_billing_metrics(db: AsyncSession, gym_id: UUID) -> dict:
     """
     Internal billing metrics for operational monitoring.
 
-    MRR = sum of all active subscription plan prices
+    MRR = sum of active subscription plan price for this gym.
+    Scoped to gym_id — owners only see their own gym's data.
     Not a financial system — operational visibility only.
     """
-    # Active subscriptions by status
+    # Subscription status for this gym
     status_counts = {}
     for status in BillingStatus:
         count = (await db.execute(
             select(func.count()).select_from(GymSubscription).where(
-                GymSubscription.status == status
+                GymSubscription.gym_id == gym_id,
+                GymSubscription.status == status,
             )
         )).scalar_one()
         status_counts[status.value] = count
 
-    # MRR: Sum of plan prices for ACTIVE subscriptions
+    # MRR: Plan price for this gym's ACTIVE subscription
     mrr_result = await db.execute(
         select(func.sum(SubscriptionPlan.price_in_paise))
         .select_from(GymSubscription)
         .join(SubscriptionPlan, GymSubscription.plan_id == SubscriptionPlan.id)
-        .where(GymSubscription.status == BillingStatus.ACTIVE)
+        .where(
+            GymSubscription.gym_id == gym_id,
+            GymSubscription.status == BillingStatus.ACTIVE,
+        )
     )
     mrr = mrr_result.scalar_one() or 0
 
-    # Cancelled this month
+    # Cancelled this month (this gym only)
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     cancelled_count = (await db.execute(
         select(func.count()).select_from(GymSubscription).where(
+            GymSubscription.gym_id == gym_id,
             GymSubscription.status == BillingStatus.CANCELLED,
             GymSubscription.cancelled_at >= month_start,
         )
     )).scalar_one()
 
-    # Trial conversion rate
+    # Trial conversion rate (this gym's history)
     total_ever_trial = status_counts.get("trial", 0) + status_counts.get("active", 0) + status_counts.get("cancelled", 0) + status_counts.get("expired", 0)
     total_converted = status_counts.get("active", 0) + status_counts.get("cancelled", 0)
     conversion_rate = (total_converted / total_ever_trial * 100) if total_ever_trial > 0 else None
 
-    # Payment failure rate (this month)
+    # Payment failure rate (this month, this gym)
     total_invoices = (await db.execute(
         select(func.count()).select_from(Invoice).where(
+            Invoice.gym_id == gym_id,
             Invoice.created_at >= month_start,
         )
     )).scalar_one()
     failed_invoices = (await db.execute(
         select(func.count()).select_from(Invoice).where(
+            Invoice.gym_id == gym_id,
             Invoice.created_at >= month_start,
             Invoice.status == InvoiceStatus.FAILED,
         )
