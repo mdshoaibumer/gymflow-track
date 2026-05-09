@@ -23,7 +23,7 @@ import json
 import logging
 from datetime import date
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -198,7 +198,7 @@ async def verify_payment(
         return PaymentVerifyResponse(
             verified=False,
             subscription_status="unknown",
-            message=str(e),
+            message="Payment verification failed. Please contact support if this persists.",
         )
 
 
@@ -283,11 +283,14 @@ async def cancel_subscription(
 
 @router.get("/history", response_model=BillingHistoryResponse)
 async def billing_history(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
     current_user: CurrentUser = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get invoice history for the gym."""
-    invoices = await billing_service.get_billing_history(db, current_user.gym_id)
+    """Get invoice history for the gym with pagination."""
+    invoices = await billing_service.get_billing_history(db, current_user.gym_id, skip=skip, limit=limit)
+    total = await billing_service.count_billing_history(db, current_user.gym_id)
     return BillingHistoryResponse(
         invoices=[
             InvoiceResponse(
@@ -303,7 +306,7 @@ async def billing_history(
             )
             for inv in invoices
         ],
-        total=len(invoices),
+        total=total,
     )
 
 

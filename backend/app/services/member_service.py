@@ -2,10 +2,13 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import AlreadyExistsError, NotFoundError
+from app.core.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.models.member import Member
 from app.repositories.member_repository import MemberRepository
 from app.schemas.member import MemberCreateRequest, MemberListResponse, MemberUpdateRequest
+
+# Fields that must NOT be set via generic update — they have dedicated lifecycle APIs
+_PROTECTED_FIELDS = frozenset({"membership_status"})
 
 
 class MemberService:
@@ -41,6 +44,13 @@ class MemberService:
         member = await self.get_member(member_id, gym_id)
 
         update_data = data.model_dump(exclude_unset=True)
+
+        # Block direct manipulation of protected lifecycle fields
+        for field_name in _PROTECTED_FIELDS:
+            if field_name in update_data:
+                raise ValidationError(
+                    f"{field_name} cannot be changed directly. Use the membership management API."
+                )
 
         # If phone is being changed, check for duplicates
         if "phone" in update_data and update_data["phone"] != member.phone:

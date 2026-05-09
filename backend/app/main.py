@@ -101,30 +101,35 @@ app = FastAPI(
 # Domain exception → HTTP response mapping
 app.add_exception_handler(GymFlowException, gymflow_exception_handler)
 
-# Middleware stack (order matters — outermost first)
-# 1. Request context — correlation IDs, timing, logging
-app.add_middleware(RequestContextMiddleware)
+# Middleware stack — Starlette adds middleware in REVERSE order (last added = outermost).
+# Desired execution order (outermost → innermost):
+#   RequestContext → SecurityHeaders → RateLimit → CORS → SubscriptionEnforcement → BodySizeLimit → Route
+#
+# Therefore, add in REVERSE of desired execution order:
 
-# 2. Security headers — nosniff, frame protection, etc.
-app.add_middleware(SecurityHeadersMiddleware)
+# 6. Body size limit — reject oversized payloads (1 MB) [innermost]
+app.add_middleware(BodySizeLimitMiddleware)
 
-# 3. Rate limiting — brute-force protection
-app.add_middleware(RateLimitMiddleware)
+# 5. Subscription enforcement — blocks writes for expired/locked gyms
+app.add_middleware(SubscriptionEnforcementMiddleware)
 
-# 4. CORS — must be AFTER request context (Starlette adds in reverse order)
+# 4. CORS — handles preflight and cross-origin
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
-# 5. Subscription enforcement — blocks writes for expired/locked gyms
-app.add_middleware(SubscriptionEnforcementMiddleware)
+# 3. Rate limiting — brute-force protection
+app.add_middleware(RateLimitMiddleware)
 
-# 6. Body size limit — reject oversized payloads (1 MB)
-app.add_middleware(BodySizeLimitMiddleware)
+# 2. Security headers — nosniff, frame protection, etc.
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 1. Request context — correlation IDs, timing, logging [outermost]
+app.add_middleware(RequestContextMiddleware)
 
 # Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])

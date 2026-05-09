@@ -64,6 +64,35 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class LogoutRequest(BaseModel):
+    """Optional: specific refresh token to revoke. If omitted, revokes all."""
+    refresh_token: str | None = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Initiate password reset — sends token via email/SMS."""
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    """Complete password reset using the token from email/SMS."""
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
+
+class ResetPasswordResponse(BaseModel):
+    message: str
+
+
 class CurrentUserResponse(BaseModel):
     """
     Safe user profile response — excludes password_hash and internal fields.

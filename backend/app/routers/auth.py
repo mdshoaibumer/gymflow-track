@@ -5,9 +5,14 @@ from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
 from app.schemas.auth import (
     CurrentUserResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     GymRegisterRequest,
     LoginRequest,
+    LogoutRequest,
     RefreshRequest,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     TokenResponse,
 )
 from app.services.auth_service import AuthService
@@ -40,9 +45,63 @@ async def refresh_token(
     data: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get new access token using refresh token."""
+    """Get new access token using refresh token (with rotation)."""
     service = AuthService(db)
     return await service.refresh_token(data)
+
+
+@router.post("/logout", status_code=200)
+async def logout(
+    data: LogoutRequest | None = None,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Revoke refresh tokens and terminate sessions.
+
+    If refresh_token is provided in the body, revokes only that token
+    (single-device logout). Otherwise, revokes ALL refresh tokens
+    (logout all devices).
+    """
+    service = AuthService(db)
+    await service.logout(
+        user_id=current_user.user_id,
+        refresh_token=data.refresh_token if data else None,
+    )
+    return {"message": "Logged out successfully"}
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Initiate password reset. Sends a reset token via email/SMS.
+
+    Always returns 200 with a generic message to prevent email enumeration.
+    In development, the reset token is logged. In production, integrate
+    with your email/notification provider.
+    """
+    service = AuthService(db)
+    message = await service.forgot_password(data.email)
+    return ForgotPasswordResponse(message=message)
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Reset password using a valid reset token.
+
+    Token is single-use and expires in 1 hour.
+    On success, all existing sessions are terminated.
+    """
+    service = AuthService(db)
+    message = await service.reset_password(data.token, data.new_password)
+    return ResetPasswordResponse(message=message)
 
 
 @router.get("/me", response_model=CurrentUserResponse)

@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     RATE_LIMIT_AUTH: int = 10  # login/register attempts per minute per IP
     RATE_LIMIT_API: int = 100  # general API requests per minute per IP
 
+    # === Proxy ===
+    TRUST_PROXY_HEADERS: bool = False  # Only enable in production behind reverse proxy
+
     # === WhatsApp ===
     WHATSAPP_PROVIDER: str = "log_only"  # "log_only" | "aisensy"
     WHATSAPP_API_KEY: str = ""
@@ -129,6 +132,15 @@ class Settings(BaseSettings):
         # --- CORS ---
         if self.is_production and "localhost" in self.CORS_ORIGINS:
             warnings.append("CORS_ORIGINS includes localhost in production.")
+
+        # --- Payment provider ---
+        if self.is_production and self.RAZORPAY_KEY_ID in ("mock", ""):
+            errors.append(
+                "RAZORPAY_KEY_ID must be set in production (not 'mock'). "
+                "Configure Razorpay credentials for real payment processing."
+            )
+        if self.is_production and not self.RAZORPAY_WEBHOOK_SECRET:
+            warnings.append("RAZORPAY_WEBHOOK_SECRET not set — webhook verification will fail.")
 
         # --- Emit warnings ---
         for w in warnings:

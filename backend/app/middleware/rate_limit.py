@@ -118,16 +118,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _get_client_ip(request: Request) -> str:
         """
-        Extract client IP, respecting proxy headers.
+        Extract client IP, respecting proxy headers only when configured.
+
+        TRUST_PROXY_HEADERS must be enabled in settings for X-Forwarded-For
+        to be respected. Without this, attackers can spoof the header to
+        bypass rate limits.
 
         In production behind Railway/Render/Fly reverse proxy:
+        - Enable TRUST_PROXY_HEADERS=true
         - X-Forwarded-For contains the real client IP
         - request.client.host is the proxy IP
-
-        Security: Only trust X-Forwarded-For in production behind known proxies.
         """
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            # X-Forwarded-For: client, proxy1, proxy2 — take the first
-            return forwarded.split(",")[0].strip()
+        if settings.TRUST_PROXY_HEADERS:
+            forwarded = request.headers.get("x-forwarded-for")
+            if forwarded:
+                # X-Forwarded-For: client, proxy1, proxy2 — take the first
+                return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"

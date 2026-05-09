@@ -24,9 +24,15 @@ Design choices:
 4. Staff/admin see the same restrictions as the gym:
    - Subscription is per-gym, not per-user
    - If the gym is locked, all users in that gym are locked
+
+5. Caching:
+   - Subscription status is cached per gym_id for 60 seconds
+   - Avoids opening a separate DB session on every request
+   - Cache invalidation is time-based (stale data window = 60s)
 """
 
 import logging
+import time
 from typing import Callable
 from uuid import UUID
 
@@ -60,6 +66,35 @@ EXEMPT_PREFIXES = (
 
 # Routes that need full access (write operations blocked in read-only mode)
 READ_ONLY_ALLOWED_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+# In-memory cache: {gym_id_str: (access_level, timestamp)}
+_access_cache: dict[str, tuple[str, float]] = {}
+_CACHE_TTL_SECONDS = 60
+_CACHE_MAX_SIZE = 5000  # Prevent unbounded memory growth
+
+
+def invalidate_subscription_cache(gym_id: UUID) -> None:
+    """Invalidate cached subscription status for a gym. Call after billing changes."""
+    _access_cache.pop(str(gym_id), None)
+
+
+def _get_cached_access(gym_id_str: str) -> str | None:
+    """Return cached access level if fresh, else None."""
+    entry = _access_cache.get(gym_id_str)
+    if entry and time.time() - entry[1] < _CACHE_TTL_SECONDS:
+        return entry[0]
+    return None
+
+
+def _set_cached_access(gym_id_str: str, access_level: str) -> None:
+    """Cache the access level with timestamp. Evict if over max size."""
+    if len(_access_cache) >= _CACHE_MAX_SIZE:
+        # Evict oldest entries
+        now = time.time()
+        stale = [k for k, (_, ts) in _access_cache.items() if now - ts > _CACHE_TTL_SECONDS]
+        for k in stale:
+            del _access_cache[k]
+    _access_cache[gym_id_str] = (access_level, time.time())
 
 
 def _extract_gym_id(request: Request) -> UUID | None:
@@ -111,18 +146,24 @@ class SubscriptionEnforcementMiddleware(BaseHTTPMiddleware):
             # No valid token — let the auth dependency handle 401
             return await call_next(request)
 
-        # Look up subscription status
-        from app.core.database import async_session_factory
-        from app.services.billing_service import get_access_level, get_subscription
+        # Check cache first to avoid opening a DB session per request
+        gym_id_str = str(gym_id)
+        access_level = _get_cached_access(gym_id_str)
 
-        try:
-            async with async_session_factory() as session:
-                subscription = await get_subscription(session, gym_id)
-                access_level = get_access_level(subscription)
-        except Exception:
-            # DB error — don't block the request, let downstream handle it
-            logger.exception("Subscription check failed, allowing request")
-            return await call_next(request)
+        if access_level is None:
+            # Cache miss — look up subscription status
+            from app.core.database import async_session_factory
+            from app.services.billing_service import get_access_level, get_subscription
+
+            try:
+                async with async_session_factory() as session:
+                    subscription = await get_subscription(session, gym_id)
+                    access_level = get_access_level(subscription)
+                    _set_cached_access(gym_id_str, access_level)
+            except Exception:
+                # DB error — don't block the request, let downstream handle it
+                logger.exception("Subscription check failed, allowing request")
+                return await call_next(request)
 
         if access_level == "locked":
             return JSONResponse(

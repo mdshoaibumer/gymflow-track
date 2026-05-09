@@ -10,9 +10,10 @@ Headers added:
 - Referrer-Policy: strict-origin-when-cross-origin — limits referrer leakage
 - Permissions-Policy: restricts browser feature access
 - X-XSS-Protection: 0 — modern browsers use CSP instead (legacy header)
+- Content-Security-Policy: Restricts resource loading origins
+- Cache-Control: no-store — prevents caching of authenticated API responses
 
 Not added (handled elsewhere):
-- Content-Security-Policy: Complex, needs frontend coordination. Add when ready.
 - Strict-Transport-Security: Set by reverse proxy (Railway/Render/Cloudflare)
 """
 
@@ -33,5 +34,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         # Disable legacy XSS filter (CSP is the modern replacement)
         response.headers["X-XSS-Protection"] = "0"
+        # Prevent browsers/proxies from caching authenticated API responses
+        response.headers["Cache-Control"] = "no-store"
+        # CSP: restrict resource loading to same-origin
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'"
+        )
 
         return response

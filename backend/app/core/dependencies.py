@@ -1,3 +1,4 @@
+import time
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -8,6 +9,13 @@ from app.middleware.request_context import set_tenant_context
 from app.models.user import UserRole
 
 security_scheme = HTTPBearer()
+
+# Lightweight cache: {user_id_str: (is_active, timestamp)}
+# Prevents disabled/deleted users from using valid access tokens for up to 60s.
+# Trade-off: DB lookup once per 60s instead of every request.
+_user_active_cache: dict[str, tuple[bool, float]] = {}
+_USER_CACHE_TTL = 60  # seconds
+_USER_CACHE_MAX_SIZE = 5000
 
 
 class CurrentUser:
@@ -30,7 +38,11 @@ class CurrentUser:
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
 ) -> CurrentUser:
-    """Extract and validate the current user from the JWT access token."""
+    """Extract and validate the current user from the JWT access token.
+
+    Additionally checks a lightweight cache to detect disabled/deleted users
+    within ~60 seconds of account changes (instead of only on token expiry).
+    """
     token = credentials.credentials
     payload = decode_token(token)
 
@@ -48,13 +60,67 @@ async def get_current_user(
             detail="Invalid token claims",
         )
 
+    user_id = UUID(payload["sub"])
+    gym_id = UUID(payload["gym_id"])
+
+    # Lightweight active-user check (cached, not every request hits DB)
+    await _check_user_active(user_id)
+
     user = CurrentUser(
-        user_id=UUID(payload["sub"]),
-        gym_id=UUID(payload["gym_id"]),
+        user_id=user_id,
+        gym_id=gym_id,
         role=role,
     )
     _set_log_context(user)
     return user
+
+
+async def _check_user_active(user_id: UUID) -> None:
+    """Check if user is still active using a time-based cache."""
+    uid_str = str(user_id)
+    now = time.time()
+
+    # Check cache
+    cached = _user_active_cache.get(uid_str)
+    if cached and now - cached[1] < _USER_CACHE_TTL:
+        if not cached[0]:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is disabled",
+            )
+        return
+
+    # Cache miss — query DB
+    from app.core.database import async_session_factory
+    from sqlalchemy import select
+    from app.models.user import User
+
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(User.is_active).where(User.id == user_id)
+            )
+            row = result.scalar_one_or_none()
+            is_active = bool(row) if row is not None else False
+
+            # Evict stale entries if cache is too large
+            if len(_user_active_cache) >= _USER_CACHE_MAX_SIZE:
+                stale = [k for k, (_, ts) in _user_active_cache.items() if now - ts > _USER_CACHE_TTL]
+                for k in stale:
+                    del _user_active_cache[k]
+
+            _user_active_cache[uid_str] = (is_active, now)
+
+            if not is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Account is disabled",
+                )
+    except HTTPException:
+        raise
+    except Exception:
+        # DB error — don't block the request, let downstream handle it
+        pass
 
 
 def require_role(*allowed_roles: UserRole):

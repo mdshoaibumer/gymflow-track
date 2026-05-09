@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError, ValidationError
+from app.middleware.subscription_enforcement import invalidate_subscription_cache
 from app.models.subscription import (
     BillingInterval,
     BillingStatus,
@@ -301,6 +302,7 @@ async def verify_and_activate(
     subscription.cancel_at_period_end = False
 
     await db.flush()
+    invalidate_subscription_cache(gym_id)
     logger.info(
         f"Subscription activated: gym={gym_id}, "
         f"plan={subscription.plan_id}, until={subscription.current_period_end}"
@@ -342,6 +344,7 @@ async def cancel_subscription(
         logger.info(f"Subscription cancelled: gym={gym_id}")
 
     await db.flush()
+    invalidate_subscription_cache(gym_id)
     return subscription
 
 
@@ -394,6 +397,7 @@ async def process_webhook_payment(
             subscription.current_period_start = invoice.period_start
             subscription.current_period_end = invoice.period_end
             subscription.payment_retry_count = 0
+            invalidate_subscription_cache(invoice.gym_id)
 
         logger.info(f"Webhook: payment captured for invoice {invoice.invoice_number}")
 
@@ -414,6 +418,7 @@ async def process_webhook_payment(
             else:
                 subscription.status = BillingStatus.PAST_DUE
                 logger.info(f"Webhook: payment failed, retry {subscription.payment_retry_count}/{MAX_PAYMENT_RETRIES}")
+            invalidate_subscription_cache(invoice.gym_id)
 
     await db.flush()
 
@@ -438,6 +443,7 @@ async def check_trial_expirations(db: AsyncSession) -> int:
 
     for sub in expired:
         sub.status = BillingStatus.EXPIRED
+        invalidate_subscription_cache(sub.gym_id)
         logger.info(f"Trial expired: gym={sub.gym_id}")
 
     if expired:
@@ -465,6 +471,7 @@ async def check_subscription_expirations(db: AsyncSession) -> int:
     )
     for sub in result.scalars().all():
         sub.status = BillingStatus.EXPIRED
+        invalidate_subscription_cache(sub.gym_id)
         logger.info(f"Cancelled subscription expired: gym={sub.gym_id}")
         count += 1
 
@@ -620,14 +627,26 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
 # === Invoicing ===
 
 
-async def get_billing_history(db: AsyncSession, gym_id: UUID) -> list[Invoice]:
-    """Get all invoices for a gym, newest first."""
+async def get_billing_history(
+    db: AsyncSession, gym_id: UUID, skip: int = 0, limit: int = 50
+) -> list[Invoice]:
+    """Get invoices for a gym with pagination, newest first."""
     result = await db.execute(
         select(Invoice)
         .where(Invoice.gym_id == gym_id)
         .order_by(Invoice.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return list(result.scalars().all())
+
+
+async def count_billing_history(db: AsyncSession, gym_id: UUID) -> int:
+    """Count total invoices for a gym (for pagination metadata)."""
+    result = await db.execute(
+        select(func.count()).select_from(Invoice).where(Invoice.gym_id == gym_id)
+    )
+    return result.scalar_one()
 
 
 async def _create_invoice(

@@ -24,7 +24,7 @@ class MemberUpdateRequest(BaseModel):
     phone: str | None = Field(None, pattern=r"^[6-9]\d{9}$")
     email: EmailStr | None = None
     gender: Gender | None = None
-    membership_status: MembershipStatus | None = None
+    # membership_status is NOT updatable directly — use membership lifecycle APIs
     membership_plan: str | None = None
     membership_start: date | None = None
     membership_end: date | None = None

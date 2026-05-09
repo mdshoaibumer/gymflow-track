@@ -42,4 +42,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Production: 1 worker (scale via platform replicas, not workers)
 # --limit-max-requests: Restart worker after 10k requests (prevents memory leaks)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--limit-max-requests", "10000"]
+# --limit-request-body: Server-level body size limit (1 MB) — fallback for chunked encoding
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--limit-max-requests", "10000", "--limit-request-body", "1048576"]
