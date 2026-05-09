@@ -37,7 +37,6 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -48,7 +47,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 # === Enums ===
@@ -105,10 +104,14 @@ class SubscriptionPlan(BaseModel):
     __tablename__ = "subscription_plans"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    tier: Mapped[PlanTier] = mapped_column(Enum(PlanTier), nullable=False, unique=True)
+    tier: Mapped[PlanTier] = mapped_column(
+        PgEnum(PlanTier, name="plantier"), nullable=False, unique=True
+    )
     price_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     billing_interval: Mapped[BillingInterval] = mapped_column(
-        Enum(BillingInterval), default=BillingInterval.MONTHLY, nullable=False
+        PgEnum(BillingInterval, name="billinginterval"),
+        default=BillingInterval.MONTHLY,
+        nullable=False,
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -152,7 +155,10 @@ class GymSubscription(BaseModel):
         nullable=False
     )
     status: Mapped[BillingStatus] = mapped_column(
-        Enum(BillingStatus), default=BillingStatus.TRIAL, nullable=False, index=True
+        PgEnum(BillingStatus, name="billingstatus"),
+        default=BillingStatus.TRIAL,
+        nullable=False,
+        index=True,
     )
 
     # Trial tracking
@@ -214,7 +220,9 @@ class Invoice(BaseModel):
     )
     amount_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[InvoiceStatus] = mapped_column(
-        Enum(InvoiceStatus), default=InvoiceStatus.PENDING, nullable=False
+        PgEnum(InvoiceStatus, name="invoicestatus"),
+        default=InvoiceStatus.PENDING,
+        nullable=False,
     )
 
     # Period this invoice covers

@@ -29,7 +29,6 @@ from enum import Enum as PyEnum
 from sqlalchemy import (
     Date,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     String,
@@ -38,7 +37,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 class AttendanceStatus(str, PyEnum):
@@ -93,12 +92,14 @@ class Attendance(BaseModel):
 
     # Status tracking
     status: Mapped[AttendanceStatus] = mapped_column(
-        Enum(AttendanceStatus), default=AttendanceStatus.CHECKED_IN, nullable=False
+        PgEnum(AttendanceStatus, name="attendancestatus"),
+        default=AttendanceStatus.CHECKED_IN,
+        nullable=False,
     )
 
     # Audit fields
     source: Mapped[CheckInSource] = mapped_column(
-        Enum(CheckInSource), nullable=False
+        PgEnum(CheckInSource, name="checkinsource"), nullable=False
     )
     recorded_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True

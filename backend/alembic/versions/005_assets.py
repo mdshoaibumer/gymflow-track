@@ -23,19 +23,21 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
+    # Create enum types using the safe, idempotent pattern
+    # ENUM(..., create_type=False) + .create(checkfirst=True) ensures
+    # the migration is re-runnable without "type already exists" errors
     asset_status = postgresql.ENUM(
         "active", "under_maintenance", "out_of_service", "retired",
-        name="assetstatus", create_type=True,
+        name="assetstatus", create_type=False,
     )
     asset_category = postgresql.ENUM(
         "cardio", "strength", "free_weights", "functional",
         "accessories", "facility", "other",
-        name="assetcategory", create_type=True,
+        name="assetcategory", create_type=False,
     )
     maintenance_type = postgresql.ENUM(
         "preventive", "corrective", "inspection", "warranty",
-        name="maintenancetype", create_type=True,
+        name="maintenancetype", create_type=False,
     )
     asset_status.create(op.get_bind(), checkfirst=True)
     asset_category.create(op.get_bind(), checkfirst=True)

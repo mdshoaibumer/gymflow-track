@@ -1,11 +1,11 @@
 import uuid
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, Boolean, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import String, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 class UserRole(str, PyEnum):
@@ -28,7 +28,7 @@ class User(BaseModel):
     phone: Mapped[str] = mapped_column(String(15), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole), default=UserRole.OWNER, nullable=False
+        PgEnum(UserRole, name="userrole"), default=UserRole.OWNER, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 

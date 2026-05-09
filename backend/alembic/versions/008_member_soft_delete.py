@@ -1,7 +1,7 @@
 """Add is_deleted column to members for soft-delete support.
 
-Revision ID: 008
-Revises: 007
+Revision ID: 008_member_soft_delete
+Revises: 007_billing
 Create Date: 2024-01-01 00:00:00.000000
 """
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "008"
+revision = "008_member_soft_delete"
 down_revision = "007_billing"
 branch_labels = None
 depends_on = None

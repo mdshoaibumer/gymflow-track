@@ -2,11 +2,11 @@ import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Enum, DateTime, Text, Index, Date
+from sqlalchemy import String, ForeignKey, DateTime, Text, Index, Date
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 class NotificationType(str, PyEnum):
@@ -57,13 +57,17 @@ class Notification(BaseModel):
         nullable=False, index=True
     )
     notification_type: Mapped[NotificationType] = mapped_column(
-        Enum(NotificationType), nullable=False
+        PgEnum(NotificationType, name="notificationtype"), nullable=False
     )
     channel: Mapped[NotificationChannel] = mapped_column(
-        Enum(NotificationChannel), default=NotificationChannel.WHATSAPP, nullable=False
+        PgEnum(NotificationChannel, name="notificationchannel"),
+        default=NotificationChannel.WHATSAPP,
+        nullable=False,
     )
     status: Mapped[NotificationStatus] = mapped_column(
-        Enum(NotificationStatus), default=NotificationStatus.PENDING, nullable=False
+        PgEnum(NotificationStatus, name="notificationstatus"),
+        default=NotificationStatus.PENDING,
+        nullable=False,
     )
 
     # When the notification is scheduled to be sent

@@ -16,11 +16,11 @@ Lifecycle:
 import uuid
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Enum, Text
+from sqlalchemy import String, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 class FeedbackCategory(str, PyEnum):
@@ -40,7 +40,7 @@ class Feedback(BaseModel):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     category: Mapped[FeedbackCategory] = mapped_column(
-        Enum(FeedbackCategory), nullable=False
+        PgEnum(FeedbackCategory, name="feedbackcategory"), nullable=False
     )
     message: Mapped[str] = mapped_column(Text, nullable=False)
     page: Mapped[str | None] = mapped_column(String(200), nullable=True)

@@ -2,11 +2,11 @@ import uuid
 from datetime import date, datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Enum, Date, Integer, Text, Index
+from sqlalchemy import String, ForeignKey, Date, Integer, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 class PaymentMethod(str, PyEnum):
@@ -41,10 +41,12 @@ class Payment(BaseModel):
     )
     amount_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     payment_method: Mapped[PaymentMethod] = mapped_column(
-        Enum(PaymentMethod), nullable=False
+        PgEnum(PaymentMethod, name="paymentmethod"), nullable=False
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus), default=PaymentStatus.COMPLETED, nullable=False
+        PgEnum(PaymentStatus, name="paymentstatus"),
+        default=PaymentStatus.COMPLETED,
+        nullable=False,
     )
     payment_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

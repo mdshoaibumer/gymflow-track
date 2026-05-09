@@ -22,16 +22,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
+    # Create enum types using the safe, idempotent pattern
+    # ENUM(..., create_type=False) + .create(checkfirst=True) ensures
+    # the migration is re-runnable without "type already exists" errors
     attendance_status = postgresql.ENUM(
         "checked_in", "checked_out", "cancelled",
         name="attendancestatus",
-        create_type=True,
+        create_type=False,
     )
     check_in_source = postgresql.ENUM(
         "qr", "manual",
         name="checkinsource",
-        create_type=True,
+        create_type=False,
     )
     attendance_status.create(op.get_bind(), checkfirst=True)
     check_in_source.create(op.get_bind(), checkfirst=True)

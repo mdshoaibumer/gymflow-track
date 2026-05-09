@@ -1,9 +1,18 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Enum as SqlEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+def PgEnum(enum_type, name: str):
+    return SqlEnum(
+        enum_type,
+        values_callable=lambda enums: [e.value for e in enums],
+        native_enum=True,
+        name=name,
+    )
 
 
 class Base(DeclarativeBase):

@@ -26,7 +26,6 @@ from enum import Enum as PyEnum
 
 from sqlalchemy import (
     Date,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -37,7 +36,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseModel
+from app.models.base import BaseModel, PgEnum
 
 
 # === Asset Enums ===
@@ -86,7 +85,7 @@ class Asset(BaseModel):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     asset_code: Mapped[str] = mapped_column(String(50), nullable=False)
     category: Mapped[AssetCategory] = mapped_column(
-        Enum(AssetCategory), nullable=False,
+        PgEnum(AssetCategory, name="assetcategory"), nullable=False,
     )
 
     # Details
@@ -99,7 +98,9 @@ class Asset(BaseModel):
 
     # Lifecycle
     status: Mapped[AssetStatus] = mapped_column(
-        Enum(AssetStatus), default=AssetStatus.ACTIVE, nullable=False,
+        PgEnum(AssetStatus, name="assetstatus"),
+        default=AssetStatus.ACTIVE,
+        nullable=False,
     )
 
     # Relationships
@@ -132,7 +133,7 @@ class MaintenanceRecord(BaseModel):
 
     # Service details
     maintenance_type: Mapped[MaintenanceType] = mapped_column(
-        Enum(MaintenanceType), nullable=False,
+        PgEnum(MaintenanceType, name="maintenancetype"), nullable=False,
     )
     service_date: Mapped[date] = mapped_column(Date, nullable=False)
     next_service_date: Mapped[date | None] = mapped_column(Date, nullable=True)
