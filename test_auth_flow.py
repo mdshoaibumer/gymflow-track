@@ -148,8 +148,8 @@ class AuthQA:
             logging.info("Running: Logout Test")
             # Try to find logout button
             try:
-                # Click the user avatar menu (it has rounded-full class)
-                await page.click(".rounded-full")
+                # Click the user avatar menu via aria-label
+                await page.click('[aria-label="User menu"]')
                 await asyncio.sleep(0.5) # wait for dropdown to open
                 
                 logout_btn = await page.wait_for_selector("text='Logout'", timeout=5000)

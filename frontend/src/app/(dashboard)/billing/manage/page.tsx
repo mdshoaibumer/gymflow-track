@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CreditCard, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,17 +13,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function BillingManagePage() {
-  const { isOwner } = useAuth();
-  const { data: subscription, isLoading: subLoading } = useSubscription();
-  const { data: history } = useBillingHistory();
+  const { isOwner, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const { data: subscription, isLoading: subLoading } = useSubscription(isOwner);
+  const { data: history } = useBillingHistory(isOwner);
   const cancelMutation = useCancelSubscription();
+
+  useEffect(() => {
+    if (!authLoading && !isOwner) {
+      router.replace("/dashboard");
+    }
+  }, [isOwner, authLoading, router]);
 
   const handleCancel = async () => {
     if (!confirm("Are you sure you want to cancel? You'll retain access until the end of your billing period.")) return;
     cancelMutation.mutate();
   };
 
-  if (subLoading) {
+  if (authLoading || !isOwner || subLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-FRONTEND_URL = "http://localhost:3001"
+FRONTEND_URL = "http://localhost:3000"
 TEST_PASS = "TestPass123"
 
 ROLES = {

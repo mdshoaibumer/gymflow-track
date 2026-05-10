@@ -34,7 +34,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { saveTokens } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -45,7 +44,6 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
     try {
       const response = await authService.login(data);
       saveTokens(response.access_token, response.refresh_token);
@@ -53,7 +51,6 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
-      setIsLoading(false);
     }
   };
 
@@ -81,6 +78,7 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="owner@yourgym.com"
+                  disabled={isSubmitting}
                   {...register("email")}
                 />
                 {errors.email && (
@@ -102,6 +100,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    disabled={isSubmitting}
                     {...register("password")}
                   />
                   <button
@@ -122,9 +121,9 @@ export default function LoginPage() {
                 )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting || isLoading}>
-                {(isSubmitting || isLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {(isSubmitting || isLoading) ? "Signing in..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 

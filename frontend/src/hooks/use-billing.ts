@@ -22,22 +22,22 @@ export function usePlans() {
   });
 }
 
-export function useSubscription() {
+export function useSubscription(enabled = true) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.subscription(),
     queryFn: () => billingService.getSubscription(token!),
-    enabled: !!token,
+    enabled: !!token && enabled,
     staleTime: 60 * 1000,
   });
 }
 
-export function useBillingHistory() {
+export function useBillingHistory(enabled = true) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.history(),
     queryFn: () => billingService.getHistory(token!),
-    enabled: !!token,
+    enabled: !!token && enabled,
   });
 }
 

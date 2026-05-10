@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,13 +10,20 @@ import { useBillingMetrics } from "@/hooks/use-billing";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function BillingMetricsPage() {
-  const { isOwner } = useAuth();
+  const { isOwner, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const { data: metrics, isLoading } = useBillingMetrics();
 
-  if (!isOwner) {
+  useEffect(() => {
+    if (!authLoading && !isOwner) {
+      router.replace("/dashboard");
+    }
+  }, [isOwner, authLoading, router]);
+
+  if (authLoading || !isOwner) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <p className="text-muted-foreground">Only the gym owner can view billing metrics.</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

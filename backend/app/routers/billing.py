@@ -87,7 +87,7 @@ async def list_plans(db: AsyncSession = Depends(get_db)):
 
 @router.get("/subscription", response_model=SubscriptionResponse | None)
 async def get_subscription(
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
     """

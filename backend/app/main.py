@@ -120,7 +120,10 @@ app.add_middleware(BodySizeLimitMiddleware)
 # 5. Subscription enforcement — business logic gating based on billing status
 app.add_middleware(SubscriptionEnforcementMiddleware)
 
-# 4. CORS — cross-origin support (handled before rate limiting to allow preflights)
+# 4. Rate limiting — security layer to prevent abuse (inner relative to CORS)
+app.add_middleware(RateLimitMiddleware)
+
+# 3. CORS — cross-origin support (outer relative to RateLimit so 429 gets CORS headers)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -128,9 +131,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
-
-# 3. Rate limiting — security layer to prevent abuse
-app.add_middleware(RateLimitMiddleware)
 
 # 2. Security headers — industry standard security headers (OWASP recommended)
 app.add_middleware(SecurityHeadersMiddleware)
