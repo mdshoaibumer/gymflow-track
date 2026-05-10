@@ -17,6 +17,18 @@ class PaymentRepository:
         await self.db.flush()
         return payment
 
+    async def get_by_idempotency_key(
+        self, gym_id: UUID, idempotency_key: str
+    ) -> Payment | None:
+        """Look up an existing payment by idempotency key within the same gym."""
+        result = await self.db.execute(
+            select(Payment).where(
+                Payment.gym_id == gym_id,
+                Payment.idempotency_key == idempotency_key,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_id(self, payment_id: UUID, gym_id: UUID) -> Payment | None:
         result = await self.db.execute(
             select(Payment).where(Payment.id == payment_id, Payment.gym_id == gym_id)

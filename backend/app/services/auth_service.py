@@ -221,6 +221,11 @@ class AuthService:
     # Author        : Mohammed Shoaib U
     #
     # ************************************************************
+    # Grace period (seconds) for concurrent refresh requests (multi-tab scenario).
+    # If a revoked token is re-presented within this window, the replacement token
+    # is returned instead of triggering reuse-detection revocation.
+    REFRESH_GRACE_SECONDS = 30
+
     async def refresh_token(self, data: RefreshRequest) -> TokenResponse:
         payload = decode_token(data.refresh_token)
         if payload is None or payload.get("type") != "refresh":
@@ -241,16 +246,59 @@ class AuthService:
         if not stored_token:
             raise AuthenticationError("Refresh token revoked or invalid")
 
-        # Reuse detection: if a revoked token is re-presented, an attacker
-        # may have stolen it. Revoke ALL tokens for this user as a safeguard.
+        # Reuse detection with grace window for multi-tab concurrent refreshes.
+        # If the token was revoked within the grace period, return the replacement
+        # token pair instead of revoking all sessions.
         if stored_token.revoked:
+            # Check if within grace window (concurrent multi-tab refresh)
+            if (
+                stored_token.revoked_at is not None
+                and stored_token.replaced_by_hash is not None
+                and (datetime.now(timezone.utc) - stored_token.revoked_at).total_seconds()
+                    < self.REFRESH_GRACE_SECONDS
+            ):
+                # Look up the replacement token to verify it's still valid
+                replacement = await self.db.execute(
+                    select(RefreshToken).where(
+                        RefreshToken.token_hash == stored_token.replaced_by_hash,
+                        RefreshToken.revoked == False,  # noqa: E712
+                    )
+                )
+                replacement_token = replacement.scalar_one_or_none()
+                if replacement_token:
+                    # Validate user is still active before returning tokens
+                    user = await self.user_repo.get_by_id(user_id)
+                    if not user or not user.is_active or user.gym_id != gym_id:
+                        raise AuthenticationError("Invalid session")
+
+                    # Re-mint access token (cheap) but keep the same refresh token
+                    new_access = create_access_token(user_id, user.gym_id, user.role.value)
+                    # Re-create the same refresh JWT for the existing replacement record
+                    new_refresh = create_refresh_token(user_id, user.gym_id, user.role.value)
+                    # Update the replacement record's hash to match the new refresh JWT
+                    new_hash = _hash_token(new_refresh)
+                    replacement_token.token_hash = new_hash
+                    # Also update the parent's replaced_by_hash pointer
+                    stored_token.replaced_by_hash = new_hash
+                    await self.db.flush()
+
+                    logger.info(
+                        f"Grace-period refresh for user {user_id} — "
+                        f"concurrent tab served without reuse revocation"
+                    )
+                    return TokenResponse(
+                        access_token=new_access,
+                        refresh_token=new_refresh,
+                    )
+
+            # Outside grace window or no replacement — genuine reuse detection
             await self.db.execute(
                 update(RefreshToken)
                 .where(
                     RefreshToken.user_id == user_id,
                     RefreshToken.revoked == False,  # noqa: E712
                 )
-                .values(revoked=True)
+                .values(revoked=True, revoked_at=datetime.now(timezone.utc))
             )
             await self.db.flush()
             logger.warning(
@@ -272,11 +320,15 @@ class AuthService:
             raise AuthenticationError("Invalid session — gym mismatch")
 
         # Rotate refresh token: revoke old, issue new
-        stored_token.revoked = True
-        await self.db.flush()
-
         new_access = create_access_token(user_id, user.gym_id, user.role.value)
         new_refresh = create_refresh_token(user_id, user.gym_id, user.role.value)
+        new_hash = _hash_token(new_refresh)
+
+        stored_token.revoked = True
+        stored_token.revoked_at = datetime.now(timezone.utc)
+        stored_token.replaced_by_hash = new_hash
+        await self.db.flush()
+
         await self._store_refresh_token(user_id, new_refresh)
 
         return TokenResponse(

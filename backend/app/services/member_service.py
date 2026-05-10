@@ -3,6 +3,7 @@
 import logging
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AlreadyExistsError, NotFoundError, ValidationError
@@ -40,7 +41,15 @@ class MemberService:
             raise AlreadyExistsError("Member with this phone number already exists")
 
         member = Member(gym_id=gym_id, **data.model_dump())
-        return await self.member_repo.create(member)
+        try:
+            return await self.member_repo.create(member)
+        except IntegrityError as e:
+            # Partial unique index (gym_id, phone) WHERE is_deleted = false
+            # can fire on concurrent duplicate phone creation — translate to domain error.
+            constraint = getattr(e.orig, "constraint_name", "") or str(e.orig)
+            if "phone" in constraint or "uq_members_gym_phone" in constraint:
+                raise AlreadyExistsError("Member with this phone number already exists")
+            raise
 
     # ************************************************************
     # Function Name : Retrieve Single Member by ID
@@ -124,7 +133,13 @@ class MemberService:
         for field, value in update_data.items():
             setattr(member, field, value)
 
-        return await self.member_repo.update(member)
+        try:
+            return await self.member_repo.update(member)
+        except IntegrityError as e:
+            constraint = getattr(e.orig, "constraint_name", "") or str(e.orig)
+            if "phone" in constraint or "uq_members_gym_phone" in constraint:
+                raise AlreadyExistsError("Another member already has this phone number")
+            raise
 
     # ************************************************************
     # Function Name : Soft-Delete Gym Member

@@ -13,6 +13,10 @@ class PaymentCreateRequest(BaseModel):
     payment_status: PaymentStatus | None = None  # defaults to COMPLETED
     payment_date: date | None = None  # defaults to today
     notes: str | None = Field(None, max_length=500)
+    # Client-supplied idempotency key to prevent duplicate submissions.
+    # If provided, a second request with the same key+gym returns the
+    # existing payment instead of creating a duplicate.
+    idempotency_key: str | None = Field(None, max_length=64)
 
     # Optional: auto-renew membership on payment
     membership_start: date | None = None
@@ -29,6 +33,7 @@ class PaymentResponse(BaseModel):
     payment_status: PaymentStatus
     payment_date: date
     notes: str | None
+    idempotency_key: str | None = None
     created_by: UUID | None
     member_name: str | None = None
 
@@ -48,6 +53,7 @@ class PaymentResponse(BaseModel):
                 payment_status=data.payment_status,
                 payment_date=data.payment_date,
                 notes=data.notes,
+                idempotency_key=data.idempotency_key,
                 created_by=data.created_by,
                 member_name=data.member.name,
             )

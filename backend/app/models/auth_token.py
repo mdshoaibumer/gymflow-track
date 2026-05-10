@@ -35,6 +35,10 @@ class RefreshToken(BaseModel):
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # When this token is rotated, record when it was revoked and which token replaced it.
+    # Used to allow a short grace window for concurrent multi-tab refresh requests.
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    replaced_by_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Optional: track device/IP for "active sessions" UI
     device_info: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

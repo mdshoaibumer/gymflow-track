@@ -50,6 +50,9 @@ class Payment(BaseModel):
     )
     payment_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Client-supplied idempotency key to prevent duplicate payment creation
+    # from retries, double-clicks, or network replays.
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Who recorded this payment (user_id from JWT)
     created_by: Mapped[uuid.UUID | None] = mapped_column(

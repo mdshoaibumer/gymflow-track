@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
 from app.core.events import emit, PaymentRecorded, MembershipRenewed
 from app.core.timezone import today_ist
+from app.models.member import Member
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
@@ -60,6 +61,16 @@ class PaymentService:
         if not member:
             raise NotFoundError("Member not found")
 
+        # Idempotency check: if the client supplied a key and a payment with
+        # that key already exists for this gym, return the existing payment
+        # instead of creating a duplicate (safe retry on double-click/network replay).
+        if data.idempotency_key:
+            existing = await self.payment_repo.get_by_idempotency_key(
+                gym_id, data.idempotency_key
+            )
+            if existing:
+                return existing
+
         payment = Payment(
             gym_id=gym_id,
             member_id=data.member_id,
@@ -68,9 +79,16 @@ class PaymentService:
             payment_status=data.payment_status or PaymentStatus.COMPLETED,
             payment_date=data.payment_date or today_ist(),
             notes=data.notes,
+            idempotency_key=data.idempotency_key,
             created_by=user_id,
         )
         payment = await self.payment_repo.create(payment)
+
+        # Atomically update amount_paid on the member using SQL-level addition
+        # to prevent lost-update race conditions from concurrent payments.
+        if payment.payment_status == PaymentStatus.COMPLETED:
+            member.amount_paid = Member.amount_paid + payment.amount_in_paise
+            await self.db.flush()
 
         # Auto-renew membership if payment is completed and dates provided
         if (
