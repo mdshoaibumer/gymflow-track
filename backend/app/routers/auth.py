@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, Request, Response
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import get_cache_backend
+from app.core.config import settings
 from app.core.cookies import ACCESS_COOKIE, REFRESH_COOKIE, clear_auth_cookies, set_auth_cookies
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
@@ -18,7 +22,68 @@ from app.schemas.auth import (
 )
 from app.services.auth_service import AuthService
 
+logger = logging.getLogger("gymflow.security")
+
 router = APIRouter()
+
+# Login-specific rate limiting: stricter than the general auth rate limiter.
+# Tracks per-IP failed login attempts with progressive cooldown.
+_LOGIN_MAX_ATTEMPTS = 5       # max attempts before lockout
+_LOGIN_WINDOW_SECONDS = 300   # 5-minute window for tracking failures
+_LOGIN_LOCKOUT_SECONDS = 300  # 5-minute lockout after exceeding limit
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP (proxy-aware)."""
+    if settings.TRUST_PROXY_HEADERS:
+        real_ip = request.headers.get("x-real-ip")
+        if real_ip:
+            return real_ip.strip()
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+            if client_ip and client_ip not in ("", "unknown"):
+                return client_ip
+    return request.client.host if request.client else "unknown"
+
+
+def _check_login_rate_limit(request: Request) -> None:
+    """Check login-specific rate limit. Raises 429 if exceeded."""
+    cache = get_cache_backend()
+    client_ip = _get_client_ip(request)
+
+    # Check if IP is currently locked out
+    lockout_key = f"login_lockout:{client_ip}"
+    if cache.get(lockout_key):
+        logger.warning(f"Login attempt during lockout: {client_ip}")
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Please try again in a few minutes.",
+            headers={"Retry-After": str(_LOGIN_LOCKOUT_SECONDS)},
+        )
+
+
+def _record_login_failure(request: Request) -> None:
+    """Record a failed login attempt. Triggers lockout if threshold exceeded."""
+    cache = get_cache_backend()
+    client_ip = _get_client_ip(request)
+    fail_key = f"login_fails:{client_ip}"
+
+    count = cache.increment_window(fail_key, _LOGIN_WINDOW_SECONDS)
+    if count >= _LOGIN_MAX_ATTEMPTS:
+        lockout_key = f"login_lockout:{client_ip}"
+        cache.set(lockout_key, "1", _LOGIN_LOCKOUT_SECONDS)
+        logger.warning(
+            f"Login lockout triggered: {client_ip} ({count} failures in {_LOGIN_WINDOW_SECONDS}s)"
+        )
+
+
+def _clear_login_failures(request: Request) -> None:
+    """Clear failed login counter on successful login."""
+    cache = get_cache_backend()
+    client_ip = _get_client_ip(request)
+    cache.delete(f"login_fails:{client_ip}")
+    cache.delete(f"login_lockout:{client_ip}")
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
@@ -38,12 +103,24 @@ async def register_gym(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     data: LoginRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     """Authenticate user and return tokens."""
+    # Login-specific rate limit check (stricter than general auth middleware)
+    _check_login_rate_limit(request)
+
     service = AuthService(db)
-    result = await service.login(data)
+    try:
+        result = await service.login(data)
+    except Exception:
+        # Record failed attempt for progressive lockout
+        _record_login_failure(request)
+        raise
+
+    # Successful login — clear any prior failure counts
+    _clear_login_failures(request)
     set_auth_cookies(response, result.access_token, result.refresh_token)
     return result
 

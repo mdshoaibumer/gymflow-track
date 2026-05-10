@@ -53,10 +53,11 @@ async function _attemptTokenRefresh(): Promise<boolean> {
 
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<{ detail?: string }>) => {
+  async (error: AxiosError<{ detail?: string | Array<{ msg?: string }> }>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     const isAuthRoute = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/auth/register");
+    const isAuthMeRoute = originalRequest.url?.includes("/auth/me");
     
     // 401 — attempt transparent token refresh (unless it's an auth route where 401 means invalid credentials)
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
@@ -74,7 +75,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       }
 
-      if (typeof window !== "undefined") {
+      // Don't fire AUTH_EXPIRED_EVENT for /auth/me — it's used for session
+      // validation on page load and a 401 just means "not logged in yet".
+      if (!isAuthMeRoute && typeof window !== "undefined") {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
       return Promise.reject(new Error("Session expired. Please log in again."));
@@ -85,10 +88,21 @@ api.interceptors.response.use(
       return Promise.reject(new Error("Too many requests. Please wait a moment and try again."));
     }
 
-    // Extract error detail
+    // Extract error detail — handle both string and array formats
     const detail = error.response?.data?.detail;
     if (detail) {
-      return Promise.reject(new Error(detail));
+      if (typeof detail === "string") {
+        return Promise.reject(new Error(detail));
+      }
+      // FastAPI validation errors return detail as array of objects
+      if (Array.isArray(detail)) {
+        const messages = detail
+          .map((d) => (typeof d === "object" && d !== null && "msg" in d ? d.msg : String(d)))
+          .join("; ");
+        return Promise.reject(new Error(messages || "Validation error"));
+      }
+      // Fallback for unexpected object shapes
+      return Promise.reject(new Error(String(detail)));
     }
 
     if (!error.response) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
 
 const registerSchema = z.object({
@@ -34,11 +35,18 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { saveTokens } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/setup");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const {
     register: reg,
@@ -51,7 +59,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     if (submittingRef.current) return;
     submittingRef.current = true;
-    setIsLoading(true);
+    setIsSubmitting(true);
     setFormError(null);
 
     try {
@@ -60,7 +68,18 @@ export default function RegisterPage() {
         city: data.city || undefined,
       };
       const response = await authService.register(payload);
-      saveTokens(response.access_token, response.refresh_token);
+
+      // Mark tokens saved (resets _profileFetched so dashboard can hydrate)
+      useAuthStore.getState().saveTokens(response.access_token, response.refresh_token);
+
+      // Fetch profile immediately to hydrate user data before navigation
+      try {
+        const profile = await authService.getMe();
+        useAuthStore.getState().setUser(profile);
+      } catch {
+        // Profile fetch failed — dashboard's useAuth will retry on mount
+      }
+
       toast.success("Gym registered! Let\u2019s set things up.");
       router.push("/setup");
     } catch (err) {
@@ -70,7 +89,7 @@ export default function RegisterPage() {
       toast.error(message);
     } finally {
       submittingRef.current = false;
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -107,7 +126,7 @@ export default function RegisterPage() {
                   <Input
                     id="gym_name"
                     placeholder="Iron Paradise Gym"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     aria-invalid={!!errors.gym_name}
                     {...reg("gym_name", { onChange: () => setFormError(null) })}
                   />
@@ -121,7 +140,7 @@ export default function RegisterPage() {
                   <Input
                     id="owner_name"
                     placeholder="Rajesh Kumar"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     aria-invalid={!!errors.owner_name}
                     {...reg("owner_name", { onChange: () => setFormError(null) })}
                   />
@@ -136,7 +155,7 @@ export default function RegisterPage() {
                 <Input
                   id="phone"
                   placeholder="9876543210"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   aria-invalid={!!errors.phone}
                   {...reg("phone", { onChange: () => setFormError(null) })}
                 />
@@ -151,7 +170,7 @@ export default function RegisterPage() {
                   id="email"
                   type="email"
                   placeholder="rajesh@gmail.com"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   aria-invalid={!!errors.email}
                   {...reg("email", { onChange: () => setFormError(null) })}
                 />
@@ -166,7 +185,7 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     aria-invalid={!!errors.password}
                     {...reg("password", { onChange: () => setFormError(null) })}
                   />
@@ -174,8 +193,9 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    disabled={isLoading}
+                    aria-label={showPassword ? "Hide input" : "Show input"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    disabled={isSubmitting}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -187,12 +207,12 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="city">City (optional)</Label>
-                <Input id="city" placeholder="Mumbai" disabled={isLoading} {...reg("city")} />
+                <Input id="city" placeholder="Mumbai" disabled={isSubmitting} {...reg("city")} />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading} aria-busy={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-                {isLoading ? "Creating\u2026" : "Create Account"}
+              <Button type="submit" className="w-full" disabled={isSubmitting} aria-busy={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                {isSubmitting ? "Creating\u2026" : "Create Account"}
               </Button>
             </form>
 

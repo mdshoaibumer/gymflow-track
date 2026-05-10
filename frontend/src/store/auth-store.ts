@@ -8,8 +8,31 @@ import { TOKEN_KEY, REFRESH_KEY } from "@/lib/api";
  *
  * Tokens are stored in HttpOnly cookies (not accessible to JS).
  * Auth state is derived from the /auth/me server response.
- * localStorage is only used for one-time migration cleanup of legacy tokens.
+ * localStorage is only used for one-time migration cleanup of legacy tokens
+ * and cross-tab auth synchronization.
  */
+
+// BroadcastChannel for multi-tab auth sync
+const AUTH_CHANNEL_NAME = "gymflow:auth-sync";
+
+type AuthMessage =
+  | { type: "logout" }
+  | { type: "login"; user: CurrentUserResponse };
+
+let _authChannel: BroadcastChannel | null = null;
+
+function getAuthChannel(): BroadcastChannel | null {
+  if (typeof window === "undefined") return null;
+  if (!_authChannel) {
+    try {
+      _authChannel = new BroadcastChannel(AUTH_CHANNEL_NAME);
+    } catch {
+      // BroadcastChannel not supported (e.g., older browsers)
+      return null;
+    }
+  }
+  return _authChannel;
+}
 
 interface AuthState {
   // Session state — derived from /auth/me server response
@@ -64,6 +87,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
 
+    // Set up multi-tab auth sync listener
+    const channel = getAuthChannel();
+    if (channel) {
+      channel.onmessage = (event: MessageEvent<AuthMessage>) => {
+        const msg = event.data;
+        if (msg.type === "logout") {
+          set({
+            isAuthenticated: false,
+            token: null,
+            user: null,
+            role: null,
+            isOwner: false,
+            isAdminOrAbove: false,
+            _profileFetched: false,
+            isLoading: false,
+          });
+        } else if (msg.type === "login" && msg.user) {
+          set({
+            user: msg.user,
+            isAuthenticated: true,
+            token: "cookie-auth",
+            role: msg.user.role,
+            isOwner: msg.user.role === "owner",
+            isAdminOrAbove: msg.user.role === "owner" || msg.user.role === "admin",
+            isLoading: false,
+            _profileFetched: true,
+          });
+        }
+      };
+    }
+
     // Auth state will be determined by the /auth/me call in useAuth hook.
     // We stay in loading state until that call completes.
   },
@@ -78,6 +132,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAdminOrAbove: user.role === "owner" || user.role === "admin",
       isLoading: false,
     });
+
+    // Notify other tabs about login
+    const channel = getAuthChannel();
+    if (channel) {
+      try {
+        channel.postMessage({ type: "login", user } as AuthMessage);
+      } catch { /* channel closed */ }
+    }
   },
 
   setAuthenticated: () => {
@@ -87,12 +149,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   saveTokens: (_accessToken: string, _refreshToken: string) => {
     // Tokens are now in HttpOnly cookies — browser manages them.
     // This method exists for backward compatibility with login/register pages
-    // that call saveTokens after a successful response. We just mark as authenticated
-    // and let the subsequent /auth/me call hydrate the full profile.
+    // that call saveTokens after a successful response. We mark as authenticated
+    // and RESET _profileFetched so the dashboard's useAuth will call /auth/me
+    // to hydrate the full user profile.
     set({
       isAuthenticated: true,
       token: "cookie-auth",  // Sentinel for !!token checks in hooks
-      isLoading: false,
+      isLoading: true,  // Stay loading until /auth/me completes on dashboard
+      _profileFetched: false,  // Allow dashboard to fetch profile
     });
   },
 
@@ -102,6 +166,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
     }
+
+    // Notify other tabs about logout
+    const channel = getAuthChannel();
+    if (channel) {
+      try {
+        channel.postMessage({ type: "logout" } as AuthMessage);
+      } catch { /* channel closed */ }
+    }
+
     set({
       isAuthenticated: false,
       token: null,

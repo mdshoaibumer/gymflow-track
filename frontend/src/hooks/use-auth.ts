@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { authService } from "@/services/auth.service";
-import axios from "axios";
 
 /**
  * Auth hook backed by Zustand store + HttpOnly cookies.
@@ -20,9 +19,10 @@ export function useAuth() {
 
     const state = useAuthStore.getState();
 
-    // Skip /auth/me if profile was already fetched (prevents duplicate calls
-    // when multiple components mount useAuth simultaneously)
-    if (state._profileFetched) return;
+    // Skip /auth/me if profile was already fetched AND user data exists.
+    // This prevents duplicate calls when multiple components mount useAuth,
+    // but allows re-fetch after login (where _profileFetched was reset).
+    if (state._profileFetched && state.user) return;
     store.markProfileFetched();
 
     // Validate session with server — the HttpOnly cookie is sent automatically.
@@ -32,14 +32,10 @@ export function useAuth() {
       .then((profile) => {
         store.setUser(profile);
       })
-      .catch((err) => {
-        // 401 = no valid session cookie → not authenticated
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          store.logout();
-          return;
-        }
-        // Network/server errors: can't determine auth state, stop loading
-        store.setLoading(false);
+      .catch(() => {
+        // Any failure (401, network error, interceptor-wrapped error) means
+        // we cannot validate the session. Clear auth state and stop loading.
+        store.logout();
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

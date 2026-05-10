@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/auth-store";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -25,11 +26,18 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { saveTokens } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
+
+  // Redirect to dashboard if already authenticated (e.g., user navigated back to /login)
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const {
     register,
@@ -42,12 +50,25 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     if (submittingRef.current) return;
     submittingRef.current = true;
-    setIsLoading(true);
+    setIsSubmitting(true);
     setFormError(null);
 
     try {
       const response = await authService.login(data);
-      saveTokens(response.access_token, response.refresh_token);
+
+      // Mark tokens saved (resets _profileFetched so dashboard can hydrate)
+      useAuthStore.getState().saveTokens(response.access_token, response.refresh_token);
+
+      // Fetch profile immediately to hydrate user data before navigation.
+      // This ensures the dashboard has user data on mount.
+      try {
+        const profile = await authService.getMe();
+        useAuthStore.getState().setUser(profile);
+      } catch {
+        // Profile fetch failed — saveTokens already set isAuthenticated,
+        // dashboard's useAuth will retry on mount
+      }
+
       toast.success("Welcome back!");
       router.push("/dashboard");
     } catch (err) {
@@ -57,7 +78,7 @@ export default function LoginPage() {
       toast.error(message);
     } finally {
       submittingRef.current = false;
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -95,7 +116,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="owner@yourgym.com"
                   autoComplete="email"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "email-error" : undefined}
                   {...register("email", { onChange: () => setFormError(null) })}
@@ -113,7 +134,7 @@ export default function LoginPage() {
                   <Link
                     href="/forgot-password"
                     className="text-xs text-primary hover:underline"
-                    tabIndex={isLoading ? -1 : 0}
+                    tabIndex={isSubmitting ? -1 : 0}
                   >
                     Forgot password?
                   </Link>
@@ -123,7 +144,7 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                     aria-invalid={!!errors.password}
                     aria-describedby={errors.password ? "password-error" : undefined}
                     {...register("password", { onChange: () => setFormError(null) })}
@@ -132,8 +153,9 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    disabled={isLoading}
+                    aria-label={showPassword ? "Hide input" : "Show input"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    disabled={isSubmitting}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -152,13 +174,13 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
-                aria-busy={isLoading}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
               >
-                {isLoading && (
+                {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                 )}
-                {isLoading ? "Signing in\u2026" : "Sign In"}
+                {isSubmitting ? "Signing in\u2026" : "Sign In"}
               </Button>
             </form>
 
