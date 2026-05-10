@@ -37,7 +37,7 @@ export interface ImportPreview {
   valid: number;
   duplicates: number;
   invalid: number;
-  column_mappings?: Array<{
+  column_mappings: Array<{
     csv_column: string;
     target_field: string;
     confidence: number;

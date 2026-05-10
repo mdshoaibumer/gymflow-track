@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { authService } from "@/services/auth.service";
-import { onAuthRefreshed } from "@/lib/api";
 import axios from "axios";
 
 /**
@@ -26,7 +25,7 @@ export function useAuth() {
     store.markProfileFetched();
 
     authService
-      .getMe(token)
+      .getMe()
       .then((profile) => {
         store.setUser(profile);
       })
@@ -39,25 +38,6 @@ export function useAuth() {
         // Network/server errors: keep auth state from JWT but stop loading spinner
         store.setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Listen for transparent token refresh events from the API client
-  useEffect(() => {
-    return onAuthRefreshed((e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.accessToken) {
-        store.updateToken(detail.accessToken);
-        authService
-          .getMe(detail.accessToken)
-          .then(store.setUser)
-          .catch(() => {
-            // Profile refresh failed after token refresh — user data may be stale
-            // but auth state is still valid from the new token
-            store.setLoading(false);
-          });
-      }
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

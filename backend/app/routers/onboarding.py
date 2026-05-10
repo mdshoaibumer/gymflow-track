@@ -48,6 +48,7 @@ from app.services.onboarding_service import (
     get_onboarding_status,
     parse_csv_with_mapping,
     seed_demo_data,
+    get_pilot_metrics,
 )
 
 logger = logging.getLogger("gymflow.onboarding")
@@ -300,98 +301,4 @@ async def pilot_metrics(
     Owner-only. Shows gym-level usage for the current gym.
     NOT a cross-gym admin panel — that comes later.
     """
-    from app.models.member import Member, MembershipStatus
-    from app.models.payment import Payment
-    from app.models.attendance import Attendance
-    from app.models.notification import Notification
-    from app.models.asset import Asset
-    from app.models.feedback import Feedback as FeedbackModel
-    from datetime import datetime, timezone, timedelta
-
-    gym_id = current_user.gym_id
-    today = datetime.now(timezone.utc).date()
-    week_ago = today - timedelta(days=7)
-
-    # Members
-    total_members = (await db.execute(
-        select(func.count()).select_from(Member).where(Member.gym_id == gym_id)
-    )).scalar_one()
-
-    active_members = (await db.execute(
-        select(func.count()).select_from(Member).where(
-            Member.gym_id == gym_id,
-            Member.membership_status == MembershipStatus.ACTIVE,
-        )
-    )).scalar_one()
-
-    # Members added this week
-    members_this_week = (await db.execute(
-        select(func.count()).select_from(Member).where(
-            Member.gym_id == gym_id,
-            Member.created_at >= week_ago,
-        )
-    )).scalar_one()
-
-    # Payments this month
-    month_start = today.replace(day=1)
-    payments_this_month = (await db.execute(
-        select(func.count()).select_from(Payment).where(
-            Payment.gym_id == gym_id,
-            Payment.created_at >= month_start,
-        )
-    )).scalar_one()
-
-    # Attendance today
-    attendance_today = (await db.execute(
-        select(func.count()).select_from(Attendance).where(
-            Attendance.gym_id == gym_id,
-            Attendance.check_in_date == today,
-        )
-    )).scalar_one()
-
-    # Attendance this week
-    attendance_week = (await db.execute(
-        select(func.count()).select_from(Attendance).where(
-            Attendance.gym_id == gym_id,
-            Attendance.check_in_date >= week_ago,
-        )
-    )).scalar_one()
-
-    # Notifications
-    from app.models.notification import NotificationStatus
-    notifications_sent = (await db.execute(
-        select(func.count()).select_from(Notification).where(
-            Notification.gym_id == gym_id,
-            Notification.status == NotificationStatus.SENT,
-        )
-    )).scalar_one()
-
-    notifications_failed = (await db.execute(
-        select(func.count()).select_from(Notification).where(
-            Notification.gym_id == gym_id,
-            Notification.status == NotificationStatus.FAILED,
-        )
-    )).scalar_one()
-
-    # Equipment
-    equipment_count = (await db.execute(
-        select(func.count()).select_from(Asset).where(Asset.gym_id == gym_id)
-    )).scalar_one()
-
-    # Feedback count
-    feedback_count = (await db.execute(
-        select(func.count()).select_from(FeedbackModel).where(FeedbackModel.gym_id == gym_id)
-    )).scalar_one()
-
-    return {
-        "total_members": total_members,
-        "active_members": active_members,
-        "members_added_this_week": members_this_week,
-        "payments_this_month": payments_this_month,
-        "attendance_today": attendance_today,
-        "attendance_this_week": attendance_week,
-        "notifications_sent": notifications_sent,
-        "notifications_failed": notifications_failed,
-        "equipment_count": equipment_count,
-        "feedback_count": feedback_count,
-    }
+    return await get_pilot_metrics(db, current_user.gym_id)

@@ -5,18 +5,11 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000
 export const TOKEN_KEY = "gymflow_access_token";
 export const REFRESH_KEY = "gymflow_refresh_token";
 
-/** Custom events for auth state communication */
 export const AUTH_EXPIRED_EVENT = "gymflow:auth-expired";
-export const AUTH_REFRESHED_EVENT = "gymflow:auth-refreshed";
 
 export function onAuthExpired(callback: () => void): () => void {
   window.addEventListener(AUTH_EXPIRED_EVENT, callback);
   return () => window.removeEventListener(AUTH_EXPIRED_EVENT, callback);
-}
-
-export function onAuthRefreshed(callback: (e: Event) => void): () => void {
-  window.addEventListener(AUTH_REFRESHED_EVENT, callback);
-  return () => window.removeEventListener(AUTH_REFRESHED_EVENT, callback);
 }
 
 // ---------- Axios Instance ----------
@@ -27,10 +20,12 @@ export const api = axios.create({
   timeout: 15000,
 });
 
-// Request interceptor — attach token from localStorage
+// Request interceptor — attach token from Zustand store
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem(TOKEN_KEY);
+    // Lazy import to avoid circular dependency issues during SSR
+    const { useAuthStore } = require("@/store/auth-store");
+    const token = useAuthStore.getState().token;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -54,14 +49,9 @@ async function _attemptTokenRefresh(): Promise<string | null> {
 
     const data = response.data;
     if (data.access_token && data.refresh_token) {
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      localStorage.setItem(REFRESH_KEY, data.refresh_token);
-
       if (typeof window !== "undefined") {
-        const event = new CustomEvent(AUTH_REFRESHED_EVENT, {
-          detail: { accessToken: data.access_token, refreshToken: data.refresh_token },
-        });
-        window.dispatchEvent(event);
+        const { useAuthStore } = require("@/store/auth-store");
+        useAuthStore.getState().saveTokens(data.access_token, data.refresh_token);
       }
       return data.access_token;
     }
@@ -76,8 +66,10 @@ api.interceptors.response.use(
   async (error: AxiosError<{ detail?: string }>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // 401 — attempt transparent token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthRoute = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/auth/register");
+    
+    // 401 — attempt transparent token refresh (unless it's an auth route where 401 means invalid credentials)
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true;
 
       if (!_refreshPromise) {
@@ -122,8 +114,6 @@ api.interceptors.response.use(
 type RequestOptions = {
   method?: string;
   body?: unknown;
-  /** @deprecated Token is now managed by the request interceptor from localStorage. This param is ignored. */
-  token?: string;
   _skipRefresh?: boolean;
 };
 

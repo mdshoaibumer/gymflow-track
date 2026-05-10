@@ -14,15 +14,24 @@ export interface Gym {
 export interface GymUpdatePayload {
   name?: string;
   phone?: string;
-  email?: string;
-  address?: string;
-  city?: string;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
 }
 
 export const gymService = {
-  getMyGym: (token: string) =>
-    apiClient<Gym>("/gyms/me", { token }),
+  /**
+   * Retrieves the current user's gym profile.
+   * @returns A promise resolving to the gym details.
+   */
+  getMyGym: () =>
+    apiClient<Gym>("/gyms/me"),
 
-  updateMyGym: (token: string, data: GymUpdatePayload) =>
-    apiClient<Gym>("/gyms/me", { method: "PATCH", body: data, token }),
+  /**
+   * Updates the current user's gym profile.
+   * @param data - The gym update details.
+   * @returns A promise resolving to the updated gym details.
+   */
+  updateMyGym: (data: GymUpdatePayload) =>
+    apiClient<Gym>("/gyms/me", { method: "PATCH", body: data }),
 };

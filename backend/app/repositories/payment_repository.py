@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from app.models.payment import Payment, PaymentStatus
 
@@ -50,7 +50,7 @@ class PaymentRepository:
 
         result = await self.db.execute(
             query.order_by(Payment.payment_date.desc(), Payment.created_at.desc())
-            .options(joinedload(Payment.member))
+            .options(selectinload(Payment.member))
             .offset(skip)
             .limit(limit)
         )
@@ -122,7 +122,7 @@ class PaymentRepository:
         """Most recent payments for dashboard display. Eager-loads member to prevent N+1."""
         result = await self.db.execute(
             select(Payment)
-            .options(joinedload(Payment.member))
+            .options(selectinload(Payment.member))
             .where(
                 Payment.gym_id == gym_id,
                 Payment.payment_status == PaymentStatus.COMPLETED,

@@ -677,83 +677,36 @@ async def _create_invoice(
 ) -> Invoice:
     """Create an invoice with a concurrency-safe invoice number.
 
-    Uses SELECT ... FOR UPDATE SKIP LOCKED counting + retry on conflict to
-    prevent duplicate invoice numbers under concurrent requests.
-    Falls back to a UUID suffix after 3 retries.
+    Uses a UUID suffix for guaranteed uniqueness without table locking or
+    race conditions during concurrent requests.
     """
-    from sqlalchemy.exc import IntegrityError
-
     now = datetime.now(timezone.utc)
     month_str = now.strftime("%Y%m")
     invoice_id = uuid4()
     idempotency_key = f"{gym_id}:{month_str}:{invoice_id.hex[:8]}"
 
-    max_retries = 3
-    for attempt in range(max_retries):
-        # Count within transaction — safe with FOR UPDATE on the session's transaction
-        count = (await db.execute(
-            select(func.count()).select_from(Invoice).where(
-                Invoice.invoice_number.like(f"INV-{month_str}-%")
-            )
-        )).scalar_one()
+    invoice_number = f"INV-{month_str}-{invoice_id.hex[:8].upper()}"
 
-        invoice_number = f"INV-{month_str}-{count + 1:04d}"
+    invoice = Invoice(
+        id=invoice_id,
+        gym_id=gym_id,
+        subscription_id=subscription_id,
+        invoice_number=invoice_number,
+        amount_in_paise=amount_in_paise,
+        status=InvoiceStatus.PENDING,
+        period_start=period_start,
+        period_end=period_end,
+        idempotency_key=idempotency_key,
+        description=description,
+    )
+    db.add(invoice)
 
-        invoice = Invoice(
-            id=invoice_id,
-            gym_id=gym_id,
-            subscription_id=subscription_id,
-            invoice_number=invoice_number,
-            amount_in_paise=amount_in_paise,
-            status=InvoiceStatus.PENDING,
-            period_start=period_start,
-            period_end=period_end,
-            idempotency_key=idempotency_key,
-            description=description,
-        )
-        db.add(invoice)
-
-        try:
-            await db.flush()
-            logger.info(
-                "Invoice created: %s for %d paise (gym=%s)",
-                invoice_number, amount_in_paise, gym_id,
-            )
-            return invoice
-        except IntegrityError:
-            await db.rollback()
-            invoice_id = uuid4()  # New ID for retry
-            idempotency_key = f"{gym_id}:{month_str}:{invoice_id.hex[:8]}"
-            if attempt < max_retries - 1:
-                logger.warning(
-                    "Invoice number conflict on %s, retrying (attempt %d)",
-                    invoice_number, attempt + 1,
-                )
-                continue
-            # Final fallback: use UUID suffix for guaranteed uniqueness
-            invoice_number = f"INV-{month_str}-{invoice_id.hex[:8].upper()}"
-            invoice = Invoice(
-                id=invoice_id,
-                gym_id=gym_id,
-                subscription_id=subscription_id,
-                invoice_number=invoice_number,
-                amount_in_paise=amount_in_paise,
-                status=InvoiceStatus.PENDING,
-                period_start=period_start,
-                period_end=period_end,
-                idempotency_key=idempotency_key,
-                description=description,
-            )
-            db.add(invoice)
-            await db.flush()
-            logger.info(
-                "Invoice created (fallback): %s for %d paise (gym=%s)",
-                invoice_number, amount_in_paise, gym_id,
-            )
-            return invoice
-
-    # Unreachable, but satisfy type checker
-    raise RuntimeError("Invoice creation failed after retries")
+    await db.flush()
+    logger.info(
+        "Invoice created: %s for %d paise (gym=%s)",
+        invoice_number, amount_in_paise, gym_id,
+    )
+    return invoice
 
 
 # === Metrics ===

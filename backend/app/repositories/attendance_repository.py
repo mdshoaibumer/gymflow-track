@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
 
@@ -46,7 +46,7 @@ class AttendanceRepository:
         """Get today's attendance for a gym — reception desk view."""
         result = await self.db.execute(
             select(Attendance)
-            .options(joinedload(Attendance.member))
+            .options(selectinload(Attendance.member))
             .where(
                 Attendance.gym_id == gym_id,
                 Attendance.check_in_date == today,
@@ -131,7 +131,7 @@ class AttendanceRepository:
         """Get attendance history for a gym, optionally filtered by date range."""
         query = (
             select(Attendance)
-            .options(joinedload(Attendance.member))
+            .options(selectinload(Attendance.member))
             .where(
                 Attendance.gym_id == gym_id,
                 Attendance.status != AttendanceStatus.CANCELLED,
@@ -178,7 +178,7 @@ class AttendanceRepository:
         """Get most recent check-ins (for dashboard widget)."""
         result = await self.db.execute(
             select(Attendance)
-            .options(joinedload(Attendance.member))
+            .options(selectinload(Attendance.member))
             .where(
                 Attendance.gym_id == gym_id,
                 Attendance.status != AttendanceStatus.CANCELLED,

@@ -22,7 +22,7 @@ Security:
 import json
 import logging
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -206,15 +206,14 @@ async def verify_payment(
             message=e.detail,
         )
     except Exception as e:
-        # Unexpected system errors — log full traceback, return safe message
+        # Unexpected system errors — log full traceback, return 500
         logger.exception(
             "Unexpected error during payment verification for gym %s",
             current_user.gym_id,
         )
-        return PaymentVerifyResponse(
-            verified=False,
-            subscription_status="unknown",
-            message="Payment verification failed. Please contact support if this persists.",
+        raise HTTPException(
+            status_code=500,
+            detail="Payment verification failed due to an internal error. Please contact support if this persists.",
         )
 
 

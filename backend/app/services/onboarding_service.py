@@ -476,16 +476,7 @@ def parse_csv_with_mapping(
     }
 
 
-def parse_csv_preview(
-    csv_content: str,
-    gym_id: UUID,
-    existing_phones: set[str],
-) -> dict:
-    """
-    Legacy preview function — kept for backward compatibility.
-    Delegates to parse_csv_with_mapping with no overrides.
-    """
-    return parse_csv_with_mapping(csv_content, gym_id, existing_phones)
+
 
 
 async def commit_csv_import(
@@ -530,7 +521,7 @@ async def commit_csv_import(
                 try:
                     gender_val = Gender(row["gender"])
                 except ValueError:
-                    pass  # Skip invalid gender, don't block import
+                    logger.warning(f"Invalid gender '{row['gender']}' for row {row['row_number']}, defaulting to None")
 
             # Parse amount (already in paise from parse_csv_with_mapping, or raw string from legacy)
             amount = 0
@@ -615,3 +606,103 @@ def _parse_date(value: str | None) -> date | None:
         except (ValueError, TypeError):
             continue
     return None
+
+
+async def get_pilot_metrics(db: AsyncSession, gym_id: UUID) -> dict:
+    """
+    Internal operational metrics for pilot monitoring.
+    Owner-only. Shows gym-level usage for the current gym.
+    """
+    from app.models.member import Member, MembershipStatus
+    from app.models.payment import Payment
+    from app.models.attendance import Attendance
+    from app.models.notification import Notification, NotificationStatus
+    from app.models.asset import Asset
+    from app.models.feedback import Feedback as FeedbackModel
+    from datetime import datetime, timezone, timedelta
+
+    today = datetime.now(timezone.utc).date()
+    week_ago = today - timedelta(days=7)
+
+    # Members
+    total_members = (await db.execute(
+        select(func.count()).select_from(Member).where(Member.gym_id == gym_id)
+    )).scalar_one()
+
+    active_members = (await db.execute(
+        select(func.count()).select_from(Member).where(
+            Member.gym_id == gym_id,
+            Member.membership_status == MembershipStatus.ACTIVE,
+        )
+    )).scalar_one()
+
+    # Members added this week
+    members_this_week = (await db.execute(
+        select(func.count()).select_from(Member).where(
+            Member.gym_id == gym_id,
+            Member.created_at >= week_ago,
+        )
+    )).scalar_one()
+
+    # Payments this month
+    month_start = today.replace(day=1)
+    payments_this_month = (await db.execute(
+        select(func.count()).select_from(Payment).where(
+            Payment.gym_id == gym_id,
+            Payment.created_at >= month_start,
+        )
+    )).scalar_one()
+
+    # Attendance today
+    attendance_today = (await db.execute(
+        select(func.count()).select_from(Attendance).where(
+            Attendance.gym_id == gym_id,
+            Attendance.check_in_date == today,
+        )
+    )).scalar_one()
+
+    # Attendance this week
+    attendance_week = (await db.execute(
+        select(func.count()).select_from(Attendance).where(
+            Attendance.gym_id == gym_id,
+            Attendance.check_in_date >= week_ago,
+        )
+    )).scalar_one()
+
+    # Notifications
+    notifications_sent = (await db.execute(
+        select(func.count()).select_from(Notification).where(
+            Notification.gym_id == gym_id,
+            Notification.status == NotificationStatus.SENT,
+        )
+    )).scalar_one()
+
+    notifications_failed = (await db.execute(
+        select(func.count()).select_from(Notification).where(
+            Notification.gym_id == gym_id,
+            Notification.status == NotificationStatus.FAILED,
+        )
+    )).scalar_one()
+
+    # Equipment
+    equipment_count = (await db.execute(
+        select(func.count()).select_from(Asset).where(Asset.gym_id == gym_id)
+    )).scalar_one()
+
+    # Feedback count
+    feedback_count = (await db.execute(
+        select(func.count()).select_from(FeedbackModel).where(FeedbackModel.gym_id == gym_id)
+    )).scalar_one()
+
+    return {
+        "total_members": total_members,
+        "active_members": active_members,
+        "members_added_this_week": members_this_week,
+        "payments_this_month": payments_this_month,
+        "attendance_today": attendance_today,
+        "attendance_this_week": attendance_week,
+        "notifications_sent": notifications_sent,
+        "notifications_failed": notifications_failed,
+        "equipment_count": equipment_count,
+        "feedback_count": feedback_count,
+    }

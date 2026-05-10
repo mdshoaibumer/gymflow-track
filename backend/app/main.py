@@ -101,19 +101,26 @@ app = FastAPI(
 # Domain exception → HTTP response mapping
 app.add_exception_handler(GymFlowException, gymflow_exception_handler)
 
-# Middleware stack — Starlette adds middleware in REVERSE order (last added = outermost).
-# Desired execution order (outermost → innermost):
-#   RequestContext → SecurityHeaders → RateLimit → CORS → SubscriptionEnforcement → BodySizeLimit → Route
+# Middleware stack configuration
+# IMPORTANT: Starlette processes middleware in REVERSE order of addition (LIFO).
+# The desired execution flow for an incoming request is:
+# 1. RequestContext (Assigns correlation IDs, starts timer)
+# 2. SecurityHeaders (Adds HSTS, CSP, etc.)
+# 3. RateLimit (Protects against brute-force/DoS)
+# 4. CORS (Handles cross-origin resource sharing)
+# 5. SubscriptionEnforcement (Validates gym subscription status)
+# 6. BodySizeLimit (Rejects large payloads)
+# 7. Application Router (Core logic)
 #
-# Therefore, add in REVERSE of desired execution order:
+# To achieve this, we add them in the following order (innermost to outermost):
 
-# 6. Body size limit — reject oversized payloads (1 MB) [innermost]
+# [Innermost] 6. Body size limit — protection against oversized requests
 app.add_middleware(BodySizeLimitMiddleware)
 
-# 5. Subscription enforcement — blocks writes for expired/locked gyms
+# 5. Subscription enforcement — business logic gating based on billing status
 app.add_middleware(SubscriptionEnforcementMiddleware)
 
-# 4. CORS — handles preflight and cross-origin
+# 4. CORS — cross-origin support (handled before rate limiting to allow preflights)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -122,13 +129,13 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
-# 3. Rate limiting — brute-force protection
+# 3. Rate limiting — security layer to prevent abuse
 app.add_middleware(RateLimitMiddleware)
 
-# 2. Security headers — nosniff, frame protection, etc.
+# 2. Security headers — industry standard security headers (OWASP recommended)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 1. Request context — correlation IDs, timing, logging [outermost]
+# [Outermost] 1. Request context — ensures tracing/logging consistency for the entire request lifecycle
 app.add_middleware(RequestContextMiddleware)
 
 # Routers

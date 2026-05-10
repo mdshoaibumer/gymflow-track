@@ -6,16 +6,14 @@ Strategy:
 - All queries use indexed columns (gym_id, payment_date, membership_status)
 - Results are integers/counts — no object loading overhead
 - Called once per dashboard load, not per-card
-- Independent queries run in parallel with separate DB sessions
+- Queries run sequentially on a single safe DB session
 """
 
-import asyncio
 from datetime import date
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import async_session_factory
 from app.models.member import MembershipStatus
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
@@ -42,54 +40,14 @@ class DashboardService:
     #
     # ************************************************************
     async def get_metrics(self, gym_id: UUID) -> DashboardMetrics:
-        """
-        Compute all dashboard metrics with parallel queries.
+        # Compute all dashboard metrics with parallel queries.
 
-        Each query runs in its own DB session to avoid sharing a single
-        AsyncSession across concurrent coroutines (which is unsafe).
-        """
-        today = today_ist()
-        month_start = today.replace(day=1)
-
-        async def _count_total() -> int:
-            async with async_session_factory() as s:
-                return await MemberRepository(s).count_by_gym(gym_id)
-
-        async def _count_active() -> int:
-            async with async_session_factory() as s:
-                return await MemberRepository(s).count_by_status(gym_id, MembershipStatus.ACTIVE)
-
-        async def _count_expiring() -> int:
-            async with async_session_factory() as s:
-                return await MemberRepository(s).count_expiring_soon(gym_id, within_days=7)
-
-        async def _count_expired() -> int:
-            async with async_session_factory() as s:
-                return await MemberRepository(s).count_by_status(gym_id, MembershipStatus.EXPIRED)
-
-        async def _count_pending() -> int:
-            async with async_session_factory() as s:
-                return await PaymentRepository(s).count_pending(gym_id)
-
-        async def _sum_revenue() -> int:
-            async with async_session_factory() as s:
-                return await PaymentRepository(s).sum_revenue(gym_id, month_start, today)
-
-        (
-            total_members,
-            active_members,
-            expiring_soon,
-            expired_members,
-            pending_dues,
-            monthly_revenue,
-        ) = await asyncio.gather(
-            _count_total(),
-            _count_active(),
-            _count_expiring(),
-            _count_expired(),
-            _count_pending(),
-            _sum_revenue(),
-        )
+        total_members = await self.member_repo.count_by_gym(gym_id)
+        active_members = await self.member_repo.count_by_status(gym_id, MembershipStatus.ACTIVE)
+        expiring_soon = await self.member_repo.count_expiring_soon(gym_id, within_days=7)
+        expired_members = await self.member_repo.count_by_status(gym_id, MembershipStatus.EXPIRED)
+        pending_dues = await self.payment_repo.count_pending(gym_id)
+        monthly_revenue = await self.payment_repo.sum_revenue(gym_id, month_start, today)
 
         return DashboardMetrics(
             total_members=total_members,
