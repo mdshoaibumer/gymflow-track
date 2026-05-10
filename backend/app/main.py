@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import async_session_factory
-from app.core.exception_handlers import gymflow_exception_handler
+from app.core.exception_handlers import gymflow_exception_handler, unhandled_exception_handler
 from app.core.exceptions import GymFlowException
 from app.core.logging_config import setup_logging
 from app.core.scheduler import start_scheduler, stop_scheduler, configure_provider
@@ -100,6 +100,8 @@ app = FastAPI(
 
 # Domain exception → HTTP response mapping
 app.add_exception_handler(GymFlowException, gymflow_exception_handler)
+# Catch-all for unhandled exceptions — prevents stack trace leakage to clients
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 # Middleware stack configuration
 # IMPORTANT: Starlette processes middleware in REVERSE order of addition (LIFO).
@@ -124,12 +126,16 @@ app.add_middleware(SubscriptionEnforcementMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
 # 3. CORS — cross-origin support (outer relative to RateLimit so 429 gets CORS headers)
+# allow_credentials=True is required for HttpOnly cookie auth.
+# NOTE: When allow_credentials=True, allow_origins CANNOT be ["*"].
+# Each origin must be explicitly listed (enforced by browser spec).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    expose_headers=["X-Request-ID"],
 )
 
 # 2. Security headers — industry standard security headers (OWASP recommended)

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cookies import ACCESS_COOKIE, REFRESH_COOKIE, clear_auth_cookies, set_auth_cookies
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
 from app.schemas.auth import (
@@ -23,35 +24,68 @@ router = APIRouter()
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register_gym(
     data: GymRegisterRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     """Register a new gym and create the owner account."""
     service = AuthService(db)
-    return await service.register_gym(data)
+    result = await service.register_gym(data)
+    # Set HttpOnly cookies — frontend doesn't need to touch tokens
+    set_auth_cookies(response, result.access_token, result.refresh_token)
+    return result
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
     data: LoginRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     """Authenticate user and return tokens."""
     service = AuthService(db)
-    return await service.login(data)
+    result = await service.login(data)
+    set_auth_cookies(response, result.access_token, result.refresh_token)
+    return result
 
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
-    data: RefreshRequest,
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get new access token using refresh token (with rotation)."""
+    """Get new access token using refresh token (with rotation).
+
+    Accepts refresh token from:
+    1. HttpOnly cookie (preferred — browser-based clients)
+    2. Request body (backward compat — mobile/API clients)
+    """
+    # Prefer cookie-based refresh token, fall back to body
+    refresh_tok = request.cookies.get(REFRESH_COOKIE)
+
+    if not refresh_tok:
+        # Try reading from request body (backward compat for non-browser clients)
+        try:
+            body = await request.json()
+            refresh_tok = body.get("refresh_token") if isinstance(body, dict) else None
+        except Exception:
+            pass
+
+    if not refresh_tok:
+        from app.core.exceptions import AuthenticationError
+        raise AuthenticationError("No refresh token provided")
+
     service = AuthService(db)
-    return await service.refresh_token(data)
+    refresh_data = RefreshRequest(refresh_token=refresh_tok)
+    result = await service.refresh_token(refresh_data)
+    set_auth_cookies(response, result.access_token, result.refresh_token)
+    return result
 
 
 @router.post("/logout", status_code=200)
 async def logout(
+    request: Request,
+    response: Response,
     data: LogoutRequest | None = None,
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -59,15 +93,24 @@ async def logout(
     """
     Revoke refresh tokens and terminate sessions.
 
-    If refresh_token is provided in the body, revokes only that token
+    If refresh_token is provided (body or cookie), revokes only that token
     (single-device logout). Otherwise, revokes ALL refresh tokens
     (logout all devices).
     """
+    # Prefer body token, then cookie, then None (revoke all)
+    refresh_tok = None
+    if data and data.refresh_token:
+        refresh_tok = data.refresh_token
+    elif request.cookies.get(REFRESH_COOKIE):
+        refresh_tok = request.cookies.get(REFRESH_COOKIE)
+
     service = AuthService(db)
     await service.logout(
         user_id=current_user.user_id,
-        refresh_token=data.refresh_token if data else None,
+        refresh_token=refresh_tok,
     )
+    # Clear HttpOnly cookies from browser
+    clear_auth_cookies(response)
     return {"message": "Logged out successfully"}
 
 

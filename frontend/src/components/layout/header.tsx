@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Menu, LogOut, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUIStore } from "@/store/ui-store";
+import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +24,8 @@ export function Header() {
   const { toggleSidebar } = useUIStore();
 
   const handleLogout = () => {
+    // Call server to clear HttpOnly cookies and revoke tokens
+    authService.logout().catch(() => {});
     logout();
     router.push("/login");
   };

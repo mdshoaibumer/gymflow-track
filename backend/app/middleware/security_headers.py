@@ -36,18 +36,35 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "0"
         # Prevent browsers/proxies from caching authenticated API responses
         response.headers["Cache-Control"] = "no-store"
-        # CSP: restrict resource loading to same-origin
-        # Only apply to non-API routes (e.g. docs, redoc, health) as it can block
-        # cross-origin API calls from the frontend even with CORS enabled.
+
+        # CSP policy: restrict resource loading.
+        # API routes don't need CSP (consumed by JS clients, not rendered in browser).
+        # Swagger/ReDoc docs need cdn.jsdelivr.net for UI assets.
+        # All other routes get strict same-origin CSP.
         if not request.url.path.startswith("/api/"):
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data:; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'"
-            )
+            is_docs = request.url.path in ("/docs", "/redoc", "/openapi.json") or \
+                      request.url.path.startswith("/docs/") or request.url.path.startswith("/redoc/")
+            if is_docs:
+                # Swagger UI / ReDoc: allow CDN assets (FastAPI default swagger CDN)
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                    "img-src 'self' data: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
+                    "font-src 'self' https://cdn.jsdelivr.net; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'none'; "
+                    "worker-src 'self' blob:"
+                )
+            else:
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data:; "
+                    "font-src 'self'; "
+                    "connect-src 'self'; "
+                    "frame-ancestors 'none'"
+                )
 
         return response

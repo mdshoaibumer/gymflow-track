@@ -9,6 +9,7 @@ import { FeedbackWidget } from "@/components/feedback-widget";
 import { BillingBanner } from "@/components/billing-banner";
 import { useAuth } from "@/hooks/use-auth";
 import { onAuthExpired } from "@/lib/api";
+import { authService } from "@/services/auth.service";
 
 export default function DashboardLayout({
   children,
@@ -29,6 +30,8 @@ export default function DashboardLayout({
   // Listen for 401 responses from API client — auto-logout on session expiry
   useEffect(() => {
     return onAuthExpired(() => {
+      // Server-side logout to clear HttpOnly cookies (best-effort)
+      authService.logout().catch(() => {});
       logout();
       router.replace("/login");
     });

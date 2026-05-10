@@ -107,10 +107,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         - Enable TRUST_PROXY_HEADERS=true
         - X-Forwarded-For contains the real client IP
         - request.client.host is the proxy IP
+
+        Header priority:
+        1. X-Real-IP (set by nginx, Cloudflare)
+        2. X-Forwarded-For (standard proxy header, first entry = client)
+        3. request.client.host (direct connection / fallback)
         """
         if settings.TRUST_PROXY_HEADERS:
+            # X-Real-IP is more reliable when set by a trusted reverse proxy
+            real_ip = request.headers.get("x-real-ip")
+            if real_ip:
+                return real_ip.strip()
             forwarded = request.headers.get("x-forwarded-for")
             if forwarded:
-                # X-Forwarded-For: client, proxy1, proxy2 — take the first
-                return forwarded.split(",")[0].strip()
+                # X-Forwarded-For: client, proxy1, proxy2 — take the first (leftmost)
+                client_ip = forwarded.split(",")[0].strip()
+                # Basic validation: reject obviously spoofed values
+                if client_ip and client_ip not in ("", "unknown"):
+                    return client_ip
         return request.client.host if request.client else "unknown"

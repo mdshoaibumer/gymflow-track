@@ -44,15 +44,27 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # === Cookie Security ===
+    # HttpOnly cookies prevent JavaScript access (mitigates XSS token theft).
+    # Secure=True requires HTTPS (auto-disabled in development for localhost).
+    # SameSite=Lax allows top-level navigations while blocking CSRF on POST.
+    COOKIE_SECURE: bool = False  # Set True in production (HTTPS required)
+    COOKIE_SAMESITE: str = "lax"  # "lax" or "strict"
+    COOKIE_DOMAIN: str = ""  # Empty = browser default; set to ".yourdomain.com" in production
+
     # === CORS ===
-    CORS_ORIGINS: str = "http://localhost:3000"
+    # Comma-separated origins. Include both localhost and 127.0.0.1 for local dev.
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # === Rate Limiting ===
     RATE_LIMIT_AUTH: int = 10  # login/register attempts per minute per IP
     RATE_LIMIT_API: int = 100  # general API requests per minute per IP
 
     # === Proxy ===
-    TRUST_PROXY_HEADERS: bool = False  # Only enable in production behind reverse proxy
+    # Enable in production behind reverse proxy (Railway/Render/Fly/nginx).
+    # When true, X-Forwarded-For and X-Real-IP headers are trusted for
+    # client IP extraction (affects rate limiting and audit logging).
+    TRUST_PROXY_HEADERS: bool = False
 
     # === WhatsApp ===
     WHATSAPP_PROVIDER: str = "log_only"  # "log_only" | "aisensy"
@@ -141,6 +153,21 @@ class Settings(BaseSettings):
             )
         if self.is_production and not self.RAZORPAY_WEBHOOK_SECRET:
             warnings.append("RAZORPAY_WEBHOOK_SECRET not set — webhook verification will fail.")
+
+        # --- Proxy headers ---
+        if self.is_production and not self.TRUST_PROXY_HEADERS:
+            warnings.append(
+                "TRUST_PROXY_HEADERS=false in production. If behind a reverse proxy "
+                "(Railway/Render/Fly), set TRUST_PROXY_HEADERS=true so rate limiting "
+                "and audit logs use the real client IP instead of the proxy IP."
+            )
+
+        # --- Cookie security ---
+        if self.is_production and not self.COOKIE_SECURE:
+            errors.append(
+                "COOKIE_SECURE=false in production. HttpOnly auth cookies must have "
+                "Secure flag enabled (requires HTTPS). Set COOKIE_SECURE=true."
+            )
 
         # --- Emit warnings ---
         for w in warnings:

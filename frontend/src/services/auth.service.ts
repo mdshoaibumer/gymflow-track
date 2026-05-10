@@ -35,35 +35,28 @@ let getMePromise: Promise<CurrentUserResponse> | null = null;
 export const authService = {
   /**
    * Authenticates a user with email and password.
-   * @param data - The login credentials (email and password).
-   * @returns A promise resolving to the token response (access and refresh tokens).
+   * Server sets HttpOnly cookies in the response — no manual token handling needed.
    */
   login: (data: LoginPayload) =>
     apiClient<TokenResponse>("/auth/login", { method: "POST", body: data }),
 
   /**
    * Registers a new gym and its owner.
-   * @param data - The registration details.
-   * @returns A promise resolving to the token response.
+   * Server sets HttpOnly cookies in the response.
    */
   register: (data: RegisterPayload) =>
     apiClient<TokenResponse>("/auth/register", { method: "POST", body: data }),
 
   /**
-   * Refreshes the access token using a refresh token.
-   * @param refresh_token - The refresh token.
-   * @returns A promise resolving to the new token response.
+   * Refreshes the access token using the HttpOnly refresh cookie.
+   * No body payload needed — the cookie is sent automatically by the browser.
    */
-  refresh: (refresh_token: string) =>
-    apiClient<TokenResponse>("/auth/refresh", {
-      method: "POST",
-      body: { refresh_token },
-    }),
+  refresh: () =>
+    apiClient<TokenResponse>("/auth/refresh", { method: "POST" }),
 
   /** 
-   * Validates the current token server-side and retrieves the user profile.
+   * Validates the current session via HttpOnly cookie and retrieves the user profile.
    * Deduplicates concurrent calls to prevent redundant network requests.
-   * @returns A promise resolving to the current user's profile information.
    */
   getMe: () => {
     if (!getMePromise) {
@@ -75,9 +68,13 @@ export const authService = {
   },
 
   /**
+   * Logs out the current session. Server clears HttpOnly cookies.
+   */
+  logout: () =>
+    apiClient<{ message: string }>("/auth/logout", { method: "POST" }),
+
+  /**
    * Initiates the forgot password flow by sending a reset link to the provided email.
-   * @param email - The user's email address.
-   * @returns A promise resolving to a success message.
    */
   forgotPassword: (email: string) =>
     apiClient<{ message: string }>("/auth/forgot-password", {
@@ -87,9 +84,6 @@ export const authService = {
 
   /**
    * Resets the user's password using a reset token.
-   * @param token - The password reset token from the email.
-   * @param new_password - The new password to set.
-   * @returns A promise resolving to a success message.
    */
   resetPassword: (token: string, new_password: string) =>
     apiClient<{ message: string }>("/auth/reset-password", {

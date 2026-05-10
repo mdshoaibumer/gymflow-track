@@ -78,6 +78,7 @@ class AuthService:
         # Note: email uniqueness is per-gym (UniqueConstraint gym_id+email).
         # We don't block registration globally — the DB constraint handles
         # same-email-same-gym collisions via IntegrityError below.
+        logger.info(f"Registration attempt for gym '{data.gym_name}' with email {data.email}")
 
         # Generate slug from gym name
         slug = self._generate_slug(data.gym_name)
@@ -127,6 +128,7 @@ class AuthService:
             # Let get_db() handle rollback — just raise the domain error.
             # Inspect constraint name to give an accurate error message.
             constraint = getattr(e.orig, "constraint_name", "") or str(e.orig)
+            logger.warning(f"Registration failed for email {data.email}: IntegrityError ({constraint})")
             if "slug" in constraint:
                 raise AlreadyExistsError("Gym name too similar to existing gym — please choose a different name")
             raise AlreadyExistsError("Email already registered")
@@ -139,6 +141,7 @@ class AuthService:
             # No user found — run a dummy bcrypt check to prevent timing
             # side-channel that reveals whether an email is registered.
             verify_password(data.password, _DUMMY_HASH)
+            logger.warning(f"Login failed: email not found (email={data.email})")
             raise AuthenticationError("Invalid email or password")
 
         user = None
@@ -148,15 +151,18 @@ class AuthService:
                 break
 
         if not user:
+            logger.warning(f"Login failed: invalid password (email={data.email})")
             raise AuthenticationError("Invalid email or password")
 
         if not user.is_active:
+            logger.warning(f"Login failed: account disabled (user_id={user.id})")
             raise AccountDisabledError("Account is disabled")
 
         access_token = create_access_token(user.id, user.gym_id, user.role.value)
         raw_refresh = create_refresh_token(user.id, user.gym_id, user.role.value)
         await self._store_refresh_token(user.id, raw_refresh)
 
+        logger.info(f"Login successful (user_id={user.id}, gym_id={user.gym_id})")
         return TokenResponse(
             access_token=access_token,
             refresh_token=raw_refresh,

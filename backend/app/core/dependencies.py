@@ -1,14 +1,17 @@
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.cache import get_cache_backend
+from app.core.cookies import ACCESS_COOKIE
 from app.core.security import decode_token
 from app.middleware.request_context import set_tenant_context
 from app.models.user import UserRole
 
-security_scheme = HTTPBearer()
+# Optional bearer scheme — does not reject requests missing the header,
+# allowing cookie-based auth to work as a fallback.
+security_scheme = HTTPBearer(auto_error=False)
 
 _USER_CACHE_TTL = 60  # seconds
 
@@ -31,14 +34,34 @@ class CurrentUser:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
 ) -> CurrentUser:
     """Extract and validate the current user from the JWT access token.
+
+    Token resolution order:
+    1. Authorization: Bearer <token> header (API clients, mobile apps)
+    2. HttpOnly cookie (browser-based clients)
 
     Additionally checks a lightweight cache to detect disabled/deleted users
     within ~60 seconds of account changes (instead of only on token expiry).
     """
-    token = credentials.credentials
+    token = None
+
+    # 1. Try Authorization header first (explicit wins over implicit)
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+
+    # 2. Fall back to HttpOnly cookie
+    if not token:
+        token = request.cookies.get(ACCESS_COOKIE)
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
     payload = decode_token(token)
 
     if payload is None or payload.get("type") != "access":

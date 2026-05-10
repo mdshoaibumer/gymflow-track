@@ -8,28 +8,39 @@ Changes:
 3. refresh_tokens.replaced_by_hash — pointer to the replacement token hash
    so concurrent multi-tab refreshes can look up the new token pair.
 
-All operations are additive (ADD COLUMN, CREATE INDEX) and safe for
-production deployment with zero downtime. No data migration required.
+All operations are idempotent (IF NOT EXISTS / column existence checks) and
+safe for production deployment with zero downtime. No data migration required.
 
-Revision ID: 012_payment_idempotency_and_token_grace
+Revision ID: 012_pay_idem_token_grace
 Revises: 011_partial_unique_indexes
 Create Date: 2026-05-10 00:00:00.000000
+
+NOTE: Revision ID shortened from '012_payment_idempotency_and_token_grace'
+to '012_pay_idem_token_grace' to fit within alembic_version.version_num
+VARCHAR(32) column limit. See env.py for automatic column-width safeguard.
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = "012_payment_idempotency_and_token_grace"
+revision = "012_pay_idem_token_grace"
 down_revision = "011_partial_unique_indexes"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    # --- Payment idempotency key ---
-    op.add_column(
-        "payments",
-        sa.Column("idempotency_key", sa.String(64), nullable=True),
-    )
+    conn = op.get_bind()
+
+    # --- Payment idempotency key (idempotent: skip if column exists) ---
+    result = conn.execute(sa.text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'payments' AND column_name = 'idempotency_key'"
+    ))
+    if not result.fetchone():
+        op.add_column(
+            "payments",
+            sa.Column("idempotency_key", sa.String(64), nullable=True),
+        )
     # Partial unique index: only enforced when key is present.
     # Scoped per gym so different tenants can independently use keys.
     op.execute(
@@ -38,15 +49,26 @@ def upgrade() -> None:
         "WHERE idempotency_key IS NOT NULL"
     )
 
-    # --- Refresh token grace-period columns ---
-    op.add_column(
-        "refresh_tokens",
-        sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-    )
-    op.add_column(
-        "refresh_tokens",
-        sa.Column("replaced_by_hash", sa.String(64), nullable=True),
-    )
+    # --- Refresh token grace-period columns (idempotent: skip if exists) ---
+    result = conn.execute(sa.text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'refresh_tokens' AND column_name = 'revoked_at'"
+    ))
+    if not result.fetchone():
+        op.add_column(
+            "refresh_tokens",
+            sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
+        )
+
+    result = conn.execute(sa.text(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = 'refresh_tokens' AND column_name = 'replaced_by_hash'"
+    ))
+    if not result.fetchone():
+        op.add_column(
+            "refresh_tokens",
+            sa.Column("replaced_by_hash", sa.String(64), nullable=True),
+        )
 
 
 def downgrade() -> None:
