@@ -16,7 +16,7 @@ export function useMembers(
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["members", params],
-    queryFn: () => memberService.list(token!, params),
+    queryFn: () => memberService.list(params),
     enabled: !!token && (options?.enabled ?? true),
     staleTime: 15_000,
   });
@@ -26,18 +26,17 @@ export function useMember(id: string) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["members", id],
-    queryFn: () => memberService.get(token!, id),
+    queryFn: () => memberService.get(id),
     enabled: !!token && !!id,
     staleTime: 30_000,
   });
 }
 
 export function useCreateMember() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateMemberPayload) =>
-      memberService.create(token!, payload),
+      memberService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -50,12 +49,11 @@ export function useCreateMember() {
 }
 
 export function useUpdateMember() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateMemberPayload }) =>
-      memberService.replace(token!, id, data),
-    onSuccess: () => {
+      memberService.replace(id, data),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       toast.success("Member updated successfully");
     },
@@ -69,7 +67,7 @@ export function useDeleteMember() {
   const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => memberService.delete(token!, id),
+    mutationFn: (id: string) => memberService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

@@ -90,7 +90,7 @@ export interface ListAssetsParams {
 }
 
 export const assetService = {
-  list: (token: string, params: ListAssetsParams = {}) => {
+  list: (params: ListAssetsParams = {}) => {
     const { skip = 0, limit = 50, status, category, search } = params;
     const query = new URLSearchParams({
       skip: String(skip),
@@ -99,57 +99,52 @@ export const assetService = {
     if (status) query.set("status", status);
     if (category) query.set("category", category);
     if (search) query.set("search", search);
-    return apiClient<AssetListResponse>(`/assets?${query}`, { token });
+    return apiClient<AssetListResponse>(`/assets?${query}`);
   },
 
-  get: (token: string, id: string) =>
-    apiClient<Asset>(`/assets/${id}`, { token }),
+  get: (id: string) =>
+    apiClient<Asset>(`/assets/${id}`),
 
-  create: (token: string, data: CreateAssetPayload) =>
-    apiClient<Asset>("/assets", { method: "POST", body: data, token }),
+  create: (data: CreateAssetPayload) =>
+    apiClient<Asset>("/assets", { method: "POST", body: data }),
 
-  update: (token: string, id: string, data: Partial<CreateAssetPayload>) =>
-    apiClient<Asset>(`/assets/${id}`, { method: "PUT", body: data, token }),
+  update: (id: string, data: Partial<CreateAssetPayload>) =>
+    apiClient<Asset>(`/assets/${id}`, { method: "PUT", body: data }),
 
-  updateStatus: (token: string, id: string, status: AssetStatus) =>
+  updateStatus: (id: string, status: AssetStatus) =>
     apiClient<Asset>(`/assets/${id}/status`, {
       method: "PUT",
       body: { status },
-      token,
     }),
 
-  completeMaintenance: (token: string, id: string) =>
+  completeMaintenance: (id: string) =>
     apiClient<Asset>(`/assets/${id}/complete-maintenance`, {
       method: "POST",
-      token,
     }),
 
-  delete: (token: string, id: string) =>
-    apiClient<void>(`/assets/${id}`, { method: "DELETE", token }),
+  delete: (id: string) =>
+    apiClient<void>(`/assets/${id}`, { method: "DELETE" }),
 
-  stats: (token: string) =>
-    apiClient<AssetDashboardStats>("/assets/stats", { token }),
+  stats: () =>
+    apiClient<AssetDashboardStats>("/assets/stats"),
 
   // Maintenance
-  recordMaintenance: (token: string, assetId: string, data: CreateMaintenancePayload) =>
+  recordMaintenance: (assetId: string, data: CreateMaintenancePayload) =>
     apiClient<MaintenanceRecord>(`/assets/${assetId}/maintenance`, {
       method: "POST",
       body: data,
-      token,
     }),
 
-  getMaintenanceHistory: (token: string, assetId: string, skip = 0, limit = 20) =>
+  getMaintenanceHistory: (assetId: string, skip = 0, limit = 20) =>
     apiClient<MaintenanceListResponse>(
-      `/assets/${assetId}/maintenance?skip=${skip}&limit=${limit}`,
-      { token }
+      `/assets/${assetId}/maintenance?skip=${skip}&limit=${limit}`
     ),
 
-  getUpcomingMaintenance: (token: string, days = 30) =>
+  getUpcomingMaintenance: (days = 30) =>
     apiClient<MaintenanceListResponse>(
-      `/assets/maintenance/upcoming?days=${days}`,
-      { token }
+      `/assets/maintenance/upcoming?days=${days}`
     ),
 
-  getOverdueMaintenance: (token: string) =>
-    apiClient<MaintenanceListResponse>("/assets/maintenance/overdue", { token }),
+  getOverdueMaintenance: () =>
+    apiClient<MaintenanceListResponse>("/assets/maintenance/overdue"),
 };

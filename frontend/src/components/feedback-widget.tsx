@@ -29,7 +29,7 @@ export function FeedbackWidget() {
     setSending(true);
     setError(null);
     try {
-      await onboardingService.submitFeedback(token, {
+      await onboardingService.submitFeedback({
         category,
         message: message.trim(),
         page: pathname,

@@ -9,8 +9,7 @@ export function useNotifications(params: ListNotificationsParams = {}) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["notifications", params],
-    queryFn: () => notificationService.list(token!, params),
-    enabled: !!token,
+    queryFn: () => notificationService.list(params),
     staleTime: 15_000,
   });
 }
@@ -19,8 +18,7 @@ export function useNotificationStats() {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["notifications", "stats"],
-    queryFn: () => notificationService.stats(token!),
-    enabled: !!token,
+    queryFn: () => notificationService.stats(),
     staleTime: 30_000,
   });
 }
@@ -29,7 +27,7 @@ export function useTriggerScan() {
   const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => notificationService.triggerScan(token!),
+    mutationFn: () => notificationService.triggerScan(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success(`${data.reminders_scheduled} reminders scheduled`);
@@ -44,7 +42,7 @@ export function useCancelNotification() {
   const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => notificationService.cancel(token!, id),
+    mutationFn: (id: string) => notificationService.cancel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Notification cancelled");
@@ -59,7 +57,7 @@ export function useRetryFailed() {
   const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => notificationService.retryFailed(token!),
+    mutationFn: () => notificationService.retryFailed(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success(`${data.reminders_scheduled} retries scheduled`);

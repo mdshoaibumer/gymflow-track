@@ -27,7 +27,7 @@ export default function BillingManagePage() {
 
   const handleCancel = async () => {
     if (!confirm("Are you sure you want to cancel? You'll retain access until the end of your billing period.")) return;
-    cancelMutation.mutate();
+    cancelMutation.mutate(undefined);
   };
 
   if (authLoading || !isOwner || subLoading) {

@@ -96,39 +96,35 @@ export const billingService = {
   getPlans: () => apiClient<Plan[]>("/billing/plans"),
 
   // Authenticated
-  getSubscription: (token: string) =>
-    apiClient<Subscription | null>("/billing/subscription", { token }),
+  getSubscription: () =>
+    apiClient<Subscription | null>("/billing/subscription"),
 
-  subscribe: (token: string, planTier: string) =>
+  subscribe: (planTier: string) =>
     apiClient<SubscribeResult>("/billing/subscribe", {
       method: "POST",
       body: { plan_tier: planTier },
-      token,
     }),
 
   verifyPayment: (
-    token: string,
     data: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }
   ) =>
     apiClient<PaymentVerifyResult>("/billing/verify", {
       method: "POST",
       body: data,
-      token,
     }),
 
-  cancel: (token: string, reason?: string) =>
+  cancel: (reason?: string) =>
     apiClient<CancelResult>("/billing/cancel", {
       method: "POST",
       body: { reason },
-      token,
     }),
 
-  getHistory: (token: string) =>
-    apiClient<BillingHistory>("/billing/history", { token }),
+  getHistory: () =>
+    apiClient<BillingHistory>("/billing/history"),
 
-  getFeatureLimits: (token: string) =>
-    apiClient<FeatureLimits>("/billing/features", { token }),
+  getFeatureLimits: () =>
+    apiClient<FeatureLimits>("/billing/features"),
 
-  getMetrics: (token: string) =>
-    apiClient<BillingMetrics>("/billing/metrics", { token }),
+  getMetrics: () =>
+    apiClient<BillingMetrics>("/billing/metrics"),
 };

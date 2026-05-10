@@ -9,8 +9,7 @@ export function useAttendanceToday() {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["attendance", "today"],
-    queryFn: () => attendanceService.getToday(token!),
-    enabled: !!token,
+    queryFn: () => attendanceService.getToday(),
     staleTime: 10_000,
     refetchInterval: 30_000,
   });
@@ -20,8 +19,7 @@ export function useAttendanceStats() {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["attendance", "stats"],
-    queryFn: () => attendanceService.getStats(token!),
-    enabled: !!token,
+    queryFn: () => attendanceService.getStats(),
     staleTime: 10_000,
   });
 }
@@ -30,8 +28,7 @@ export function useAttendanceTrend(days = 14) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["attendance", "trend", days],
-    queryFn: () => attendanceService.getTrend(token!, days),
-    enabled: !!token,
+    queryFn: () => attendanceService.getTrend(days),
     staleTime: 60_000,
   });
 }
@@ -40,8 +37,8 @@ export function useMemberAttendance(memberId: string, skip = 0, limit = 30) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["attendance", "member", memberId, skip, limit],
-    queryFn: () => attendanceService.getMemberAttendance(token!, memberId, skip, limit),
-    enabled: !!token && !!memberId,
+    queryFn: () => attendanceService.getMemberAttendance(memberId, skip, limit),
+    enabled: !!memberId,
   });
 }
 
@@ -50,7 +47,7 @@ export function useCheckInQR() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (qrToken: string) =>
-      attendanceService.checkInByQR(token!, qrToken),
+      attendanceService.checkInByQR(qrToken),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
       toast.success(`${data.member_name || "Member"} checked in!`);
@@ -66,7 +63,7 @@ export function useCheckInManual() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (memberId: string) =>
-      attendanceService.checkInManual(token!, memberId),
+      attendanceService.checkInManual(memberId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
       toast.success(`${data.member_name || "Member"} checked in (manual)`);
@@ -82,7 +79,7 @@ export function useCheckOut() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attendanceId: string) =>
-      attendanceService.checkOut(token!, attendanceId),
+      attendanceService.checkOut(attendanceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
       toast.success("Checked out");

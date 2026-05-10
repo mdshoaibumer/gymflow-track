@@ -43,7 +43,7 @@ export default function SetupPage() {
     // Skip API call for unauthorized roles — prevents unnecessary fetch before redirect
     if (!token || !isAdminOrAbove) return;
     onboardingService
-      .getStatus(token)
+      .getStatus()
       .then((s) => {
         setStatus(s);
         if (s.onboarding_complete) setStep("done");
@@ -58,7 +58,7 @@ export default function SetupPage() {
     if (!token) return;
     setActionLoading(true);
     try {
-      const result = await onboardingService.seedDemoData(token);
+      const result = await onboardingService.seedDemoData();
       setDemoResult(result);
       toast.success(`Added ${result.members_created} demo members!`);
       setStep("explore");
@@ -82,7 +82,7 @@ export default function SetupPage() {
     if (!token || !importFile) return;
     setActionLoading(true);
     try {
-      const preview = await onboardingService.previewImport(token, importFile);
+      const preview = await onboardingService.previewImport(importFile);
       setImportPreview(preview);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to preview file");
@@ -95,7 +95,7 @@ export default function SetupPage() {
     if (!token || !importFile) return;
     setActionLoading(true);
     try {
-      const result = await onboardingService.commitImport(token, importFile);
+      const result = await onboardingService.commitImport(importFile);
       setImportResult(result);
       if (result.imported > 0) {
         toast.success(`${result.imported} members imported!`);

@@ -84,47 +84,41 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 }
 
 export const paymentService = {
-  async create(token: string, payload: CreatePaymentPayload): Promise<Payment> {
+  async create(payload: CreatePaymentPayload): Promise<Payment> {
     return apiClient<Payment>("/payments", {
       method: "POST",
       body: payload,
-      token,
     });
   },
 
-  async list(token: string, params: ListPaymentsParams = {}): Promise<PaymentListResponse> {
+  async list(params: ListPaymentsParams = {}): Promise<PaymentListResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<PaymentListResponse>(`/payments${query}`, { token });
+    return apiClient<PaymentListResponse>(`/payments${query}`);
   },
 
-  async get(token: string, paymentId: string): Promise<Payment> {
-    return apiClient<Payment>(`/payments/${paymentId}`, { token });
+  async get(paymentId: string): Promise<Payment> {
+    return apiClient<Payment>(`/payments/${paymentId}`);
   },
 
   async listByMember(
-    token: string,
     memberId: string,
     params: { skip?: number; limit?: number } = {}
   ): Promise<PaymentListResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<PaymentListResponse>(`/members/${memberId}/payments${query}`, {
-      token,
-    });
+    return apiClient<PaymentListResponse>(`/members/${memberId}/payments${query}`);
   },
 };
 
 export const dashboardService = {
-  async getMetrics(token: string): Promise<DashboardMetrics> {
-    return apiClient<DashboardMetrics>("/dashboard/metrics", { token });
+  async getMetrics(): Promise<DashboardMetrics> {
+    return apiClient<DashboardMetrics>("/dashboard/metrics");
   },
 
-  async getExpiring(token: string, days: number = 7): Promise<ExpiringMember[]> {
-    return apiClient<ExpiringMember[]>(`/dashboard/expiring?days=${days}`, { token });
+  async getExpiring(days: number = 7): Promise<ExpiringMember[]> {
+    return apiClient<ExpiringMember[]>(`/dashboard/expiring?days=${days}`);
   },
 
-  async getRecentPayments(token: string, limit: number = 10): Promise<RecentPayment[]> {
-    return apiClient<RecentPayment[]>(`/dashboard/recent-payments?limit=${limit}`, {
-      token,
-    });
+  async getRecentPayments(limit: number = 10): Promise<RecentPayment[]> {
+    return apiClient<RecentPayment[]>(`/dashboard/recent-payments?limit=${limit}`);
   },
 };

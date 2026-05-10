@@ -77,10 +77,10 @@ export interface PilotMetrics {
 }
 
 export const onboardingService = {
-  getStatus: (token: string) =>
-    apiClient<OnboardingStatus>("/onboarding/status", { token }),
+  getStatus: () =>
+    apiClient<OnboardingStatus>("/onboarding/status"),
 
-  seedDemoData: (token: string, options?: { member_count?: number }) =>
+  seedDemoData: (options?: { member_count?: number }) =>
     apiClient<DemoDataResult>("/onboarding/demo-data", {
       method: "POST",
       body: {
@@ -89,10 +89,9 @@ export const onboardingService = {
         include_equipment: true,
         member_count: options?.member_count ?? 15,
       },
-      token,
     }),
 
-  previewImport: async (token: string, file: File): Promise<ImportPreview> => {
+  previewImport: async (file: File): Promise<ImportPreview> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -109,7 +108,6 @@ export const onboardingService = {
   },
 
   commitImport: async (
-    token: string,
     file: File,
     options?: { skip_duplicates?: boolean; skip_invalid?: boolean }
   ): Promise<ImportResult> => {
@@ -133,13 +131,12 @@ export const onboardingService = {
     return response.data;
   },
 
-  submitFeedback: (token: string, data: FeedbackPayload) =>
+  submitFeedback: (data: FeedbackPayload) =>
     apiClient<{ id: string }>("/feedback", {
       method: "POST",
       body: data,
-      token,
     }),
 
-  getMetrics: (token: string) =>
-    apiClient<PilotMetrics>("/admin/metrics", { token }),
+  getMetrics: () =>
+    apiClient<PilotMetrics>("/admin/metrics"),
 };

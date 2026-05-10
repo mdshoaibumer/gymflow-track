@@ -22,8 +22,7 @@ export function useAssets(params: ListAssetsParams = {}) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.list(params),
-    queryFn: () => assetService.list(token!, params),
-    enabled: !!token,
+    queryFn: () => assetService.list(params),
   });
 }
 
@@ -31,8 +30,7 @@ export function useAssetStats() {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.stats(),
-    queryFn: () => assetService.stats(token!),
-    enabled: !!token,
+    queryFn: () => assetService.stats(),
   });
 }
 
@@ -40,8 +38,8 @@ export function useMaintenanceHistory(assetId: string) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.maintenance(assetId),
-    queryFn: () => assetService.getMaintenanceHistory(token!, assetId),
-    enabled: !!token && !!assetId,
+    queryFn: () => assetService.getMaintenanceHistory(assetId),
+    enabled: !!assetId,
   });
 }
 
@@ -49,7 +47,7 @@ export function useCreateAsset() {
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateAssetPayload) => assetService.create(token!, data),
+    mutationFn: (data: CreateAssetPayload) => assetService.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.all });
       toast.success("Equipment added");
@@ -63,7 +61,7 @@ export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateAssetPayload> }) =>
-      assetService.update(token!, id, data),
+      assetService.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.all });
       toast.success("Equipment updated");
@@ -77,7 +75,7 @@ export function useUpdateAssetStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: AssetStatus }) =>
-      assetService.updateStatus(token!, id, status),
+      assetService.updateStatus(id, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.all });
       toast.success("Status updated");
@@ -90,7 +88,7 @@ export function useCompleteMaintenance() {
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => assetService.completeMaintenance(token!, id),
+    mutationFn: (id: string) => assetService.completeMaintenance(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.all });
       toast.success("Maintenance completed");
@@ -104,7 +102,7 @@ export function useRecordMaintenance() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ assetId, data }: { assetId: string; data: CreateMaintenancePayload }) =>
-      assetService.recordMaintenance(token!, assetId, data),
+      assetService.recordMaintenance(assetId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.all });
       toast.success("Maintenance recorded");

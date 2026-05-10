@@ -29,8 +29,8 @@ export function useSubscription(enabled = true) {
 
   return useQuery({
     queryKey: keys.subscription(),
-    queryFn: () => billingService.getSubscription(token!),
-    enabled: !!token && isOwner && enabled,
+    queryFn: () => billingService.getSubscription(),
+    enabled: isOwner && enabled,
     staleTime: 60 * 1000,
   });
 }
@@ -42,8 +42,8 @@ export function useBillingHistory(enabled = true) {
 
   return useQuery({
     queryKey: keys.history(),
-    queryFn: () => billingService.getHistory(token!),
-    enabled: !!token && isOwner && enabled,
+    queryFn: () => billingService.getHistory(),
+    enabled: isOwner && enabled,
   });
 }
 
@@ -51,8 +51,8 @@ export function useFeatureLimits() {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: keys.features(),
-    queryFn: () => billingService.getFeatureLimits(token!),
-    enabled: !!token,
+    queryFn: () => billingService.getFeatureLimits(),
+    enabled: true,
   });
 }
 
@@ -63,8 +63,8 @@ export function useBillingMetrics() {
 
   return useQuery({
     queryKey: keys.metrics(),
-    queryFn: () => billingService.getMetrics(token!),
-    enabled: !!token && isOwner,
+    queryFn: () => billingService.getMetrics(),
+    enabled: isOwner,
   });
 }
 
@@ -72,7 +72,7 @@ export function useSubscribe() {
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (planTier: string) => billingService.subscribe(token!, planTier),
+    mutationFn: (planTier: string) => billingService.subscribe(planTier),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.subscription() });
     },
@@ -90,7 +90,7 @@ export function useVerifyPayment() {
       razorpay_payment_id: string;
       razorpay_order_id: string;
       razorpay_signature: string;
-    }) => billingService.verifyPayment(token!, data),
+    }) => billingService.verifyPayment(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.subscription() });
       qc.invalidateQueries({ queryKey: keys.history() });
@@ -106,7 +106,7 @@ export function useCancelSubscription() {
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (reason?: string) => billingService.cancel(token!, reason),
+    mutationFn: (reason?: string) => billingService.cancel(reason),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: keys.subscription() });
       toast.success(data.message || "Subscription cancelled");

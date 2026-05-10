@@ -48,7 +48,7 @@ export interface ListNotificationsParams {
 }
 
 export const notificationService = {
-  list: (token: string, params: ListNotificationsParams = {}) => {
+  list: (params: ListNotificationsParams = {}) => {
     const { skip = 0, limit = 50, status, notification_type } = params;
     const query = new URLSearchParams({
       skip: String(skip),
@@ -56,30 +56,27 @@ export const notificationService = {
     });
     if (status) query.set("status", status);
     if (notification_type) query.set("notification_type", notification_type);
-    return apiClient<NotificationListResponse>(`/notifications?${query}`, { token });
+    return apiClient<NotificationListResponse>(`/notifications?${query}`);
   },
 
-  stats: (token: string) =>
-    apiClient<NotificationStats>("/notifications/stats", { token }),
+  stats: () =>
+    apiClient<NotificationStats>("/notifications/stats"),
 
-  upcoming: (token: string, limit = 20) =>
-    apiClient<Notification[]>(`/notifications/upcoming?limit=${limit}`, { token }),
+  upcoming: (limit = 20) =>
+    apiClient<Notification[]>(`/notifications/upcoming?limit=${limit}`),
 
-  triggerScan: (token: string) =>
+  triggerScan: () =>
     apiClient<TriggerScanResponse>("/notifications/scan", {
       method: "POST",
-      token,
     }),
 
-  cancel: (token: string, id: string) =>
+  cancel: (id: string) =>
     apiClient<Notification>(`/notifications/${id}/cancel`, {
       method: "POST",
-      token,
     }),
 
-  retryFailed: (token: string) =>
+  retryFailed: () =>
     apiClient<TriggerScanResponse>("/notifications/retry-failed", {
       method: "POST",
-      token,
     }),
 };

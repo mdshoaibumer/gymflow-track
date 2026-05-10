@@ -48,47 +48,40 @@ export interface ListAttendanceParams {
 }
 
 export const attendanceService = {
-  checkInByQR: (token: string, qr_token: string) =>
+  checkInByQR: (qr_token: string) =>
     apiClient<AttendanceRecord>("/attendance/check-in", {
       method: "POST",
       body: { qr_token },
-      token,
     }),
 
-  checkInManual: (token: string, member_id: string) =>
+  checkInManual: (member_id: string) =>
     apiClient<AttendanceRecord>("/attendance/check-in/manual", {
       method: "POST",
       body: { member_id },
-      token,
     }),
 
-  checkOut: (token: string, attendance_id: string) =>
+  checkOut: (attendance_id: string) =>
     apiClient<AttendanceRecord>(`/attendance/${attendance_id}/check-out`, {
       method: "POST",
-      token,
     }),
 
-  cancel: (token: string, attendance_id: string) =>
+  cancel: (attendance_id: string) =>
     apiClient<AttendanceRecord>(`/attendance/${attendance_id}/cancel`, {
       method: "POST",
-      token,
     }),
 
-  getToday: (token: string, skip = 0, limit = 100) =>
+  getToday: (skip = 0, limit = 100) =>
     apiClient<AttendanceListResponse>(
-      `/attendance/today?skip=${skip}&limit=${limit}`,
-      { token }
+      `/attendance/today?skip=${skip}&limit=${limit}`
     ),
 
-  getStats: (token: string) =>
-    apiClient<AttendanceStats>("/attendance/stats", { token }),
+  getStats: () =>
+    apiClient<AttendanceStats>("/attendance/stats"),
 
-  getTrend: (token: string, days = 14) =>
-    apiClient<AttendanceTrendResponse>(`/attendance/trend?days=${days}`, {
-      token,
-    }),
+  getTrend: (days = 14) =>
+    apiClient<AttendanceTrendResponse>(`/attendance/trend?days=${days}`),
 
-  getHistory: (token: string, params: ListAttendanceParams = {}) => {
+  getHistory: (params: ListAttendanceParams = {}) => {
     const { skip = 0, limit = 50, start_date, end_date } = params;
     const query = new URLSearchParams({
       skip: String(skip),
@@ -96,17 +89,14 @@ export const attendanceService = {
     });
     if (start_date) query.set("start_date", start_date);
     if (end_date) query.set("end_date", end_date);
-    return apiClient<AttendanceListResponse>(`/attendance/history?${query}`, {
-      token,
-    });
+    return apiClient<AttendanceListResponse>(`/attendance/history?${query}`);
   },
 
-  getMemberAttendance: (token: string, member_id: string, skip = 0, limit = 30) =>
+  getMemberAttendance: (member_id: string, skip = 0, limit = 30) =>
     apiClient<AttendanceListResponse>(
-      `/attendance/member/${member_id}?skip=${skip}&limit=${limit}`,
-      { token }
+      `/attendance/member/${member_id}?skip=${skip}&limit=${limit}`
     ),
 
-  getMemberQR: (token: string, member_id: string) =>
-    apiClient<QRTokenResponse>(`/attendance/member/${member_id}/qr`, { token }),
+  getMemberQR: (member_id: string) =>
+    apiClient<QRTokenResponse>(`/attendance/member/${member_id}/qr`),
 };

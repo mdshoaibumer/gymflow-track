@@ -36,28 +36,28 @@ export interface ListMembersParams {
 }
 
 export const memberService = {
-  list: (token: string, params: ListMembersParams = {}) => {
+  list: (params: ListMembersParams = {}) => {
     const { skip = 0, limit = 20, search } = params;
     const query = new URLSearchParams({
       skip: String(skip),
       limit: String(limit),
     });
     if (search) query.set("search", search);
-    return apiClient<MemberListResponse>(`/members?${query}`, { token });
+    return apiClient<MemberListResponse>(`/members?${query}`);
   },
 
-  get: (token: string, id: string) =>
-    apiClient<Member>(`/members/${id}`, { token }),
+  get: (id: string) =>
+    apiClient<Member>(`/members/${id}`),
 
-  create: (token: string, data: CreateMemberPayload) =>
-    apiClient<Member>("/members", { method: "POST", body: data, token }),
+  create: (data: CreateMemberPayload) =>
+    apiClient<Member>("/members", { method: "POST", body: data }),
 
-  update: (token: string, id: string, data: Partial<CreateMemberPayload>) =>
-    apiClient<Member>(`/members/${id}`, { method: "PATCH", body: data, token }),
+  update: (id: string, data: Partial<CreateMemberPayload>) =>
+    apiClient<Member>(`/members/${id}`, { method: "PATCH", body: data }),
 
-  replace: (token: string, id: string, data: CreateMemberPayload) =>
-    apiClient<Member>(`/members/${id}`, { method: "PUT", body: data, token }),
+  replace: (id: string, data: CreateMemberPayload) =>
+    apiClient<Member>(`/members/${id}`, { method: "PUT", body: data }),
 
-  delete: (token: string, id: string) =>
-    apiClient<void>(`/members/${id}`, { method: "DELETE", token }),
+  delete: (id: string) =>
+    apiClient<void>(`/members/${id}`, { method: "DELETE" }),
 };
