@@ -257,12 +257,14 @@ class AuthService:
                 and (datetime.now(timezone.utc) - stored_token.revoked_at).total_seconds()
                     < self.REFRESH_GRACE_SECONDS
             ):
-                # Look up the replacement token to verify it's still valid
+                # Look up the replacement token to verify it's still valid.
+                # FOR UPDATE prevents concurrent tabs from mutating the same
+                # replacement row simultaneously (one wins, others block briefly).
                 replacement = await self.db.execute(
                     select(RefreshToken).where(
                         RefreshToken.token_hash == stored_token.replaced_by_hash,
                         RefreshToken.revoked == False,  # noqa: E712
-                    )
+                    ).with_for_update()
                 )
                 replacement_token = replacement.scalar_one_or_none()
                 if replacement_token:

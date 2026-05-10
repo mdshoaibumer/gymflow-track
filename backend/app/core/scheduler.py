@@ -50,6 +50,7 @@ _job_failures: dict[str, int] = {
     "retry_failed": 0,
     "maintenance_scan": 0,
     "billing_check": 0,
+    "token_cleanup": 0,
 }
 
 
@@ -188,7 +189,7 @@ async def _maintenance_scan_job() -> None:
 async def _billing_check_job() -> None:
     """
     Periodic job: check trial and subscription expirations.
-    Runs every 6 hours.
+    Runs every 1 hour.
 
     Handles:
     - Expire trials past their end date
@@ -217,6 +218,71 @@ async def _billing_check_job() -> None:
     except Exception:
         _job_failures["billing_check"] += 1
         logger.exception("billing_check job failed")
+
+
+async def _token_cleanup_job() -> None:
+    """
+    Periodic job: delete stale refresh tokens and used/expired password reset tokens.
+    Runs every 24 hours.
+
+    Keeps the auth tables lean:
+    - Revoked refresh tokens older than 30 days
+    - Expired refresh tokens older than 7 days
+    - Used or expired password reset tokens older than 7 days
+    """
+    from sqlalchemy import delete, and_
+    from app.models.auth_token import RefreshToken, PasswordResetToken
+    from datetime import timedelta
+
+    logger.debug("Running token_cleanup job")
+
+    try:
+        async with async_session_factory() as session:
+            async with session.begin():
+                now = datetime.now(timezone.utc)
+
+                # Delete revoked refresh tokens older than 30 days
+                revoked_cutoff = now - timedelta(days=30)
+                result_revoked = await session.execute(
+                    delete(RefreshToken).where(
+                        RefreshToken.revoked == True,  # noqa: E712
+                        RefreshToken.updated_at < revoked_cutoff,
+                    )
+                )
+
+                # Delete expired refresh tokens older than 7 days
+                expired_cutoff = now - timedelta(days=7)
+                result_expired = await session.execute(
+                    delete(RefreshToken).where(
+                        RefreshToken.expires_at < expired_cutoff,
+                    )
+                )
+
+                # Delete used/expired password reset tokens older than 7 days
+                result_reset = await session.execute(
+                    delete(PasswordResetToken).where(
+                        and_(
+                            PasswordResetToken.created_at < expired_cutoff,
+                            (PasswordResetToken.used == True) | (PasswordResetToken.expires_at < now),  # noqa: E712
+                        )
+                    )
+                )
+
+                total = (
+                    result_revoked.rowcount
+                    + result_expired.rowcount
+                    + result_reset.rowcount
+                )
+                if total:
+                    logger.info(
+                        f"Token cleanup: removed {result_revoked.rowcount} revoked refresh, "
+                        f"{result_expired.rowcount} expired refresh, "
+                        f"{result_reset.rowcount} used/expired reset tokens"
+                    )
+        _job_failures["token_cleanup"] = 0
+    except Exception:
+        _job_failures["token_cleanup"] += 1
+        logger.exception("token_cleanup job failed")
 
 
 def start_scheduler() -> None:
@@ -255,14 +321,25 @@ def start_scheduler() -> None:
     )
     scheduler.add_job(
         _billing_check_job,
-        trigger=IntervalTrigger(hours=6),
+        trigger=IntervalTrigger(hours=1),
         id="billing_check",
         name="Check trial/subscription expirations",
         max_instances=1,
         replace_existing=True,
     )
+    scheduler.add_job(
+        _token_cleanup_job,
+        trigger=IntervalTrigger(hours=24),
+        id="token_cleanup",
+        name="Clean up expired/revoked tokens",
+        max_instances=1,
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Background scheduler started (scan=1h, process=5m, retry=6h, maint=12h, billing=6h)")
+    logger.info(
+        "Background scheduler started "
+        "(scan=1h, process=5m, retry=6h, maint=12h, billing=1h, token_cleanup=24h)"
+    )
 
 
 def stop_scheduler() -> None:

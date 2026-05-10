@@ -21,6 +21,7 @@ import asyncio
 from uuid import uuid4
 
 import pytest
+import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -58,9 +59,38 @@ def event_loop():
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database():
-    """Create all tables once per test session, drop at the end."""
+    """Create all tables once per test session, drop at the end.
+
+    After create_all(), we add partial unique indexes that mirror
+    migrations 011/012 so the test schema matches production.
+    ORM models no longer carry these constraints (they are partial
+    indexes which SQLAlchemy's MetaData.create_all cannot express).
+    """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Partial unique indexes matching migration 011
+        await conn.execute(
+            sa.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_gym_member_date "
+                "ON attendance (gym_id, member_id, check_in_date) "
+                "WHERE status != 'cancelled'"
+            )
+        )
+        await conn.execute(
+            sa.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_members_gym_phone "
+                "ON members (gym_id, phone) "
+                "WHERE is_deleted = false"
+            )
+        )
+        # Partial unique index matching migration 012
+        await conn.execute(
+            sa.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_payments_idempotency "
+                "ON payments (gym_id, idempotency_key) "
+                "WHERE idempotency_key IS NOT NULL"
+            )
+        )
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

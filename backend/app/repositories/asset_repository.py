@@ -52,7 +52,8 @@ class AssetRepository:
         if category:
             query = query.where(Asset.category == category)
         if search:
-            pattern = f"%{search}%"
+            escaped = search.replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             query = query.where(
                 Asset.name.ilike(pattern) | Asset.asset_code.ilike(pattern)
             )
@@ -76,7 +77,8 @@ class AssetRepository:
         if category:
             query = query.where(Asset.category == category)
         if search:
-            pattern = f"%{search}%"
+            escaped = search.replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             query = query.where(
                 Asset.name.ilike(pattern) | Asset.asset_code.ilike(pattern)
             )

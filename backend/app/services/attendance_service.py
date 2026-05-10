@@ -216,11 +216,13 @@ class AttendanceService:
             recorded_by=recorded_by,
         )
         try:
-            return await self.attendance_repo.create(attendance)
+            # Use a SAVEPOINT so that an IntegrityError from a concurrent
+            # insert only rolls back this INSERT, not the outer transaction.
+            async with self.db.begin_nested():
+                return await self.attendance_repo.create(attendance)
         except IntegrityError:
             # Race condition: concurrent request already inserted a row.
-            # Roll back the failed INSERT and return the existing record.
-            await self.db.rollback()
+            # The SAVEPOINT was rolled back — outer session is still usable.
             existing = await self.attendance_repo.get_today_for_member(
                 gym_id, member_id, today
             )
