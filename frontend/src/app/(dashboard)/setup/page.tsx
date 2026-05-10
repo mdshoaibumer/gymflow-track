@@ -20,15 +20,15 @@ type Step = "welcome" | "members" | "explore" | "done";
 const STEPS: Step[] = ["welcome", "members", "explore", "done"];
 
 export default function SetupPage() {
-  const { token, user, isOwner, isAdmin, isLoading: authLoading } = useAuth();
+  const { token, user, isOwner, isAdminOrAbove, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Role-based route protection
   useEffect(() => {
-    if (!authLoading && !isOwner && !isAdmin) {
+    if (!authLoading && !isAdminOrAbove) {
       router.replace("/dashboard");
     }
-  }, [isOwner, isAdmin, authLoading, router]);
+  }, [isAdminOrAbove, authLoading, router]);
 
   const [step, setStep] = useState<Step>("welcome");
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
@@ -40,7 +40,8 @@ export default function SetupPage() {
   const [demoResult, setDemoResult] = useState<{ members_created: number } | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    // Skip API call for unauthorized roles — prevents unnecessary fetch before redirect
+    if (!token || !isAdminOrAbove) return;
     onboardingService
       .getStatus(token)
       .then((s) => {
@@ -51,7 +52,7 @@ export default function SetupPage() {
         toast.error(err instanceof Error ? err.message : "Failed to load setup status");
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, isAdminOrAbove]);
 
   const handleDemoData = async () => {
     if (!token) return;
@@ -106,6 +107,18 @@ export default function SetupPage() {
       setActionLoading(false);
     }
   };
+
+  // Render-gate: prevent unauthorized content flash during hydration
+  if (authLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!isAdminOrAbove) {
+    return null;
+  }
 
   if (loading) {
     return (

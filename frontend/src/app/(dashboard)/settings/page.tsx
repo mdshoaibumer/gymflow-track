@@ -17,17 +17,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
 export default function SettingsPage() {
-  const { user, isOwner, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isOwner, isAdminOrAbove, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { data: gym, isLoading } = useGym();
   const updateMutation = useUpdateGym();
 
   // Role-based route protection
   useEffect(() => {
-    if (!authLoading && !isOwner && !isAdmin) {
+    if (!authLoading && !isAdminOrAbove) {
       router.replace("/dashboard");
     }
-  }, [isOwner, isAdmin, authLoading, router]);
+  }, [isAdminOrAbove, authLoading, router]);
 
   const [form, setForm] = useState<GymUpdatePayload>({});
 
@@ -45,6 +45,18 @@ export default function SettingsPage() {
       });
     }
   }, [gym]);
+
+  // Render-gate: prevent unauthorized content flash during hydration
+  if (authLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (!isAdminOrAbove) {
+    return null;
+  }
 
   const handleSave = async () => {
     // Basic validation
