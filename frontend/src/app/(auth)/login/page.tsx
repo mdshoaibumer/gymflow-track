@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -23,34 +23,41 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-/**
- * LoginPage Component
- * 
- * Handles user authentication by providing a form for email and password.
- * Uses react-hook-form for form management and zod for validation.
- * Upon successful login, tokens are saved and the user is redirected to the dashboard.
- */
 export default function LoginPage() {
   const router = useRouter();
   const { saveTokens } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginForm) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsLoading(true);
+    setFormError(null);
+
     try {
       const response = await authService.login(data);
       saveTokens(response.access_token, response.refresh_token);
       toast.success("Welcome back!");
       router.push("/dashboard");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Login failed");
+      const message =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      submittingRef.current = false;
+      setIsLoading(false);
     }
   };
 
@@ -71,7 +78,16 @@ export default function LoginPage() {
             <CardDescription>Sign in to your GymFlow account</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                >
+                  {formError}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -79,11 +95,15 @@ export default function LoginPage() {
                   type="email"
                   placeholder="owner@yourgym.com"
                   autoComplete="email"
-                  disabled={isSubmitting}
-                  {...register("email")}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  {...register("email", { onChange: () => setFormError(null) })}
                 />
                 {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                  <p id="email-error" className="text-xs text-destructive" role="alert">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -93,6 +113,7 @@ export default function LoginPage() {
                   <Link
                     href="/forgot-password"
                     className="text-xs text-primary hover:underline"
+                    tabIndex={isLoading ? -1 : 0}
                   >
                     Forgot password?
                   </Link>
@@ -102,14 +123,17 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    disabled={isSubmitting}
-                    {...register("password")}
+                    disabled={isLoading}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? "password-error" : undefined}
+                    {...register("password", { onChange: () => setFormError(null) })}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -119,13 +143,22 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                  <p id="password-error" className="text-xs text-destructive" role="alert">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Signing in..." : "Sign In"}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                aria-busy={isLoading}
+              >
+                {isLoading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                )}
+                {isLoading ? "Signing in\u2026" : "Sign In"}
               </Button>
             </form>
 

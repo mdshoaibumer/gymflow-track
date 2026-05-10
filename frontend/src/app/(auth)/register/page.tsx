@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -36,16 +36,24 @@ export default function RegisterPage() {
   const router = useRouter();
   const { saveTokens } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   const {
     register: reg,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterForm) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsLoading(true);
+    setFormError(null);
+
     try {
       const payload = {
         ...data,
@@ -53,10 +61,16 @@ export default function RegisterPage() {
       };
       const response = await authService.register(payload);
       saveTokens(response.access_token, response.refresh_token);
-      toast.success("Gym registered! Let's set things up.");
+      toast.success("Gym registered! Let\u2019s set things up.");
       router.push("/setup");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Registration failed");
+      const message =
+        err instanceof Error ? err.message : "Registration failed. Please try again.";
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      submittingRef.current = false;
+      setIsLoading(false);
     }
   };
 
@@ -77,17 +91,28 @@ export default function RegisterPage() {
             <CardDescription>Get started in under 10 minutes</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                >
+                  {formError}
+                </div>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="gym_name">Gym Name</Label>
                   <Input
                     id="gym_name"
                     placeholder="Iron Paradise Gym"
-                    {...reg("gym_name")}
+                    disabled={isLoading}
+                    aria-invalid={!!errors.gym_name}
+                    {...reg("gym_name", { onChange: () => setFormError(null) })}
                   />
                   {errors.gym_name && (
-                    <p className="text-xs text-destructive">{errors.gym_name.message}</p>
+                    <p className="text-xs text-destructive" role="alert">{errors.gym_name.message}</p>
                   )}
                 </div>
 
@@ -96,10 +121,12 @@ export default function RegisterPage() {
                   <Input
                     id="owner_name"
                     placeholder="Rajesh Kumar"
-                    {...reg("owner_name")}
+                    disabled={isLoading}
+                    aria-invalid={!!errors.owner_name}
+                    {...reg("owner_name", { onChange: () => setFormError(null) })}
                   />
                   {errors.owner_name && (
-                    <p className="text-xs text-destructive">{errors.owner_name.message}</p>
+                    <p className="text-xs text-destructive" role="alert">{errors.owner_name.message}</p>
                   )}
                 </div>
               </div>
@@ -109,10 +136,12 @@ export default function RegisterPage() {
                 <Input
                   id="phone"
                   placeholder="9876543210"
-                  {...reg("phone")}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.phone}
+                  {...reg("phone", { onChange: () => setFormError(null) })}
                 />
                 {errors.phone && (
-                  <p className="text-xs text-destructive">{errors.phone.message}</p>
+                  <p className="text-xs text-destructive" role="alert">{errors.phone.message}</p>
                 )}
               </div>
 
@@ -122,10 +151,12 @@ export default function RegisterPage() {
                   id="email"
                   type="email"
                   placeholder="rajesh@gmail.com"
-                  {...reg("email")}
+                  disabled={isLoading}
+                  aria-invalid={!!errors.email}
+                  {...reg("email", { onChange: () => setFormError(null) })}
                 />
                 {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                  <p className="text-xs text-destructive" role="alert">{errors.email.message}</p>
                 )}
               </div>
 
@@ -135,30 +166,33 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    {...reg("password")}
+                    disabled={isLoading}
+                    aria-invalid={!!errors.password}
+                    {...reg("password", { onChange: () => setFormError(null) })}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                  <p className="text-xs text-destructive" role="alert">{errors.password.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="city">City (optional)</Label>
-                <Input id="city" placeholder="Mumbai" {...reg("city")} />
+                <Input id="city" placeholder="Mumbai" disabled={isLoading} {...reg("city")} />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Creating..." : "Create Account"}
+              <Button type="submit" className="w-full" disabled={isLoading} aria-busy={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                {isLoading ? "Creating\u2026" : "Create Account"}
               </Button>
             </form>
 
