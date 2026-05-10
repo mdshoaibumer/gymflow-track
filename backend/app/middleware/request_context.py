@@ -67,7 +67,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         except Exception:
             duration_ms = round((time.perf_counter() - start) * 1000, 1)
             logger.exception(
-                f"{method} {path} → 500 ({duration_ms}ms)",
+                f"{method} {path} -> 500 ({duration_ms}ms)",
                 extra={
                     "method": method, "path": path, "status_code": 500,
                     "duration_ms": duration_ms, "client_ip": client_ip,
@@ -81,7 +81,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
             logger.log(
                 log_level,
-                f"{method} {path} → {response.status_code} ({duration_ms}ms)",
+                f"{method} {path} -> {response.status_code} ({duration_ms}ms)",
                 extra={
                     "method": method, "path": path,
                     "status_code": response.status_code,

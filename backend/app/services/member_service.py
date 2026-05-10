@@ -96,12 +96,22 @@ class MemberService:
 
         update_data = data.model_dump(exclude_unset=True)
 
-        # Block direct manipulation of protected lifecycle fields
+        # Block direct manipulation of protected lifecycle fields if they are actually changing
         for field_name in _PROTECTED_FIELDS:
             if field_name in update_data:
-                raise ValidationError(
-                    f"{field_name} cannot be changed directly. Use the membership management API."
-                )
+                current_val = getattr(member, field_name)
+                new_val = update_data[field_name]
+                
+                # Robust comparison: convert both to string if they are dates/datetimes
+                # to avoid type-mismatch false positives.
+                if str(current_val) != str(new_val):
+                    logger.warning(
+                        "Attempted protected field change: field=%s current=%s new=%s member_id=%s",
+                        field_name, current_val, new_val, member_id
+                    )
+                    raise ValidationError(
+                        f"{field_name} cannot be changed directly. Use the membership management API."
+                    )
 
         # If phone is being changed, check for duplicates
         if "phone" in update_data and update_data["phone"] != member.phone:

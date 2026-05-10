@@ -22,9 +22,9 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
 export default function MemberDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const { data: member, isLoading } = useMember(id);
   const { data: paymentData } = useMemberPayments(id);
 
