@@ -78,6 +78,7 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="owner@yourgym.com"
+                  autoComplete="email"
                   disabled={isSubmitting}
                   {...register("email")}
                 />
@@ -100,6 +101,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     disabled={isSubmitting}
                     {...register("password")}
                   />

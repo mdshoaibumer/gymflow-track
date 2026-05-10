@@ -134,9 +134,10 @@ class AuthService:
             password_hash=hash_password(data.password),
             role=UserRole.OWNER,
         )
-        user = await self.user_repo.create(user)
 
         try:
+            user = await self.user_repo.create(user)
+
             # Create trial subscription for the new gym
             await create_trial_subscription(self.db, gym.id)
 
