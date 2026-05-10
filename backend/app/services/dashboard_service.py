@@ -27,18 +27,6 @@ class DashboardService:
         self.member_repo = MemberRepository(db)
         self.payment_repo = PaymentRepository(db)
 
-    # ************************************************************
-    # Function Name : Compute Dashboard Metrics
-    #
-    # Purpose       : Aggregates all dashboard KPIs in optimized
-    # single-count queries: total/active/expiring/
-    # expired members, pending dues, and monthly
-    # revenue. Each query uses indexed columns for
-    # sub-millisecond performance.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def get_metrics(self, gym_id: UUID) -> DashboardMetrics:
         # Compute all dashboard metrics with parallel queries.
         today = today_ist()

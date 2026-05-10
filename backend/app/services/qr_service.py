@@ -49,17 +49,6 @@ def _compute_signature(gym_id: UUID, member_id: UUID) -> str:
     return base64.urlsafe_b64encode(sig[:12]).decode().rstrip("=")
 
 
-# ************************************************************
-# Function Name : Generate Compact QR Check-In Token
-#
-# Purpose       : Produces a tamper-proof QR token by HMAC-signing
-# the gym and member UUIDs. The resulting ~80-char
-# string is ideal for QR code encoding and serves as
-# a permanent, scannable member ID card.
-#
-# Author        : Mohammed Shoaib U
-#
-# ************************************************************
 def generate_qr_token(gym_id: UUID, member_id: UUID) -> str:
     """
     Generate a compact, tamper-proof QR token for a member.
@@ -80,18 +69,6 @@ def generate_qr_token(gym_id: UUID, member_id: UUID) -> str:
     return payload
 
 
-# ************************************************************
-# Function Name : Validate QR Check-In Token
-#
-# Purpose       : Verifies the HMAC signature of a QR token and
-# extracts the gym_id and member_id. Uses constant-
-# time comparison to prevent timing attacks. Returns
-# None if the token is tampered, malformed, or from
-# a different gym.
-#
-# Author        : Mohammed Shoaib U
-#
-# ************************************************************
 def validate_qr_token(token: str) -> tuple[UUID, UUID] | None:
     """
     Validate a QR token and extract gym_id + member_id.

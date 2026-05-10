@@ -171,7 +171,7 @@ async def test_rate_limit_auth_endpoint(client: AsyncClient):
 async def test_expired_token_rejected(client: AsyncClient):
     """Expired JWT is rejected with 401."""
     from datetime import datetime, timedelta, timezone
-    from jose import jwt
+    import jwt as pyjwt
     from app.core.config import settings
 
     expired_payload = {
@@ -181,7 +181,7 @@ async def test_expired_token_rejected(client: AsyncClient):
         "exp": datetime.now(timezone.utc) - timedelta(hours=1),
         "type": "access",
     }
-    token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm="HS256")
+    token = pyjwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm="HS256")
     resp = await client.get(
         "/api/v1/members",
         headers={"Authorization": f"Bearer {token}"},
@@ -192,7 +192,7 @@ async def test_expired_token_rejected(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_tampered_token_rejected(client: AsyncClient):
     """Token signed with wrong key is rejected."""
-    from jose import jwt
+    import jwt as pyjwt
     from datetime import datetime, timedelta, timezone
 
     payload = {
@@ -202,7 +202,7 @@ async def test_tampered_token_rejected(client: AsyncClient):
         "exp": datetime.now(timezone.utc) + timedelta(hours=1),
         "type": "access",
     }
-    token = jwt.encode(payload, "wrong-secret-key", algorithm="HS256")
+    token = pyjwt.encode(payload, "wrong-secret-key", algorithm="HS256")
     resp = await client.get(
         "/api/v1/members",
         headers={"Authorization": f"Bearer {token}"},
@@ -213,7 +213,7 @@ async def test_tampered_token_rejected(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_refresh_token_not_accepted_as_access(client: AsyncClient):
     """Refresh tokens cannot be used as access tokens."""
-    from jose import jwt
+    import jwt as pyjwt
     from datetime import datetime, timedelta, timezone
     from app.core.config import settings
 
@@ -224,7 +224,7 @@ async def test_refresh_token_not_accepted_as_access(client: AsyncClient):
         "exp": datetime.now(timezone.utc) + timedelta(hours=1),
         "type": "refresh",  # Wrong type!
     }
-    token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
+    token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
     resp = await client.get(
         "/api/v1/members",
         headers={"Authorization": f"Bearer {token}"},

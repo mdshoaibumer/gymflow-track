@@ -223,7 +223,7 @@ class TestGetMe:
         from datetime import datetime, timezone, timedelta
         from uuid import uuid4
 
-        from jose import jwt
+        import jwt as pyjwt
 
         from app.core.config import settings
 
@@ -234,7 +234,7 @@ class TestGetMe:
             "type": "access",
             "exp": datetime.now(timezone.utc) - timedelta(hours=1),
         }
-        expired_token = jwt.encode(
+        expired_token = pyjwt.encode(
             payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
         )
 

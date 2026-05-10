@@ -231,11 +231,11 @@ class TestTokenIntegrity:
     async def test_token_without_role_rejected(self, client: AsyncClient):
         """A token missing the role claim is treated as invalid."""
         from app.core.config import settings
-        from jose import jwt
+        import jwt as pyjwt
 
         # Craft a token without 'role' claim
         payload = {"sub": "fake-id", "gym_id": "fake-gym", "type": "access", "exp": 9999999999}
-        bad_token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        bad_token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
         response = await client.get(
             "/api/v1/members",
@@ -246,7 +246,7 @@ class TestTokenIntegrity:
     async def test_token_with_invalid_role_rejected(self, client: AsyncClient):
         """A token with a non-existent role is treated as invalid."""
         from app.core.config import settings
-        from jose import jwt
+        import jwt as pyjwt
         from uuid import uuid4
 
         payload = {
@@ -256,7 +256,7 @@ class TestTokenIntegrity:
             "type": "access",
             "exp": 9999999999,
         }
-        bad_token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        bad_token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
         response = await client.get(
             "/api/v1/members",
@@ -268,7 +268,7 @@ class TestTokenIntegrity:
         """An expired JWT returns 401."""
         from datetime import datetime, timezone, timedelta
         from app.core.config import settings
-        from jose import jwt
+        import jwt as pyjwt
         from uuid import uuid4
 
         payload = {
@@ -278,7 +278,7 @@ class TestTokenIntegrity:
             "type": "access",
             "exp": datetime.now(timezone.utc) - timedelta(hours=1),
         }
-        expired_token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        expired_token = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
         response = await client.get(
             "/api/v1/members",

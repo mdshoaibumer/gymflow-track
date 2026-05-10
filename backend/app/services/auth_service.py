@@ -43,17 +43,6 @@ logger = logging.getLogger("gymflow.auth")
 _DUMMY_HASH = "$2b$12$LJ3m4ys3Lf2Hbs5MhFclcOvpS2yJqinSPnNlVqFOK0D3IsVHyqEvC"
 
 
-# ************************************************************
-# Function Name : Hash Authentication Token
-#
-# Purpose       : Produces a SHA-256 digest of a raw token string
-# so that tokens are never stored in plaintext in
-# the database. Used for refresh tokens and
-# password-reset tokens.
-#
-# Author        : Mohammed Shoaib U
-#
-# ************************************************************
 def _hash_token(token: str) -> str:
     """SHA-256 hash a token for storage. Tokens are never stored in plaintext."""
     return hashlib.sha256(token.encode()).hexdigest()
@@ -65,18 +54,6 @@ class AuthService:
         self.gym_repo = GymRepository(db)
         self.user_repo = UserRepository(db)
 
-    # ************************************************************
-    # Function Name : Retrieve Authenticated User Profile
-    #
-    # Purpose       : Fetches the full user profile from the database
-    # for the currently authenticated user. Validates
-    # that the user still exists, is active, and
-    # belongs to the expected gym (prevents cross-
-    # tenant session hijacking).
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def get_current_user_profile(self, user_id: UUID, gym_id: UUID) -> CurrentUserResponse:
         """
         Fetch the authenticated user's profile from DB.
@@ -97,18 +74,6 @@ class AuthService:
 
         return CurrentUserResponse.model_validate(user)
 
-    # ************************************************************
-    # Function Name : Register New Gym and Owner Account
-    #
-    # Purpose       : Creates a new gym entity with a unique slug,
-    # registers the first user as the OWNER, provisions
-    # a trial subscription, and returns JWT tokens for
-    # immediate authentication. This is the primary
-    # onboarding entry point for new customers.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def register_gym(self, data: GymRegisterRequest) -> TokenResponse:
         # Note: email uniqueness is per-gym (UniqueConstraint gym_id+email).
         # We don't block registration globally — the DB constraint handles
@@ -166,18 +131,6 @@ class AuthService:
                 raise AlreadyExistsError("Gym name too similar to existing gym — please choose a different name")
             raise AlreadyExistsError("Email already registered")
 
-    # ************************************************************
-    # Function Name : Authenticate User Login
-    #
-    # Purpose       : Validates user credentials (email + password),
-    # checks that the account is active, then issues
-    # a fresh pair of access and refresh JWT tokens.
-    # Failed attempts raise AuthenticationError for
-    # generic error messaging (prevents user enumeration).
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def login(self, data: LoginRequest) -> TokenResponse:
         # Multi-tenant safe: same email can exist in different gyms
         users = await self.user_repo.get_all_by_email(data.email)
@@ -209,18 +162,6 @@ class AuthService:
             refresh_token=raw_refresh,
         )
 
-    # ************************************************************
-    # Function Name : Refresh Authentication Token
-    #
-    # Purpose       : Validates the provided refresh token, rotates it
-    # (revokes old, issues new), and returns a fresh
-    # token pair. Implements reuse detection — if a
-    # revoked token is reused, ALL user sessions are
-    # revoked as a security safeguard against token theft.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     # Grace period (seconds) for concurrent refresh requests (multi-tab scenario).
     # If a revoked token is re-presented within this window, the replacement token
     # is returned instead of triggering reuse-detection revocation.
@@ -338,17 +279,6 @@ class AuthService:
             refresh_token=new_refresh,
         )
 
-    # ************************************************************
-    # Function Name : Logout and Revoke Refresh Tokens
-    #
-    # Purpose       : Revokes either a specific refresh token (single
-    # device logout) or all tokens for the user (logout
-    # from all devices). Used on explicit logout and
-    # after password reset for security.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def logout(self, user_id: UUID, refresh_token: str | None = None) -> None:
         """
         Revoke refresh tokens for the user.
@@ -377,18 +307,6 @@ class AuthService:
             )
             logger.info(f"Revoked ALL refresh tokens for user {user_id}")
 
-    # ************************************************************
-    # Function Name : Initiate Password Reset Flow
-    #
-    # Purpose       : Generates a one-time password reset token valid
-    # for 1 hour. Returns a generic success message
-    # regardless of whether the email exists to prevent
-    # email enumeration attacks. Invalidates any
-    # previously issued reset tokens for the user.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def forgot_password(self, email: str) -> str:
         """
         Generate a password reset token.
@@ -442,17 +360,6 @@ class AuthService:
 
         return "If an account exists with that email, a reset link has been sent."
 
-    # ************************************************************
-    # Function Name : Complete Password Reset
-    #
-    # Purpose       : Validates the reset token, updates the user's
-    # password hash, marks the token as used, and
-    # revokes all refresh tokens to force re-login on
-    # all devices. Single-use and time-limited (1 hour).
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def reset_password(self, token: str, new_password: str) -> str:
         """
         Reset password using a valid reset token.

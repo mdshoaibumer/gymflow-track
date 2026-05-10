@@ -32,13 +32,13 @@ Design choices:
 """
 
 import logging
-import time
 from typing import Callable
 from uuid import UUID
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from jose import JWTError, jwt
+from jwt import InvalidTokenError
+import jwt as pyjwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -67,34 +67,26 @@ EXEMPT_PREFIXES = (
 # Routes that need full access (write operations blocked in read-only mode)
 READ_ONLY_ALLOWED_METHODS = {"GET", "HEAD", "OPTIONS"}
 
-# In-memory cache: {gym_id_str: (access_level, timestamp)}
-_access_cache: dict[str, tuple[str, float]] = {}
+# Cache TTL for subscription status
 _CACHE_TTL_SECONDS = 60
-_CACHE_MAX_SIZE = 5000  # Prevent unbounded memory growth
 
 
 def invalidate_subscription_cache(gym_id: UUID) -> None:
     """Invalidate cached subscription status for a gym. Call after billing changes."""
-    _access_cache.pop(str(gym_id), None)
+    from app.core.cache import get_cache_backend
+    get_cache_backend().delete(f"sub:{gym_id}")
 
 
 def _get_cached_access(gym_id_str: str) -> str | None:
     """Return cached access level if fresh, else None."""
-    entry = _access_cache.get(gym_id_str)
-    if entry and time.time() - entry[1] < _CACHE_TTL_SECONDS:
-        return entry[0]
-    return None
+    from app.core.cache import get_cache_backend
+    return get_cache_backend().get(f"sub:{gym_id_str}")
 
 
 def _set_cached_access(gym_id_str: str, access_level: str) -> None:
-    """Cache the access level with timestamp. Evict if over max size."""
-    if len(_access_cache) >= _CACHE_MAX_SIZE:
-        # Evict oldest entries
-        now = time.time()
-        stale = [k for k, (_, ts) in _access_cache.items() if now - ts > _CACHE_TTL_SECONDS]
-        for k in stale:
-            del _access_cache[k]
-    _access_cache[gym_id_str] = (access_level, time.time())
+    """Cache the access level with TTL."""
+    from app.core.cache import get_cache_backend
+    get_cache_backend().set(f"sub:{gym_id_str}", access_level, _CACHE_TTL_SECONDS)
 
 
 def _extract_gym_id(request: Request) -> UUID | None:
@@ -110,11 +102,11 @@ def _extract_gym_id(request: Request) -> UUID | None:
         return None
     token = auth_header[7:]
     try:
-        payload = jwt.decode(
+        payload = pyjwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         return UUID(payload["gym_id"])
-    except (JWTError, KeyError, ValueError):
+    except (InvalidTokenError, KeyError, ValueError):
         return None
 
 

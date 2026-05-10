@@ -31,19 +31,6 @@ class PaymentService:
         self.member_repo = MemberRepository(db)
         self.membership_service = MembershipService(db)
 
-    # ************************************************************
-    # Function Name : Record Member Payment
-    #
-    # Purpose       : Records a payment for a gym member with full
-    # tenant isolation. When a completed payment
-    # includes membership dates, it automatically
-    # triggers membership renewal. Emits domain
-    # events for future notification integrations
-    # (WhatsApp receipts, SMS confirmations).
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def record_payment(
         self, gym_id: UUID, user_id: UUID, data: PaymentCreateRequest
     ) -> Payment:
