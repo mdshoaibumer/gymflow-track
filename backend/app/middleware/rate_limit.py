@@ -23,35 +23,18 @@ Security reasoning:
 """
 
 import logging
-import time
-from collections import defaultdict
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from app.core.cache import get_cache_backend
 from app.core.config import settings
 
 logger = logging.getLogger("gymflow.security")
 
-# In-memory store: {ip: [(timestamp, path_tier), ...]}
-_request_log: dict[str, list[float]] = defaultdict(list)
-_auth_request_log: dict[str, list[float]] = defaultdict(list)
-
-# Cleanup threshold — prune old entries periodically
+# Window duration for sliding-window counters
 _WINDOW_SECONDS = 60
-_CLEANUP_THRESHOLD = 1000  # Prune when dict exceeds this many IPs
-
-
-def _cleanup(store: dict[str, list[float]], now: float) -> None:
-    """Remove entries older than the window. Prevents unbounded memory growth."""
-    if len(store) > _CLEANUP_THRESHOLD:
-        stale_keys = [
-            ip for ip, times in store.items()
-            if not times or times[-1] < now - _WINDOW_SECONDS
-        ]
-        for key in stale_keys:
-            del store[key]
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -83,39 +66,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Determine client IP (respect proxy headers in production)
         client_ip = self._get_client_ip(request)
-        now = time.time()
 
         # Choose rate limit tier
         is_auth = path.startswith("/api/v1/auth")
+        cache = get_cache_backend()
 
         if is_auth:
-            store = _auth_request_log
+            key = f"rl:auth:{client_ip}"
             limit = settings.RATE_LIMIT_AUTH
         else:
-            store = _request_log
+            key = f"rl:api:{client_ip}"
             limit = settings.RATE_LIMIT_API
 
-        # Prune old entries for this IP
-        cutoff = now - _WINDOW_SECONDS
-        store[client_ip] = [t for t in store[client_ip] if t > cutoff]
+        count = cache.increment_window(key, _WINDOW_SECONDS)
 
-        if len(store[client_ip]) >= limit:
-            retry_after = int(_WINDOW_SECONDS - (now - store[client_ip][0]))
+        if count > limit:
             logger.warning(
                 f"Rate limit exceeded: {client_ip} on {path} "
-                f"({len(store[client_ip])}/{limit} in {_WINDOW_SECONDS}s)",
+                f"({count}/{limit} in {_WINDOW_SECONDS}s)",
                 extra={"client_ip": client_ip, "path": path},
             )
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please try again later."},
-                headers={"Retry-After": str(max(retry_after, 1))},
+                headers={"Retry-After": str(_WINDOW_SECONDS)},
             )
-
-        store[client_ip].append(now)
-
-        # Periodic cleanup
-        _cleanup(store, now)
 
         return await call_next(request)
 
@@ -132,10 +107,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         - Enable TRUST_PROXY_HEADERS=true
         - X-Forwarded-For contains the real client IP
         - request.client.host is the proxy IP
+
+        Header priority:
+        1. X-Real-IP (set by nginx, Cloudflare)
+        2. X-Forwarded-For (standard proxy header, first entry = client)
+        3. request.client.host (direct connection / fallback)
         """
         if settings.TRUST_PROXY_HEADERS:
+            # X-Real-IP is more reliable when set by a trusted reverse proxy
+            real_ip = request.headers.get("x-real-ip")
+            if real_ip:
+                return real_ip.strip()
             forwarded = request.headers.get("x-forwarded-for")
             if forwarded:
-                # X-Forwarded-For: client, proxy1, proxy2 — take the first
-                return forwarded.split(",")[0].strip()
+                # X-Forwarded-For: client, proxy1, proxy2 — take the first (leftmost)
+                client_ip = forwarded.split(",")[0].strip()
+                # Basic validation: reject obviously spoofed values
+                if client_ip and client_ip not in ("", "unknown"):
+                    return client_ip
         return request.client.host if request.client else "unknown"

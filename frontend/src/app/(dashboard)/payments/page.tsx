@@ -11,7 +11,6 @@ import { motion } from "framer-motion";
 import { Plus, Receipt } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePayments, useCreatePayment } from "@/hooks/use-payments";
-import { useMembers } from "@/hooks/use-members";
 import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
@@ -35,15 +34,8 @@ export default function PaymentsPage() {
     limit: PAGE_SIZE,
   });
 
-  // Only load members when the payment form is visible (for the member dropdown)
-  const { data: membersData } = useMembers(
-    { skip: 0, limit: 500 },
-    { enabled: showForm }
-  );
-
   const payments = paymentsData?.payments ?? [];
   const total = paymentsData?.total ?? 0;
-  const members = membersData?.members ?? [];
 
   const createMutation = useCreatePayment();
 
@@ -146,7 +138,6 @@ export default function PaymentsPage() {
       {/* Form */}
       {showForm && (
         <PaymentForm
-          members={members}
           onSubmit={handleCreate}
           onCancel={() => setShowForm(false)}
         />

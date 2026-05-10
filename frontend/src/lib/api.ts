@@ -2,6 +2,8 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+// Legacy keys — kept temporarily for migration. New code uses HttpOnly cookies.
+// TODO: Remove after confirming all clients are on cookie-based auth.
 export const TOKEN_KEY = "gymflow_access_token";
 export const REFRESH_KEY = "gymflow_refresh_token";
 
@@ -18,46 +20,34 @@ export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
+  // CRITICAL: withCredentials sends HttpOnly cookies with every request.
+  // This replaces manual Authorization header management for browser clients.
+  withCredentials: true,
 });
 
-// Request interceptor — attach token from Zustand store
+// Request interceptor — no-op for cookie auth, but kept for backward compat
+// with any code that still sets Authorization manually.
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window !== "undefined") {
-    // Lazy import to avoid circular dependency issues during SSR
-    const { useAuthStore } = require("@/store/auth-store");
-    const token = useAuthStore.getState().token;
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
+  // Cookies are sent automatically by the browser — no manual header needed.
+  // Legacy localStorage tokens are no longer read here.
   return config;
 });
 
 // Response interceptor — auto-refresh on 401, normalize errors
-let _refreshPromise: Promise<string | null> | null = null;
+let _refreshPromise: Promise<boolean> | null = null;
 
-async function _attemptTokenRefresh(): Promise<string | null> {
-  const refreshToken = typeof window !== "undefined"
-    ? localStorage.getItem(REFRESH_KEY)
-    : null;
-  if (!refreshToken) return null;
-
+async function _attemptTokenRefresh(): Promise<boolean> {
   try {
-    const response = await axios.post(`${API_URL}/auth/refresh`, {
-      refresh_token: refreshToken,
-    });
-
-    const data = response.data;
-    if (data.access_token && data.refresh_token) {
-      if (typeof window !== "undefined") {
-        const { useAuthStore } = require("@/store/auth-store");
-        useAuthStore.getState().saveTokens(data.access_token, data.refresh_token);
-      }
-      return data.access_token;
-    }
-    return null;
+    // POST to /auth/refresh — the refresh token is in an HttpOnly cookie,
+    // sent automatically by the browser (withCredentials: true).
+    await axios.post(
+      `${API_URL}/auth/refresh`,
+      {},
+      { withCredentials: true },
+    );
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -77,10 +67,10 @@ api.interceptors.response.use(
           _refreshPromise = null;
         });
       }
-      const newToken = await _refreshPromise;
+      const refreshed = await _refreshPromise;
 
-      if (newToken) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      if (refreshed) {
+        // Retry original request — new access token is in the cookie
         return api(originalRequest);
       }
 
@@ -122,9 +112,6 @@ export async function apiClient<T>(
   options: RequestOptions = {}
 ): Promise<T> {
   const { method = "GET", body } = options;
-
-  // Auth header is set automatically by the request interceptor from localStorage.
-  // Do NOT set it here — avoids stale token conflicts between Zustand state and localStorage.
 
   const response = await api.request<T>({
     url: endpoint,

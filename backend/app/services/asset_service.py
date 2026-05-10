@@ -75,17 +75,6 @@ class AssetService:
 
     # === Asset CRUD ===
 
-    # ************************************************************
-    # Function Name : Register New Equipment Asset
-    #
-    # Purpose       : Creates a new equipment asset in the gym's
-    # inventory with an initial ACTIVE status. Validates
-    # that the asset code is unique within the gym to
-    # prevent duplicate equipment entries.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def create_asset(
         self,
         gym_id: UUID,
@@ -121,17 +110,6 @@ class AssetService:
         )
         return await self.asset_repo.create(asset)
 
-    # ************************************************************
-    # Function Name : Update Equipment Asset Details
-    #
-    # Purpose       : Modifies equipment metadata (name, manufacturer,
-    # notes, etc.) without changing the lifecycle
-    # status. Asset code changes are validated for
-    # uniqueness within the gym.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def update_asset(
         self,
         gym_id: UUID,

@@ -41,18 +41,6 @@ class UserService:
         )
         return result.scalar_one()
 
-    # ************************************************************
-    # Function Name : Create Staff or Admin User
-    #
-    # Purpose       : Creates a new user account within a gym with
-    # the specified role (ADMIN or STAFF). Validates
-    # email uniqueness within the gym and hashes the
-    # password before storage. OWNER role creation
-    # is blocked at the schema validation layer.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def create_user(self, gym_id: UUID, data: CreateUserRequest) -> User:
         existing = await self.user_repo.get_by_email_and_gym(data.email, gym_id)
         if existing:
@@ -72,17 +60,6 @@ class UserService:
         logger.info(f"User created: {user.id} role={user.role.value} gym={gym_id}")
         return user
 
-    # ************************************************************
-    # Function Name : Update Staff or Admin User
-    #
-    # Purpose       : Modifies user profile fields (name, phone, role,
-    # active status). Protects the gym OWNER account
-    # from modification through this API. Only fields
-    # included in the request are updated.
-    #
-    # Author        : Mohammed Shoaib U
-    #
-    # ************************************************************
     async def update_user(
         self, user_id: UUID, gym_id: UUID, data: UpdateUserRequest
     ) -> User:

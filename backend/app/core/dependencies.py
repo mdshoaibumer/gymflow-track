@@ -1,21 +1,19 @@
-import time
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.cache import get_cache_backend
+from app.core.cookies import ACCESS_COOKIE
 from app.core.security import decode_token
 from app.middleware.request_context import set_tenant_context
 from app.models.user import UserRole
 
-security_scheme = HTTPBearer()
+# Optional bearer scheme — does not reject requests missing the header,
+# allowing cookie-based auth to work as a fallback.
+security_scheme = HTTPBearer(auto_error=False)
 
-# Lightweight cache: {user_id_str: (is_active, timestamp)}
-# Prevents disabled/deleted users from using valid access tokens for up to 60s.
-# Trade-off: DB lookup once per 60s instead of every request.
-_user_active_cache: dict[str, tuple[bool, float]] = {}
 _USER_CACHE_TTL = 60  # seconds
-_USER_CACHE_MAX_SIZE = 5000
 
 
 class CurrentUser:
@@ -35,27 +33,35 @@ class CurrentUser:
         return self.role in (UserRole.OWNER, UserRole.ADMIN)
 
 
-# ************************************************************
-# Function Name : Extract and Validate Current User from JWT
-#
-# Purpose       : FastAPI dependency that extracts the authenticated
-# user from the Authorization header JWT. Validates
-# token type, parses identity claims, and checks a
-# lightweight cache to detect disabled/deleted users
-# within ~60 seconds of account changes.
-#
-# Author        : Mohammed Shoaib U
-#
-# ************************************************************
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
 ) -> CurrentUser:
     """Extract and validate the current user from the JWT access token.
+
+    Token resolution order:
+    1. Authorization: Bearer <token> header (API clients, mobile apps)
+    2. HttpOnly cookie (browser-based clients)
 
     Additionally checks a lightweight cache to detect disabled/deleted users
     within ~60 seconds of account changes (instead of only on token expiry).
     """
-    token = credentials.credentials
+    token = None
+
+    # 1. Try Authorization header first (explicit wins over implicit)
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+
+    # 2. Fall back to HttpOnly cookie
+    if not token:
+        token = request.cookies.get(ACCESS_COOKIE)
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
     payload = decode_token(token)
 
     if payload is None or payload.get("type") != "access":
@@ -90,12 +96,12 @@ async def get_current_user(
 async def _check_user_active(user_id: UUID) -> None:
     """Check if user is still active using a time-based cache."""
     uid_str = str(user_id)
-    now = time.time()
+    cache = get_cache_backend()
 
     # Check cache
-    cached = _user_active_cache.get(uid_str)
-    if cached and now - cached[1] < _USER_CACHE_TTL:
-        if not cached[0]:
+    cached = cache.get(f"user_active:{uid_str}")
+    if cached is not None:
+        if cached == "0":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is disabled",
@@ -115,13 +121,7 @@ async def _check_user_active(user_id: UUID) -> None:
             row = result.scalar_one_or_none()
             is_active = bool(row) if row is not None else False
 
-            # Evict stale entries if cache is too large
-            if len(_user_active_cache) >= _USER_CACHE_MAX_SIZE:
-                stale = [k for k, (_, ts) in _user_active_cache.items() if now - ts > _USER_CACHE_TTL]
-                for k in stale:
-                    del _user_active_cache[k]
-
-            _user_active_cache[uid_str] = (is_active, now)
+            cache.set(f"user_active:{uid_str}", "1" if is_active else "0", _USER_CACHE_TTL)
 
             if not is_active:
                 raise HTTPException(
@@ -142,18 +142,6 @@ async def _check_user_active(user_id: UUID) -> None:
         )
 
 
-# ************************************************************
-# Function Name : Role-Based Access Control Factory
-#
-# Purpose       : Creates a FastAPI dependency that enforces role-
-# based access control at the route level. Returns
-# a dependency function that verifies the current
-# user has one of the allowed roles (OWNER, ADMIN,
-# or STAFF) before granting access to the endpoint.
-#
-# Author        : Mohammed Shoaib U
-#
-# ************************************************************
 def require_role(*allowed_roles: UserRole):
     """
     Factory that creates a dependency enforcing role-based access.
