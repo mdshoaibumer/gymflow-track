@@ -256,7 +256,10 @@ class AuthService:
             )
             raise AuthenticationError("Refresh token reuse detected — all sessions revoked")
 
-        if stored_token.expires_at < datetime.now(timezone.utc):
+        token_expiry = stored_token.expires_at
+        if token_expiry.tzinfo is None:
+            token_expiry = token_expiry.replace(tzinfo=timezone.utc)
+        if token_expiry < datetime.now(timezone.utc):
             raise AuthenticationError("Refresh token expired")
 
         # Validate user still exists and is active

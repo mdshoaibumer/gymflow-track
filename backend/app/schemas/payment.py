@@ -42,8 +42,23 @@ class PaymentResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def extract_member_name(cls, data):
-        """Pull member.name from the ORM relationship when available."""
-        if hasattr(data, "member") and data.member is not None:
+        """Pull member.name from the ORM relationship when available.
+
+        Uses inspect() to check if the 'member' relationship is loaded,
+        avoiding lazy='raise' errors when the relationship wasn't
+        eagerly loaded (e.g. after create without selectinload).
+        """
+        from sqlalchemy import inspect as sa_inspect
+
+        member = None
+        try:
+            state = sa_inspect(data)
+            if "member" in state.dict:
+                member = data.member
+        except Exception:
+            pass
+
+        if member is not None:
             data = dict(
                 id=data.id,
                 gym_id=data.gym_id,
@@ -55,7 +70,7 @@ class PaymentResponse(BaseModel):
                 notes=data.notes,
                 idempotency_key=data.idempotency_key,
                 created_by=data.created_by,
-                member_name=data.member.name,
+                member_name=member.name,
             )
         return data
 

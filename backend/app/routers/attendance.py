@@ -44,12 +44,25 @@ router = APIRouter()
 
 
 def _to_response(attendance: Attendance) -> AttendanceResponse:
-    """Convert attendance model to response, including eager-loaded member info."""
+    """Convert attendance model to response, including eager-loaded member info.
+
+    Uses inspect() to check if the 'member' relationship is loaded,
+    avoiding lazy='raise' errors when the relationship wasn't
+    eagerly loaded (e.g. after create without selectinload).
+    """
+    from sqlalchemy import inspect as sa_inspect
+
     member_name = None
     member_phone = None
-    if hasattr(attendance, "member") and attendance.member is not None:
-        member_name = attendance.member.name
-        member_phone = attendance.member.phone
+    try:
+        state = sa_inspect(attendance)
+        if "member" in state.dict:
+            member = attendance.member
+            if member is not None:
+                member_name = member.name
+                member_phone = member.phone
+    except Exception:
+        pass
 
     return AttendanceResponse(
         id=attendance.id,
