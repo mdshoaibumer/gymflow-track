@@ -212,9 +212,29 @@ class MaintenanceRepository:
         return result.scalar_one()
 
     async def count_overdue(self, gym_id: UUID, as_of: date) -> int:
+        # Only count the latest maintenance record per asset to avoid
+        # inflating the overdue count with historical records.
+        from sqlalchemy import and_
+
+        latest_per_asset = (
+            select(
+                MaintenanceRecord.asset_id,
+                func.max(MaintenanceRecord.service_date).label("max_date"),
+            )
+            .where(MaintenanceRecord.gym_id == gym_id)
+            .group_by(MaintenanceRecord.asset_id)
+            .subquery()
+        )
         result = await self.db.execute(
             select(func.count())
             .select_from(MaintenanceRecord)
+            .join(
+                latest_per_asset,
+                and_(
+                    MaintenanceRecord.asset_id == latest_per_asset.c.asset_id,
+                    MaintenanceRecord.service_date == latest_per_asset.c.max_date,
+                ),
+            )
             .where(
                 MaintenanceRecord.gym_id == gym_id,
                 MaintenanceRecord.next_service_date != None,

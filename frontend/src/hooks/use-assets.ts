@@ -23,6 +23,7 @@ export function useAssets(params: ListAssetsParams = {}) {
   return useQuery({
     queryKey: keys.list(params),
     queryFn: () => assetService.list(params),
+    enabled: !!token,
   });
 }
 
@@ -31,6 +32,7 @@ export function useAssetStats() {
   return useQuery({
     queryKey: keys.stats(),
     queryFn: () => assetService.stats(),
+    enabled: !!token,
   });
 }
 
@@ -39,12 +41,11 @@ export function useMaintenanceHistory(assetId: string) {
   return useQuery({
     queryKey: keys.maintenance(assetId),
     queryFn: () => assetService.getMaintenanceHistory(assetId),
-    enabled: !!assetId,
+    enabled: !!token && !!assetId,
   });
 }
 
 export function useCreateAsset() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateAssetPayload) => assetService.create(data),
@@ -57,7 +58,6 @@ export function useCreateAsset() {
 }
 
 export function useUpdateAsset() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateAssetPayload> }) =>
@@ -71,7 +71,6 @@ export function useUpdateAsset() {
 }
 
 export function useUpdateAssetStatus() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: AssetStatus }) =>
@@ -85,7 +84,6 @@ export function useUpdateAssetStatus() {
 }
 
 export function useCompleteMaintenance() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => assetService.completeMaintenance(id),
@@ -98,7 +96,6 @@ export function useCompleteMaintenance() {
 }
 
 export function useRecordMaintenance() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ assetId, data }: { assetId: string; data: CreateMaintenancePayload }) =>

@@ -48,9 +48,11 @@ class GymService:
     async def update_gym(self, gym_id: UUID, data: GymUpdateRequest) -> Gym:
         gym = await self.get_gym(gym_id)
 
+        allowed_fields = {"name", "phone", "email", "address", "city"}
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            setattr(gym, field, value)
+            if field in allowed_fields:
+                setattr(gym, field, value)
 
         await self.db.flush()
         return gym

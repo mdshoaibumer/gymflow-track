@@ -10,6 +10,7 @@ export function useAttendanceToday() {
   return useQuery({
     queryKey: ["attendance", "today"],
     queryFn: () => attendanceService.getToday(),
+    enabled: !!token,
     staleTime: 10_000,
     refetchInterval: 30_000,
   });
@@ -20,6 +21,7 @@ export function useAttendanceStats() {
   return useQuery({
     queryKey: ["attendance", "stats"],
     queryFn: () => attendanceService.getStats(),
+    enabled: !!token,
     staleTime: 10_000,
   });
 }
@@ -29,6 +31,7 @@ export function useAttendanceTrend(days = 14) {
   return useQuery({
     queryKey: ["attendance", "trend", days],
     queryFn: () => attendanceService.getTrend(days),
+    enabled: !!token,
     staleTime: 60_000,
   });
 }
@@ -38,12 +41,11 @@ export function useMemberAttendance(memberId: string, skip = 0, limit = 30) {
   return useQuery({
     queryKey: ["attendance", "member", memberId, skip, limit],
     queryFn: () => attendanceService.getMemberAttendance(memberId, skip, limit),
-    enabled: !!memberId,
+    enabled: !!token && !!memberId,
   });
 }
 
 export function useCheckInQR() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (qrToken: string) =>
@@ -59,7 +61,6 @@ export function useCheckInQR() {
 }
 
 export function useCheckInManual() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (memberId: string) =>
@@ -75,7 +76,6 @@ export function useCheckInManual() {
 }
 
 export function useCheckOut() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attendanceId: string) =>

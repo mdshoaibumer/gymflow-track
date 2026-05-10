@@ -359,6 +359,6 @@ function formValuesToPayload(values: MemberFormValues): CreateMemberPayload {
   if (values.membership_plan) payload.membership_plan = values.membership_plan;
   if (values.membership_start) payload.membership_start = values.membership_start;
   if (values.membership_end) payload.membership_end = values.membership_end;
-  if (values.amount_paid) payload.amount_paid = Math.round(values.amount_paid * 100);
+  if (values.amount_paid != null) payload.amount_paid = Math.round(values.amount_paid * 100);
   return payload;
 }

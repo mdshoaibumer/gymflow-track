@@ -90,46 +90,54 @@ async def get_plan_by_tier(db: AsyncSession, tier: str) -> SubscriptionPlan:
 async def seed_default_plans(db: AsyncSession) -> None:
     """
     Idempotently seed Starter and Pro plans.
-    Called on startup — skips if plans already exist.
+    Called on startup — checks each tier individually so partial
+    failures from previous startups are recovered.
     """
-    result = await db.execute(
-        select(func.count()).select_from(SubscriptionPlan).where(
-            SubscriptionPlan.is_active == True  # noqa: E712
-        )
-    )
-    if result.scalar_one() > 0:
-        return  # Plans already exist
-
-    plans = [
-        SubscriptionPlan(
-            name="Starter",
-            tier=PlanTier.STARTER,
-            price_in_paise=149900,  # ₹1,499/mo
-            billing_interval=BillingInterval.MONTHLY,
-            description="For small gyms getting started. Up to 50 members.",
-            max_members=50,
-            max_staff_users=2,
-            sms_notifications_enabled=False,
-            advanced_reports_enabled=False,
-            is_active=True,
-        ),
-        SubscriptionPlan(
-            name="Pro",
-            tier=PlanTier.PRO,
-            price_in_paise=299900,  # ₹2,999/mo
-            billing_interval=BillingInterval.MONTHLY,
-            description="For growing gyms. Up to 200 members, SMS, and reports.",
-            max_members=200,
-            max_staff_users=5,
-            sms_notifications_enabled=True,
-            advanced_reports_enabled=True,
-            is_active=True,
-        ),
+    plan_definitions = [
+        {
+            "tier": PlanTier.STARTER,
+            "name": "Starter",
+            "price_in_paise": 149900,
+            "description": "For small gyms getting started. Up to 50 members.",
+            "max_members": 50,
+            "max_staff_users": 2,
+            "sms_notifications_enabled": False,
+            "advanced_reports_enabled": False,
+        },
+        {
+            "tier": PlanTier.PRO,
+            "name": "Pro",
+            "price_in_paise": 299900,
+            "description": "For growing gyms. Up to 200 members, SMS, and reports.",
+            "max_members": 200,
+            "max_staff_users": 5,
+            "sms_notifications_enabled": True,
+            "advanced_reports_enabled": True,
+        },
     ]
-    for plan in plans:
+
+    seeded = []
+    for defn in plan_definitions:
+        existing = await db.execute(
+            select(func.count()).select_from(SubscriptionPlan).where(
+                SubscriptionPlan.tier == defn["tier"],
+                SubscriptionPlan.is_active == True,  # noqa: E712
+            )
+        )
+        if existing.scalar_one() > 0:
+            continue
+
+        plan = SubscriptionPlan(
+            billing_interval=BillingInterval.MONTHLY,
+            is_active=True,
+            **defn,
+        )
         db.add(plan)
-    await db.flush()
-    logger.info("Seeded default subscription plans: Starter, Pro")
+        seeded.append(defn["name"])
+
+    if seeded:
+        await db.flush()
+        logger.info(f"Seeded subscription plans: {', '.join(seeded)}")
 
 
 # === Subscription Operations ===

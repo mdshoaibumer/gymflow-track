@@ -53,7 +53,7 @@ export function useUpdateMember() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateMemberPayload }) =>
       memberService.replace(id, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       toast.success("Member updated successfully");
     },
@@ -64,7 +64,6 @@ export function useUpdateMember() {
 }
 
 export function useDeleteMember() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => memberService.delete(id),

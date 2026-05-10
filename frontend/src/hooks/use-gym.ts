@@ -14,11 +14,11 @@ export function useGym() {
   return useQuery({
     queryKey: keys.gym,
     queryFn: () => gymService.getMyGym(),
+    enabled: !!token,
   });
 }
 
 export function useUpdateGym() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: GymUpdatePayload) => gymService.updateMyGym(data),

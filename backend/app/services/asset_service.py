@@ -158,7 +158,7 @@ class AssetService:
             "warranty_expiry", "notes",
         }
         for field, value in updates.items():
-            if field in allowed_fields and value is not None:
+            if field in allowed_fields:
                 setattr(asset, field, value)
 
         await self.db.flush()
@@ -184,10 +184,11 @@ class AssetService:
                 f"Cannot transition from '{asset.status.value}' to '{new_status.value}'"
             )
 
+        old_status = asset.status
         asset.status = new_status
         await self.db.flush()
         logger.info(
-            f"Asset {asset_id} status: {asset.status.value} → {new_status.value}"
+            f"Asset {asset_id} status: {old_status.value} \u2192 {new_status.value}"
         )
         return asset
 

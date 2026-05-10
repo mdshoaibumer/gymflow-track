@@ -79,7 +79,7 @@ export function PaymentForm({
             type="number"
             step="1"
             min="1"
-            {...register("amount")}
+            {...register("amount", { valueAsNumber: true })}
             className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="2000"
           />

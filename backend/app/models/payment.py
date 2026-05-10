@@ -52,7 +52,7 @@ class Payment(BaseModel):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Who recorded this payment (user_id from JWT)
-    created_by: Mapped[uuid.UUID] = mapped_column(
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 

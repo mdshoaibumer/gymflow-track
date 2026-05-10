@@ -32,7 +32,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -54,11 +53,8 @@ class CheckInSource(str, PyEnum):
 class Attendance(BaseModel):
     __tablename__ = "attendance"
     __table_args__ = (
-        # Dedup: one check-in per member per calendar day per gym
-        UniqueConstraint(
-            "gym_id", "member_id", "check_in_date",
-            name="uq_attendance_gym_member_date",
-        ),
+        # Dedup: one active check-in per member per calendar day per gym.
+        # Enforced via partial unique index in migration 011 (excludes cancelled rows).
         # Operational query: "today's attendance for this gym"
         Index(
             "ix_attendance_gym_date",

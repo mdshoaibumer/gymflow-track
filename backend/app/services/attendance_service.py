@@ -21,6 +21,7 @@ import logging
 from datetime import date, datetime, timezone
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError, ValidationError
@@ -214,7 +215,20 @@ class AttendanceService:
             source=source,
             recorded_by=recorded_by,
         )
-        return await self.attendance_repo.create(attendance)
+        try:
+            return await self.attendance_repo.create(attendance)
+        except IntegrityError:
+            # Race condition: concurrent request already inserted a row.
+            # Roll back the failed INSERT and return the existing record.
+            await self.db.rollback()
+            existing = await self.attendance_repo.get_today_for_member(
+                gym_id, member_id, today
+            )
+            if existing:
+                logger.debug(f"Concurrent check-in race for member {member_id}, returning existing")
+                return existing
+            # Should not happen — re-raise if no existing record found
+            raise
 
     async def generate_member_qr(self, gym_id: UUID, member_id: UUID) -> str:
         """

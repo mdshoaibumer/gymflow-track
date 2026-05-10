@@ -97,6 +97,8 @@ class NotificationRepository:
         Get pending notifications that are due for sending.
         Used by the background job processor.
         Ordered by scheduled_for ASC so oldest-due are processed first.
+        Uses FOR UPDATE SKIP LOCKED to prevent duplicate sends when
+        multiple scheduler instances overlap.
         """
         result = await self.db.execute(
             select(Notification)
@@ -106,6 +108,7 @@ class NotificationRepository:
             )
             .order_by(Notification.scheduled_for.asc())
             .limit(limit)
+            .with_for_update(skip_locked=True)
         )
         return list(result.scalars().all())
 

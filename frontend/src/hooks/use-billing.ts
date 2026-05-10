@@ -30,7 +30,7 @@ export function useSubscription(enabled = true) {
   return useQuery({
     queryKey: keys.subscription(),
     queryFn: () => billingService.getSubscription(),
-    enabled: isOwner && enabled,
+    enabled: !!token && isOwner && enabled,
     staleTime: 60 * 1000,
   });
 }
@@ -43,7 +43,7 @@ export function useBillingHistory(enabled = true) {
   return useQuery({
     queryKey: keys.history(),
     queryFn: () => billingService.getHistory(),
-    enabled: isOwner && enabled,
+    enabled: !!token && isOwner && enabled,
   });
 }
 
@@ -52,7 +52,7 @@ export function useFeatureLimits() {
   return useQuery({
     queryKey: keys.features(),
     queryFn: () => billingService.getFeatureLimits(),
-    enabled: true,
+    enabled: !!token,
   });
 }
 
@@ -64,12 +64,11 @@ export function useBillingMetrics() {
   return useQuery({
     queryKey: keys.metrics(),
     queryFn: () => billingService.getMetrics(),
-    enabled: isOwner,
+    enabled: !!token && isOwner,
   });
 }
 
 export function useSubscribe() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (planTier: string) => billingService.subscribe(planTier),
@@ -83,7 +82,6 @@ export function useSubscribe() {
 }
 
 export function useVerifyPayment() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: {
@@ -103,7 +101,6 @@ export function useVerifyPayment() {
 }
 
 export function useCancelSubscription() {
-  const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reason?: string) => billingService.cancel(reason),

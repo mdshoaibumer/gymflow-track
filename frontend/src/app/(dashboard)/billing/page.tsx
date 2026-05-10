@@ -53,13 +53,15 @@ export default function PricingPage() {
 
       if (result.razorpay_order_id && result.razorpay_key_id) {
         openRazorpayCheckout(result);
-      } else {
-        const verification = await verifyMutation.mutateAsync({
+      } else if (process.env.NODE_ENV === "development") {
+        // Mock payment flow — only available in development
+        await verifyMutation.mutateAsync({
           razorpay_payment_id: `mock_pay_${Date.now()}`,
           razorpay_order_id: result.razorpay_order_id || "mock",
           razorpay_signature: "mock_signature",
         });
-        // Query invalidation handled by useVerifyPayment hook
+      } else {
+        toast.error("Payment gateway not configured. Please contact support.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Subscription failed");

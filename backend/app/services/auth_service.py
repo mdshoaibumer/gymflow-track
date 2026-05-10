@@ -38,6 +38,10 @@ from app.services.billing_service import create_trial_subscription
 
 logger = logging.getLogger("gymflow.auth")
 
+# Pre-computed bcrypt hash used for constant-time rejection on invalid emails.
+# Prevents timing side-channels from revealing whether an email is registered.
+_DUMMY_HASH = "$2b$12$LJ3m4ys3Lf2Hbs5MhFclcOvpS2yJqinSPnNlVqFOK0D3IsVHyqEvC"
+
 
 # ************************************************************
 # Function Name : Hash Authentication Token
@@ -154,12 +158,13 @@ class AuthService:
                 access_token=access_token,
                 refresh_token=raw_refresh,
             )
-        except IntegrityError:
-            await self.db.rollback()
+        except IntegrityError as e:
+            # Let get_db() handle rollback — just raise the domain error.
+            # Inspect constraint name to give an accurate error message.
+            constraint = getattr(e.orig, "constraint_name", "") or str(e.orig)
+            if "slug" in constraint:
+                raise AlreadyExistsError("Gym name too similar to existing gym — please choose a different name")
             raise AlreadyExistsError("Email already registered")
-        except Exception:
-            await self.db.rollback()
-            raise
 
     # ************************************************************
     # Function Name : Authenticate User Login
@@ -176,6 +181,13 @@ class AuthService:
     async def login(self, data: LoginRequest) -> TokenResponse:
         # Multi-tenant safe: same email can exist in different gyms
         users = await self.user_repo.get_all_by_email(data.email)
+
+        if not users:
+            # No user found — run a dummy bcrypt check to prevent timing
+            # side-channel that reveals whether an email is registered.
+            verify_password(data.password, _DUMMY_HASH)
+            raise AuthenticationError("Invalid email or password")
+
         user = None
         for candidate in users:
             if verify_password(data.password, candidate.password_hash):
@@ -336,6 +348,8 @@ class AuthService:
         user = await self.user_repo.get_by_email(email)
 
         if not user or not user.is_active:
+            # Run a dummy hash to normalize response time (prevents timing enumeration)
+            verify_password("dummy", _DUMMY_HASH)
             logger.info(f"Password reset requested for unknown/inactive email")
             return "If an account exists with that email, a reset link has been sent."
 

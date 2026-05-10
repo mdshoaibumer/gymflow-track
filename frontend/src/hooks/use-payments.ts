@@ -17,6 +17,7 @@ export function useDashboardMetrics() {
   return useQuery({
     queryKey: ["dashboard", "metrics"],
     queryFn: () => dashboardService.getMetrics(),
+    enabled: !!token,
     staleTime: 30_000,
   });
 }
@@ -26,6 +27,7 @@ export function useExpiringMembers(days = 7) {
   return useQuery({
     queryKey: ["dashboard", "expiring", days],
     queryFn: () => dashboardService.getExpiring(days),
+    enabled: !!token,
     staleTime: 60_000,
   });
 }
@@ -35,6 +37,7 @@ export function useRecentPayments(limit = 5) {
   return useQuery({
     queryKey: ["dashboard", "recent-payments", limit],
     queryFn: () => dashboardService.getRecentPayments(limit),
+    enabled: !!token,
     staleTime: 30_000,
   });
 }
@@ -46,6 +49,7 @@ export function usePayments(params: ListPaymentsParams = {}) {
   return useQuery({
     queryKey: ["payments", params],
     queryFn: () => paymentService.list(params),
+    enabled: !!token,
     staleTime: 15_000,
   });
 }
@@ -55,13 +59,12 @@ export function useMemberPayments(memberId: string, skip = 0, limit = 20) {
   return useQuery({
     queryKey: ["payments", "member", memberId, skip, limit],
     queryFn: () => paymentService.listByMember(memberId, { skip, limit }),
-    enabled: !!memberId,
+    enabled: !!token && !!memberId,
     staleTime: 15_000,
   });
 }
 
 export function useCreatePayment() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreatePaymentPayload) =>

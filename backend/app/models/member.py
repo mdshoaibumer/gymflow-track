@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Date, Integer, Boolean, UniqueConstraint, Index
+from sqlalchemy import String, ForeignKey, Date, Integer, Boolean, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,7 +26,8 @@ class Gender(str, PyEnum):
 class Member(BaseModel):
     __tablename__ = "members"
     __table_args__ = (
-        UniqueConstraint("gym_id", "phone", name="uq_members_gym_phone"),
+        # Phone uniqueness enforced via partial unique index in migration 011
+        # (excludes soft-deleted rows so phone numbers can be reused).
         # Dashboard query: count by status
         Index("ix_members_gym_status", "gym_id", "membership_status"),
         # Expiry queries: members expiring within N days

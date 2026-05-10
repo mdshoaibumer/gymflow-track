@@ -10,6 +10,7 @@ export function useNotifications(params: ListNotificationsParams = {}) {
   return useQuery({
     queryKey: ["notifications", params],
     queryFn: () => notificationService.list(params),
+    enabled: !!token,
     staleTime: 15_000,
   });
 }
@@ -19,12 +20,12 @@ export function useNotificationStats() {
   return useQuery({
     queryKey: ["notifications", "stats"],
     queryFn: () => notificationService.stats(),
+    enabled: !!token,
     staleTime: 30_000,
   });
 }
 
 export function useTriggerScan() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => notificationService.triggerScan(),
@@ -39,7 +40,6 @@ export function useTriggerScan() {
 }
 
 export function useCancelNotification() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => notificationService.cancel(id),
@@ -54,7 +54,6 @@ export function useCancelNotification() {
 }
 
 export function useRetryFailed() {
-  const token = useAuthStore((s) => s.token);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => notificationService.retryFailed(),
