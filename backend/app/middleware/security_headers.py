@@ -37,14 +37,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Prevent browsers/proxies from caching authenticated API responses
         response.headers["Cache-Control"] = "no-store"
         # CSP: restrict resource loading to same-origin
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; "
-            "font-src 'self'; "
-            "connect-src 'self'; "
-            "frame-ancestors 'none'"
-        )
+        # Only apply to non-API routes (e.g. docs, redoc, health) as it can block
+        # cross-origin API calls from the frontend even with CORS enabled.
+        if not request.url.path.startswith("/api/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data:; "
+                "font-src 'self'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'"
+            )
 
         return response

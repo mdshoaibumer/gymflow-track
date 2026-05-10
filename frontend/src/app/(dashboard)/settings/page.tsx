@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Building2, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,9 +17,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
 export default function SettingsPage() {
-  const { user, isOwner } = useAuth();
+  const { user, isOwner, isAdmin, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const { data: gym, isLoading } = useGym();
   const updateMutation = useUpdateGym();
+
+  // Role-based route protection
+  useEffect(() => {
+    if (!authLoading && !isOwner && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [isOwner, isAdmin, authLoading, router]);
 
   const [form, setForm] = useState<GymUpdatePayload>({});
 

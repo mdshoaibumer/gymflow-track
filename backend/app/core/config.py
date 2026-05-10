@@ -156,9 +156,11 @@ class Settings(BaseSettings):
             )
             sys.exit(1)
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        "extra": "allow"
+    }
 
 
 settings = Settings()

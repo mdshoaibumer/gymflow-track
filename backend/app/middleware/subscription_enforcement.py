@@ -129,6 +129,10 @@ class SubscriptionEnforcementMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable):
+        # Skip OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         path = request.url.path
 
         # Skip exempt routes

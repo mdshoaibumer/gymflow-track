@@ -24,20 +24,26 @@ export function usePlans() {
 
 export function useSubscription(enabled = true) {
   const token = useAuthStore((s) => s.token);
+  const role = useAuthStore((s) => s.role);
+  const isOwner = role === "owner";
+
   return useQuery({
     queryKey: keys.subscription(),
     queryFn: () => billingService.getSubscription(token!),
-    enabled: !!token && enabled,
+    enabled: !!token && isOwner && enabled,
     staleTime: 60 * 1000,
   });
 }
 
 export function useBillingHistory(enabled = true) {
   const token = useAuthStore((s) => s.token);
+  const role = useAuthStore((s) => s.role);
+  const isOwner = role === "owner";
+
   return useQuery({
     queryKey: keys.history(),
     queryFn: () => billingService.getHistory(token!),
-    enabled: !!token && enabled,
+    enabled: !!token && isOwner && enabled,
   });
 }
 
@@ -52,10 +58,13 @@ export function useFeatureLimits() {
 
 export function useBillingMetrics() {
   const token = useAuthStore((s) => s.token);
+  const role = useAuthStore((s) => s.role);
+  const isOwner = role === "owner";
+
   return useQuery({
     queryKey: keys.metrics(),
     queryFn: () => billingService.getMetrics(token!),
-    enabled: !!token,
+    enabled: !!token && isOwner,
   });
 }
 

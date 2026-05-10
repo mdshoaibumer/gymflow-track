@@ -150,7 +150,7 @@ export function MemberForm({
             id="amount_paid"
             type="number"
             min="0"
-            {...register("amount_paid")}
+            {...register("amount_paid", { valueAsNumber: true })}
             className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="2000"
           />

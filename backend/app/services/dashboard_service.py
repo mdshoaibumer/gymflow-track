@@ -41,6 +41,8 @@ class DashboardService:
     # ************************************************************
     async def get_metrics(self, gym_id: UUID) -> DashboardMetrics:
         # Compute all dashboard metrics with parallel queries.
+        today = today_ist()
+        month_start = today.replace(day=1)
 
         total_members = await self.member_repo.count_by_gym(gym_id)
         active_members = await self.member_repo.count_by_status(gym_id, MembershipStatus.ACTIVE)

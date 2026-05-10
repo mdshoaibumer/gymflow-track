@@ -20,8 +20,16 @@ type Step = "welcome" | "members" | "explore" | "done";
 const STEPS: Step[] = ["welcome", "members", "explore", "done"];
 
 export default function SetupPage() {
-  const { token, user } = useAuth();
+  const { token, user, isOwner, isAdmin, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Role-based route protection
+  useEffect(() => {
+    if (!authLoading && !isOwner && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [isOwner, isAdmin, authLoading, router]);
+
   const [step, setStep] = useState<Step>("welcome");
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);

@@ -71,6 +71,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # Skip preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         path = request.url.path
 
         # Skip rate limiting for health checks
