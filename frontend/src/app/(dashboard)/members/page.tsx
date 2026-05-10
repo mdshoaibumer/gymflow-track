@@ -61,13 +61,14 @@ export default function MembersPage() {
   const deleteMutation = useDeleteMember();
 
   const handleCreate = async (values: MemberFormValues) => {
+    if (createMutation.isPending) return;
     const payload = formValuesToPayload(values);
     await createMutation.mutateAsync(payload);
     setShowCreateForm(false);
   };
 
   const handleEdit = async (values: MemberFormValues) => {
-    if (!editingMember) return;
+    if (!editingMember || updateMutation.isPending) return;
     const payload = formValuesToPayload(values);
     await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
     setEditingMember(null);
@@ -209,6 +210,7 @@ export default function MembersPage() {
           submitLabel="Add Member"
           onSubmit={handleCreate}
           onCancel={() => setShowCreateForm(false)}
+          isPending={createMutation.isPending}
         />
       )}
 
@@ -221,6 +223,7 @@ export default function MembersPage() {
           defaultValues={memberToFormValues(editingMember)}
           onSubmit={handleEdit}
           onCancel={() => setEditingMember(null)}
+          isPending={updateMutation.isPending}
         />
       )}
 

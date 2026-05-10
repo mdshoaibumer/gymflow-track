@@ -11,6 +11,8 @@ interface MemberFormProps {
   onCancel: () => void;
   submitLabel: string;
   title: string;
+  /** Mutation isPending state — prevents duplicate submissions across render cycles */
+  isPending?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export function MemberForm({
   onCancel,
   submitLabel,
   title,
+  isPending = false,
 }: MemberFormProps) {
   const {
     register,
@@ -186,15 +189,16 @@ export function MemberForm({
         <div className="sm:col-span-2 flex gap-3 pt-2">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isPending}
             className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? "Saving..." : submitLabel}
+            {isSubmitting || isPending ? "Saving..." : submitLabel}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
+            disabled={isSubmitting || isPending}
+            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
           >
             Cancel
           </button>
