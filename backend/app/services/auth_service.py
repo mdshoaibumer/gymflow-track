@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -146,17 +147,18 @@ class AuthService:
             raw_refresh = create_refresh_token(user.id, gym.id, user.role.value)
             await self._store_refresh_token(user.id, raw_refresh)
 
-            # Flush to trigger unique constraints before returning
+            # Flush to trigger any remaining constraints before returning
             await self.db.flush()
 
             return TokenResponse(
                 access_token=access_token,
                 refresh_token=raw_refresh,
             )
-        except Exception as e:
-            err_str = str(e).lower()
-            if "uq_users_gym_email" in err_str or "unique" in err_str:
-                raise AlreadyExistsError("Email already registered")
+        except IntegrityError:
+            await self.db.rollback()
+            raise AlreadyExistsError("Email already registered")
+        except Exception:
+            await self.db.rollback()
             raise
 
     # ************************************************************
