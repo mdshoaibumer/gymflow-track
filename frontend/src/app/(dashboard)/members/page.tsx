@@ -9,7 +9,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Search, Pencil, Trash2, Plus, UserPlus } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, UserPlus, Download } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import type { Member, CreateMemberPayload } from "@/services/member.service";
@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { formatPaise } from "@/lib/utils";
+import { downloadCsv } from "@/lib/export-csv";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
@@ -185,15 +186,30 @@ export default function MembersPage() {
           </p>
         </div>
         <RoleGate allowed={["owner", "admin"]}>
-          <Button
-            onClick={() => {
-              setShowCreateForm(true);
-              setEditingMember(null);
-            }}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Member
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                downloadCsv(
+                  "/members/csv",
+                  `members_${new Date().toISOString().split("T")[0]}.csv`,
+                  debouncedSearch ? { search: debouncedSearch } : undefined,
+                ).catch(() => {})
+              }
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setShowCreateForm(true);
+                setEditingMember(null);
+              }}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Member
+            </Button>
+          </div>
         </RoleGate>
       </div>
 
