@@ -8,6 +8,7 @@ Uses efficient GROUP BY aggregations to avoid N+1 patterns.
 
 from datetime import date, timedelta
 from collections import defaultdict
+import logging
 from uuid import UUID
 
 from sqlalchemy import select, func
@@ -25,6 +26,8 @@ from app.schemas.analytics import (
     KPICard,
     DashboardKPIsResponse,
 )
+
+logger = logging.getLogger("gymflow.analytics")
 
 
 class AnalyticsService:
@@ -57,6 +60,7 @@ class AnalyticsService:
         try:
             data = await self._revenue_trend_db(gym_id, granularity, date_from, date_to)
         except Exception:
+            logger.debug("DB-native revenue trend failed, falling back to Python aggregation")
             data = await self._revenue_trend_python(gym_id, granularity, date_from, date_to)
 
         # Fill missing periods with zeros
@@ -283,6 +287,7 @@ class AnalyticsService:
             day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
             return day_names[int(row.dow)]
         except Exception:
+            logger.debug("DB-native best_collection_day failed, falling back to Python")
             return await self._best_collection_day_python(gym_id, d_from, d_to)
 
     async def _best_collection_day_python(self, gym_id: UUID, d_from: date, d_to: date) -> str | None:
@@ -536,6 +541,7 @@ class AnalyticsService:
             result = await self.db.execute(stmt)
             return int(result.scalar_one())
         except Exception:
+            logger.debug("Attendance count query failed, returning 0")
             return 0
 
     async def _sum_pending(self, gym_id: UUID) -> int:

@@ -18,6 +18,7 @@ RBAC:
 """
 
 from datetime import date, timedelta
+import logging
 from app.core.timezone import today_ist
 from uuid import UUID
 
@@ -41,6 +42,8 @@ from app.schemas.attendance import (
 )
 from app.services.attendance_service import AttendanceService
 
+logger = logging.getLogger("gymflow.attendance")
+
 router = APIRouter()
 
 
@@ -62,8 +65,8 @@ def _to_response(attendance: Attendance) -> AttendanceResponse:
             if member is not None:
                 member_name = member.name
                 member_phone = member.phone
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not load member info for attendance %s: %s", attendance.id, e)
 
     return AttendanceResponse(
         id=attendance.id,
