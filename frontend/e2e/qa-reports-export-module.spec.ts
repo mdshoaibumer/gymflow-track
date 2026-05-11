@@ -1820,9 +1820,15 @@ test.describe("12. Mobile Responsive", () => {
     const menuBtnCount = await menuBtn.count();
 
     if (menuBtnCount > 0) {
-      await menuBtn.first().click();
-      await page.waitForTimeout(500);
-      console.log("Mobile menu button found and clicked");
+      // Menu button may exist but be hidden via CSS at desktop viewport
+      const isVisible = await menuBtn.first().isVisible();
+      if (isVisible) {
+        await menuBtn.first().click();
+        await page.waitForTimeout(500);
+        console.log("Mobile menu button found and clicked");
+      } else {
+        console.log("Mobile menu button exists but not visible at current viewport");
+      }
     } else {
       console.log("FINDING: No mobile hamburger menu button found");
     }

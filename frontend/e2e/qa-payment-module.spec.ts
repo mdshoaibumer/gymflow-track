@@ -1382,7 +1382,7 @@ test.describe("6. Network & Failure Tests", () => {
       latency: 400,
     });
 
-    await page.goto("/payments");
+    await page.goto("/payments", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(8000);
 
     await takeScreenshot(page, "64-slow-3g");

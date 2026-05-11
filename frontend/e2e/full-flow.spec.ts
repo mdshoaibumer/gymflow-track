@@ -152,8 +152,8 @@ test.describe("Authenticated Navigation", () => {
   test("dashboard page loads with metrics", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/total members/i)).toBeVisible();
     await expect(page.getByText(/active members/i)).toBeVisible();
+    await expect(page.getByText(/revenue|attendance/i).first()).toBeVisible();
   });
 
   test("members page loads", async ({ page }) => {

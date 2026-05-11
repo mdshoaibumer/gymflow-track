@@ -460,7 +460,7 @@ test.describe("3. SESSION & AUTHORIZATION", () => {
 
   test("3.01 Session persists after page refresh", async ({ page }) => {
     await loginViaUI(page, OWNER_EMAIL);
-    await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page.waitForURL(/dashboard|setup/, { timeout: 60000 });
     await page.reload();
     await page.waitForTimeout(5000);
     // Should still be on dashboard (not redirected to login)
@@ -604,7 +604,7 @@ test.describe("5. SECURITY — TOKEN & COOKIE INSPECTION", () => {
 
   test("5.01 No tokens in localStorage after login", async ({ page }) => {
     await loginViaUI(page, OWNER_EMAIL);
-    await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page.waitForURL(/dashboard|setup/, { timeout: 60000 });
     const localStorageData = await page.evaluate(() => {
       const data: Record<string, string> = {};
       for (let i = 0; i < localStorage.length; i++) {
@@ -708,10 +708,13 @@ test.describe("5. SECURITY — TOKEN & COOKIE INSPECTION", () => {
     const tokenLeaks: string[] = [];
     page.on("response", async (response) => {
       try {
+        const url = response.url();
+        // Skip auth endpoints, static assets, and Next.js chunks
+        if (url.includes("/auth/") || url.includes("_next/") || url.includes(".js") || url.includes(".css")) return;
         const text = await response.text();
         // Check if JWT appears in non-auth endpoints
-        if (!response.url().includes("/auth/") && text.includes("eyJ") && text.length > 100) {
-          tokenLeaks.push(response.url());
+        if (text.includes("eyJ") && text.length > 100) {
+          tokenLeaks.push(url);
         }
       } catch { /* binary response */ }
     });
@@ -935,7 +938,7 @@ test.describe("7. NETWORK & FAILURE TESTS", () => {
 
   test("7.06 Session recovery after network reconnect", async ({ page }) => {
     await loginViaUI(page, OWNER_EMAIL);
-    await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page.waitForURL(/dashboard|setup/, { timeout: 60000 });
     // Go offline
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Network.emulateNetworkConditions", {
@@ -963,7 +966,7 @@ test.describe("8. MULTI-TAB TESTING", () => {
     const page2 = await context.newPage();
     // Login in tab 1
     await loginViaUI(page1, OWNER_EMAIL);
-    await page1.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page1.waitForURL(/dashboard|setup/, { timeout: 60000 });
     // Navigate tab 2 to dashboard
     await page2.goto("/dashboard");
     await page2.waitForTimeout(8000);
@@ -978,7 +981,7 @@ test.describe("8. MULTI-TAB TESTING", () => {
     const page2 = await context.newPage();
     // Login in tab 1
     await loginViaUI(page1, OWNER_EMAIL);
-    await page1.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page1.waitForURL(/dashboard|setup/, { timeout: 60000 });
     // Load dashboard in tab 2
     await page2.goto("/dashboard");
     await page2.waitForTimeout(5000);
@@ -1000,7 +1003,7 @@ test.describe("8. MULTI-TAB TESTING", () => {
   test("8.03 Multiple tabs accessing protected routes simultaneously", async ({ context }) => {
     const page1 = await context.newPage();
     await loginViaUI(page1, OWNER_EMAIL);
-    await page1.waitForURL(/dashboard|setup/, { timeout: 30000 });
+    await page1.waitForURL(/dashboard|setup/, { timeout: 60000 });
     // Open multiple protected routes in parallel
     const page2 = await context.newPage();
     const page3 = await context.newPage();

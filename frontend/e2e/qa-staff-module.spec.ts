@@ -65,7 +65,7 @@ test.describe("Staff Management", () => {
       await expect(
         page.getByRole("heading", { name: /staff management/i })
       ).toBeVisible({ timeout: 15000 });
-      await expect(page.getByText(OWNER_NAME)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(OWNER_NAME).first()).toBeVisible({ timeout: 10000 });
     });
 
     test("add staff dialog validates empty form", async ({ page }) => {
