@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = "013_optimistic_locking"
-down_revision = "012_payment_idempotency_and_token_grace"
+down_revision = "012_pay_idem_token_grace"
 branch_labels = None
 depends_on = None
 
