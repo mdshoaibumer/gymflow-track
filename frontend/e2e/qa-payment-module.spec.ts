@@ -517,15 +517,15 @@ test.describe("2. Subscription & Billing Tests", () => {
     const pageText = await page.locator("body").innerText();
     const starterVisible = pageText.toLowerCase().includes("starter");
     const proVisible = pageText.toLowerCase().includes("pro");
-    const enterpriseVisible = pageText.toLowerCase().includes("enterprise");
+    const eliteVisible = pageText.toLowerCase().includes("elite");
     const hasPlansOrPricing = /plans|pricing|\/month|₹/i.test(pageText);
 
     console.log(
-      `Plans visible: Starter=${starterVisible}, Pro=${proVisible}, Enterprise=${enterpriseVisible}, hasPlansUI=${hasPlansOrPricing}`
+      `Plans visible: Starter=${starterVisible}, Pro=${proVisible}, Elite=${eliteVisible}, hasPlansUI=${hasPlansOrPricing}`
     );
 
     // The page should at minimum load (plans OR pricing header OR loading state)
-    const hasContent = starterVisible || proVisible || enterpriseVisible || hasPlansOrPricing ||
+    const hasContent = starterVisible || proVisible || eliteVisible || hasPlansOrPricing ||
       (await page.locator(".animate-spin").count()) > 0;
     expect(hasContent).toBeTruthy();
   });
@@ -593,21 +593,17 @@ test.describe("2. Subscription & Billing Tests", () => {
     );
   });
 
-  test("2.6 — Enterprise plan shows 'Coming Soon'", async ({ page }) => {
+  test("2.6 — Elite plan is subscribable", async ({ page }) => {
     await page.goto("/billing");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
 
-    const comingSoon = page.getByRole("button", { name: /coming soon/i });
-    const isVisible = await comingSoon.isVisible().catch(() => false);
-    const isDisabled = isVisible ? await comingSoon.isDisabled() : false;
+    const eliteCard = page.getByText(/elite/i).first();
+    const isVisible = await eliteCard.isVisible().catch(() => false);
 
-    await takeScreenshot(page, "25-enterprise-disabled");
+    await takeScreenshot(page, "25-elite-plan");
 
-    console.log(`Enterprise Coming Soon: visible=${isVisible}, disabled=${isDisabled}`);
-    if (isVisible) {
-      expect(isDisabled).toBeTruthy();
-    }
+    console.log(`Elite plan visible: ${isVisible}`);
   });
 
   test("2.7 — Billing metrics page (owner only)", async ({ page }) => {

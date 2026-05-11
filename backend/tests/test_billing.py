@@ -103,10 +103,15 @@ async def starter_plan(db_session: AsyncSession) -> SubscriptionPlan:
         name="Test Starter",
         tier=PlanTier.STARTER,
         price_in_paise=99900,
-        max_members=50,
+        max_members=100,
         max_staff_users=2,
-        sms_notifications_enabled=False,
+        sms_notifications_enabled=True,
         advanced_reports_enabled=False,
+        qr_attendance_enabled=False,
+        advanced_analytics_enabled=False,
+        export_reports_enabled=False,
+        multi_branch_enabled=False,
+        automated_whatsapp_enabled=False,
         is_active=True,
     )
     db_session.add(plan)
@@ -123,9 +128,14 @@ async def pro_plan(db_session: AsyncSession) -> SubscriptionPlan:
         tier=PlanTier.PRO,
         price_in_paise=199900,
         max_members=500,
-        max_staff_users=10,
+        max_staff_users=5,
         sms_notifications_enabled=True,
         advanced_reports_enabled=True,
+        qr_attendance_enabled=True,
+        advanced_analytics_enabled=True,
+        export_reports_enabled=True,
+        multi_branch_enabled=False,
+        automated_whatsapp_enabled=False,
         is_active=True,
     )
     db_session.add(plan)

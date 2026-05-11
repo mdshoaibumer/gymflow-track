@@ -533,7 +533,7 @@ op.execute("CREATE TYPE feedbackcategory AS ENUM (...)")  # ❌ No checkfirst
 | `maintenancetype` | preventive, corrective, inspection, warranty | 005 | assets |
 | `feedbackcategory` | bug, feature, friction, general | 006 | feedback |
 | `billingstatus` | trial, active, past_due, cancelled, expired | 007 | billing |
-| `plantier` | starter, pro, enterprise | 007 | billing |
+| `plantier` | starter, pro, elite | 007+015 | billing |
 | `billinginterval` | monthly | 007 | billing |
 | `invoicestatus` | pending, paid, failed, refunded | 007 | billing |
 

@@ -89,9 +89,10 @@ async def get_plan_by_tier(db: AsyncSession, tier: str) -> SubscriptionPlan:
 
 async def seed_default_plans(db: AsyncSession) -> None:
     """
-    Idempotently seed Starter and Pro plans.
-    Called on startup — checks each tier individually so partial
-    failures from previous startups are recovered.
+    Idempotently seed and update Starter, Pro, and Elite plans.
+    Called on startup — creates missing plans and updates existing plans
+    so feature flags stay correct (e.g. Pro gets qr_attendance_enabled=True).
+    Also deactivates stale Enterprise plans from older migrations.
     """
     plan_definitions = [
         {
@@ -144,28 +145,64 @@ async def seed_default_plans(db: AsyncSession) -> None:
         },
     ]
 
+    # Fields to keep in sync on existing plans (feature flags + limits)
+    sync_fields = [
+        "name", "price_in_paise", "yearly_price_in_paise", "description",
+        "max_members", "max_staff_users",
+        "sms_notifications_enabled", "advanced_reports_enabled",
+        "qr_attendance_enabled", "advanced_analytics_enabled",
+        "export_reports_enabled", "multi_branch_enabled",
+        "automated_whatsapp_enabled",
+    ]
+
     seeded = []
+    updated = []
     for defn in plan_definitions:
-        existing = await db.execute(
-            select(func.count()).select_from(SubscriptionPlan).where(
+        result = await db.execute(
+            select(SubscriptionPlan).where(
                 SubscriptionPlan.tier == defn["tier"],
-                SubscriptionPlan.is_active == True,  # noqa: E712
             )
         )
-        if existing.scalar_one() > 0:
-            continue
+        existing = result.scalar_one_or_none()
 
-        plan = SubscriptionPlan(
-            billing_interval=BillingInterval.MONTHLY,
-            is_active=True,
-            **defn,
+        if existing:
+            # Update existing plan to ensure feature flags are correct
+            changed = False
+            for field in sync_fields:
+                if field in defn and getattr(existing, field) != defn[field]:
+                    setattr(existing, field, defn[field])
+                    changed = True
+            if not existing.is_active:
+                existing.is_active = True
+                changed = True
+            if changed:
+                updated.append(defn["name"])
+        else:
+            plan = SubscriptionPlan(
+                billing_interval=BillingInterval.MONTHLY,
+                is_active=True,
+                **defn,
+            )
+            db.add(plan)
+            seeded.append(defn["name"])
+
+    # Deactivate stale Enterprise plans from migration 007
+    stale = await db.execute(
+        select(SubscriptionPlan).where(
+            SubscriptionPlan.name == "Enterprise",
+            SubscriptionPlan.is_active == True,  # noqa: E712
         )
-        db.add(plan)
-        seeded.append(defn["name"])
+    )
+    for plan in stale.scalars().all():
+        plan.is_active = False
+        logger.info(f"Deactivated stale Enterprise plan {plan.id}")
 
-    if seeded:
+    if seeded or updated:
         await db.flush()
+    if seeded:
         logger.info(f"Seeded subscription plans: {', '.join(seeded)}")
+    if updated:
+        logger.info(f"Updated subscription plans: {', '.join(updated)}")
 
 
 # === Subscription Operations ===
