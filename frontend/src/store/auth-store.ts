@@ -49,6 +49,7 @@ interface AuthState {
   // Computed helpers
   isOwner: boolean;
   isAdminOrAbove: boolean;
+  isSuperAdmin: boolean;
 
   // Tracks whether the /auth/me profile fetch has been initiated
   _profileFetched: boolean;
@@ -74,6 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   isOwner: false,
   isAdminOrAbove: false,
+  isSuperAdmin: false,
   _profileFetched: false,
 
   initialize: () => {
@@ -100,6 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             role: null,
             isOwner: false,
             isAdminOrAbove: false,
+            isSuperAdmin: false,
             _profileFetched: false,
             isLoading: false,
           });
@@ -111,6 +114,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             role: msg.user.role,
             isOwner: msg.user.role === "owner",
             isAdminOrAbove: msg.user.role === "owner" || msg.user.role === "admin",
+            isSuperAdmin: msg.user.role === "super_admin",
             isLoading: false,
             _profileFetched: true,
           });
@@ -130,6 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       role: user.role,
       isOwner: user.role === "owner",
       isAdminOrAbove: user.role === "owner" || user.role === "admin",
+      isSuperAdmin: user.role === "super_admin",
       isLoading: false,
     });
 
@@ -182,6 +187,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       role: null,
       isOwner: false,
       isAdminOrAbove: false,
+      isSuperAdmin: false,
       _profileFetched: false,
       isLoading: false,
     });

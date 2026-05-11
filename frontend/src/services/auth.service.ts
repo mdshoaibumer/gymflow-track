@@ -26,7 +26,7 @@ export interface CurrentUserResponse {
   name: string;
   email: string;
   phone: string;
-  role: "owner" | "admin" | "staff";
+  role: "super_admin" | "owner" | "admin" | "staff";
   is_active: boolean;
 }
 

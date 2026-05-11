@@ -7,7 +7,7 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-export type UserRole = "owner" | "admin" | "staff";
+export type UserRole = "super_admin" | "owner" | "admin" | "staff";
 
 export interface DecodedToken {
   sub: string;
