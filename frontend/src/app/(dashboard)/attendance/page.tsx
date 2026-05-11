@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { QrCode, UserCheck, Search, AlertCircle, RefreshCw } from "lucide-react";
+import { QrCode, UserCheck, Search, AlertCircle, RefreshCw, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useAttendanceToday,
@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-attendance";
 import { useMembers } from "@/hooks/use-members";
 import { DashboardCard } from "@/components/layout/dashboard-card";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -217,12 +218,19 @@ export default function AttendancePage() {
               ))}
             </div>
           ) : todayList.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
-              No check-ins today yet. Search for a member to mark their attendance.
+            <div className="p-6">
+              <EmptyState
+                icon={CalendarCheck}
+                title="No check-ins today"
+                description="Members can scan their QR code or check in at the front desk to appear here."
+                className="border-0 bg-transparent min-h-[200px]"
+              />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-sm" role="table">
+                <caption className="sr-only">Today&apos;s attendance records</caption>
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Member</th>
@@ -274,6 +282,41 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile cards for attendance */}
+            <div className="space-y-3 p-4 md:hidden">
+              {todayList.map((a) => (
+                <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{a.member_name || "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.check_in_at
+                        ? new Date(a.check_in_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                        : "—"}
+                      {" · "}
+                      <span className="capitalize">{a.source || "—"}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={STATUS_VARIANTS[a.status] || "secondary"} className="text-xs">
+                      {a.status === "checked_in" ? "In" : a.status === "checked_out" ? "Left" : "—"}
+                    </Badge>
+                    {a.status === "checked_in" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => checkOut.mutate(a.id)}
+                        disabled={checkOut.isPending}
+                      >
+                        Out
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -64,13 +64,20 @@ export default function LoginPage() {
       try {
         const profile = await authService.getMe();
         useAuthStore.getState().setUser(profile);
+        
+        toast.success("Welcome back!");
+        
+        // Route super admins to admin dashboard
+        if (profile.role === "super_admin") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       } catch {
         // Profile fetch failed — saveTokens already set isAuthenticated,
         // dashboard's useAuth will retry on mount
+        router.push("/dashboard");
       }
-
-      toast.success("Welcome back!");
-      router.push("/dashboard");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Login failed. Please try again.";
@@ -144,12 +151,13 @@ export default function LoginPage() {
                     aria-describedby={errors.password ? "password-error" : undefined}
                     {...register("password", { onChange: () => setFormError(null) })}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide input" : "Show input"}
-                    title={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     disabled={isSubmitting}
                   >
                     {showPassword ? (
@@ -157,7 +165,7 @@ export default function LoginPage() {
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {errors.password && (
                   <p id="password-error" className="text-xs text-destructive" role="alert">

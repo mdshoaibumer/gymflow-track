@@ -5,6 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import type { Member } from "@/services/member.service";
 
 interface MemberFormProps {
@@ -13,14 +16,9 @@ interface MemberFormProps {
   onCancel: () => void;
   submitLabel: string;
   title: string;
-  /** Mutation isPending state — prevents duplicate submissions across render cycles */
   isPending?: boolean;
 }
 
-/**
- * Reusable member form for create + edit operations.
- * Uses React Hook Form + Zod for validated, performant form handling.
- */
 export function MemberForm({
   defaultValues,
   onSubmit,
@@ -49,7 +47,6 @@ export function MemberForm({
     },
   });
 
-  // Warn user about unsaved changes on page refresh/close
   useUnsavedChanges(isDirty);
 
   const handleFormSubmit = async (data: Record<string, unknown>) => {
@@ -67,7 +64,7 @@ export function MemberForm({
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
 
       {errors.root && (
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive mb-4">
+        <div role="alert" className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive mb-4">
           {errors.root.message}
         </div>
       )}
@@ -76,60 +73,49 @@ export function MemberForm({
         onSubmit={handleSubmit(handleFormSubmit)}
         className="grid gap-4 sm:grid-cols-2"
       >
-        <div>
-          <label htmlFor="name" className="text-sm font-medium">
-            Name *
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Name *</Label>
+          <Input
             id="name"
             {...register("name")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="Member name"
           />
           {errors.name && (
-            <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>
+            <p className="text-xs text-destructive">{errors.name.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="phone" className="text-sm font-medium">
-            Phone *
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Phone *</Label>
+          <Input
             id="phone"
             {...register("phone")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="9876543210"
           />
           {errors.phone && (
-            <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>
+            <p className="text-xs text-destructive">{errors.phone.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
             id="email"
             type="email"
             {...register("email")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="member@email.com"
           />
           {errors.email && (
-            <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>
+            <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="gender" className="text-sm font-medium">
-            Gender
-          </label>
+        <div className="space-y-1.5">
+          <Label htmlFor="gender">Gender</Label>
           <select
             id="gender"
             {...register("gender")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm bg-background"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="">Select</option>
             <option value="male">Male</option>
@@ -138,78 +124,65 @@ export function MemberForm({
           </select>
         </div>
 
-        <div>
-          <label htmlFor="membership_plan" className="text-sm font-medium">
-            Plan
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="membership_plan">Plan</Label>
+          <Input
             id="membership_plan"
             {...register("membership_plan")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="Monthly / Quarterly / Annual"
           />
         </div>
 
-        <div>
-          <label htmlFor="amount_paid" className="text-sm font-medium">
-            Amount Paid (₹)
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="amount_paid">Amount Paid (₹)</Label>
+          <Input
             id="amount_paid"
             type="number"
             min="0"
             {...register("amount_paid", { valueAsNumber: true })}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="2000"
           />
           {errors.amount_paid && (
-            <p className="mt-1 text-xs text-destructive">{errors.amount_paid.message}</p>
+            <p className="text-xs text-destructive">{errors.amount_paid.message}</p>
           )}
         </div>
 
-        <div>
-          <label htmlFor="membership_start" className="text-sm font-medium">
-            Start Date
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="membership_start">Start Date</Label>
+          <Input
             id="membership_start"
             type="date"
             {...register("membership_start")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
           />
         </div>
 
-        <div>
-          <label htmlFor="membership_end" className="text-sm font-medium">
-            End Date
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="membership_end">End Date</Label>
+          <Input
             id="membership_end"
             type="date"
             {...register("membership_end")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
           />
         </div>
 
         <div className="sm:col-span-2 flex gap-3 pt-2">
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || isPending}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {(isSubmitting || isPending) && (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             {isSubmitting || isPending ? "Saving..." : submitLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={onCancel}
             disabled={isSubmitting || isPending}
-            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

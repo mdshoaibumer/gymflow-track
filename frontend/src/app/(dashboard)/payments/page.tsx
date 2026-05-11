@@ -14,6 +14,8 @@ import { usePayments, useCreatePayment } from "@/hooks/use-payments";
 import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
+import { EmptyState } from "@/components/empty-state";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -238,42 +240,36 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       ) : payments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Receipt className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">
-              {dateFrom || dateTo ? "No payments found" : "No payments yet"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {dateFrom || dateTo
-                ? "Try adjusting the date range filters."
-                : "Record your first payment to get started."}
-            </p>
-            {!(dateFrom || dateTo) && (
-              <RoleGate allowed={["owner", "admin"]}>
-                <Button className="mt-4" onClick={() => setShowForm(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Record First Payment
-                </Button>
-              </RoleGate>
-            )}
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Receipt}
+          title={dateFrom || dateTo ? "No payments found" : "No payments yet"}
+          description={
+            dateFrom || dateTo
+              ? "Try adjusting the date range filters."
+              : "Record your first payment to start tracking revenue."
+          }
+          action={
+            !(dateFrom || dateTo) && isAdminOrAbove
+              ? { label: "Record First Payment", onClick: () => setShowForm(true), icon: Plus }
+              : undefined
+          }
+        />
       ) : (
         <>
-          <Card>
+          {/* Desktop Table */}
+          <Card className="hidden md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" role="table">
+                  <caption className="sr-only">Payment records</caption>
                   <thead className="border-b bg-muted/50">
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <th
                             key={header.id}
-                            className="px-4 py-3 text-left font-medium text-muted-foreground"
+                            scope="col"
+                            className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
@@ -297,31 +293,37 @@ export default function PaymentsPage() {
             </CardContent>
           </Card>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Mobile Cards */}
+          <div className="space-y-3 md:hidden">
+            {payments.map((payment) => (
+              <Card key={payment.id} className="transition-shadow hover:shadow-md">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium">{payment.member_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(payment.payment_date).toLocaleDateString("en-IN")}
+                      </p>
+                    </div>
+                    <span className="text-lg font-bold">{formatPaise(payment.amount_in_paise)}</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Badge variant="secondary" className="capitalize text-xs">
+                      {payment.payment_method.replace("_", " ")}
+                    </Badge>
+                    <StatusBadge status={payment.payment_status} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <PaginationControls
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
     </motion.div>

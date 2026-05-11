@@ -16,6 +16,8 @@ import type { Member, CreateMemberPayload } from "@/services/member.service";
 import { RoleGate } from "@/components/role-gate";
 import { MemberForm, memberToFormValues } from "@/components/members/member-form";
 import { DeleteConfirmDialog } from "@/components/members/delete-confirm-dialog";
+import { EmptyState } from "@/components/empty-state";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -253,7 +255,8 @@ export default function MembersPage() {
       {isLoading ? (
         <Card>
           <CardContent className="p-0">
-            <div className="space-y-0">
+            {/* Desktop skeleton */}
+            <div className="hidden md:block space-y-0">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 border-b px-4 py-4 last:border-0">
                   <Skeleton className="h-4 w-32" />
@@ -264,45 +267,53 @@ export default function MembersPage() {
                 </div>
               ))}
             </div>
+            {/* Mobile skeleton */}
+            <div className="space-y-3 p-4 md:hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-lg border bg-card p-4 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       ) : members.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <UserPlus className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">
-              {debouncedSearch ? "No results found" : "No members yet"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
-              {debouncedSearch
-                ? `No members matching "${debouncedSearch}"`
-                : "Add your first member to get started with GymFlow."}
-            </p>
-            {!debouncedSearch && (
-              <RoleGate allowed={["owner", "admin"]}>
-                <Button className="mt-4" onClick={() => setShowCreateForm(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Member
-                </Button>
-              </RoleGate>
-            )}
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={UserPlus}
+          title={debouncedSearch ? "No results found" : "No members yet"}
+          description={
+            debouncedSearch
+              ? `No members matching "${debouncedSearch}"`
+              : "Add your first member to get started with GymFlow."
+          }
+          action={
+            !debouncedSearch && isAdminOrAbove
+              ? {
+                  label: "Add First Member",
+                  onClick: () => setShowCreateForm(true),
+                  icon: Plus,
+                }
+              : undefined
+          }
+        />
       ) : (
         <>
-          <Card>
+          {/* Desktop Table */}
+          <Card className="hidden md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" role="table">
+                  <caption className="sr-only">Gym members list</caption>
                   <thead className="border-b bg-muted/50">
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <th
                             key={header.id}
-                            className="px-4 py-3 text-left font-medium text-muted-foreground"
+                            scope="col"
+                            className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
@@ -326,32 +337,65 @@ export default function MembersPage() {
             </CardContent>
           </Card>
 
+          {/* Mobile Cards */}
+          <div className="space-y-3 md:hidden">
+            {members.map((member) => (
+              <Card key={member.id} className="transition-shadow hover:shadow-md">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/members/${member.id}`}
+                        className="font-medium text-primary hover:underline truncate block"
+                      >
+                        {member.name}
+                      </Link>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {member.phone}
+                      </p>
+                    </div>
+                    <StatusBadge status={member.membership_status} />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {member.membership_plan || "No plan"}
+                    </span>
+                    <span className="font-medium">{formatPaise(member.amount_paid)}</span>
+                  </div>
+                  {isAdminOrAbove && (
+                    <div className="mt-3 flex justify-end gap-1 border-t pt-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => setEditingMember(member)}
+                      >
+                        <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-destructive hover:text-destructive"
+                        onClick={() => setDeletingMember(member)}
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
 

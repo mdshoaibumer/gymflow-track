@@ -28,6 +28,7 @@ import { assetFormSchema, type AssetFormValues } from "@/lib/validations/asset";
 import { DashboardCard } from "@/components/layout/dashboard-card";
 import { formatPaise } from "@/lib/utils";
 import { RoleGate } from "@/components/role-gate";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -235,31 +236,33 @@ export default function EquipmentPage() {
           </CardContent>
         </Card>
       ) : assets.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Wrench className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">No equipment found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {search || filterStatus || filterCategory
-                ? "Try adjusting your filters."
-                : "Add your first piece of equipment to get started."}
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Wrench}
+          title="No equipment found"
+          description={
+            search || filterStatus || filterCategory
+              ? "Try adjusting your filters."
+              : "Add your first piece of equipment to get started."
+          }
+          action={
+            !search && !filterStatus && !filterCategory && isAdminOrAbove
+              ? { label: "Add Equipment", onClick: () => setModal({ type: "add" }), icon: Plus }
+              : undefined
+          }
+        />
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-sm" role="table">
+                <caption className="sr-only">Gym equipment inventory</caption>
                 <thead className="border-b bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Equipment</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Warranty</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Equipment</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Warranty</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -361,6 +364,66 @@ export default function EquipmentPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 p-4 md:hidden">
+              {assets.map((a) => (
+                <div key={a.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{a.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.asset_code}{a.manufacturer && ` · ${a.manufacturer}`}
+                      </p>
+                    </div>
+                    <Badge variant={STATUS_VARIANTS[a.status]} className="text-xs shrink-0">
+                      {STATUS_LABELS[a.status]}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{CATEGORY_LABELS[a.category] || a.category}</span>
+                    <span>
+                      {a.warranty_expiry
+                        ? `Warranty: ${new Date(a.warranty_expiry).toLocaleDateString("en-IN")}`
+                        : "No warranty"}
+                    </span>
+                  </div>
+                  <div className="flex gap-1 pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setModal({ type: "history", asset: a })}
+                    >
+                      <History className="mr-1 h-3 w-3" />
+                      History
+                    </Button>
+                    {isAdminOrAbove && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setModal({ type: "maintenance", asset: a })}
+                        >
+                          <Wrench className="mr-1 h-3 w-3" />
+                          Service
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setModal({ type: "edit", asset: a })}
+                        >
+                          <Pencil className="mr-1 h-3 w-3" />
+                          Edit
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

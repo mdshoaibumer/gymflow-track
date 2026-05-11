@@ -35,7 +35,7 @@ export function DashboardCard({
   }
 
   return (
-    <Card className={cn("transition-shadow hover:shadow-md", className)}>
+    <Card className={cn("transition-all duration-200 hover:shadow-md hover:-translate-y-0.5", className)}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>

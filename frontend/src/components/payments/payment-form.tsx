@@ -9,6 +9,9 @@ import {
 } from "@/lib/validations/payment";
 import type { Member } from "@/services/member.service";
 import { useMembers } from "@/hooks/use-members";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface PaymentFormProps {
   members?: Member[];
@@ -151,29 +154,28 @@ export function PaymentForm({
         </div>
 
         {/* Amount */}
-        <div>
-          <label className="text-sm font-medium">Amount (₹) *</label>
-          <input
+        <div className="space-y-1.5">
+          <Label>Amount (₹) *</Label>
+          <Input
             type="number"
             step="1"
             min="1"
             {...register("amount", { valueAsNumber: true })}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="2000"
           />
           {errors.amount && (
-            <p className="mt-1 text-xs text-destructive">
+            <p className="text-xs text-destructive">
               {errors.amount.message}
             </p>
           )}
         </div>
 
         {/* Payment Method */}
-        <div>
-          <label className="text-sm font-medium">Payment Method *</label>
+        <div className="space-y-1.5">
+          <Label>Payment Method *</Label>
           <select
             {...register("payment_method")}
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="cash">Cash</option>
             <option value="upi">UPI</option>
@@ -184,11 +186,11 @@ export function PaymentForm({
         </div>
 
         {/* Status */}
-        <div>
-          <label className="text-sm font-medium">Status</label>
+        <div className="space-y-1.5">
+          <Label>Status</Label>
           <select
             {...register("payment_status")}
-            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="completed">Completed</option>
             <option value="pending">Pending (Due)</option>
@@ -196,22 +198,20 @@ export function PaymentForm({
         </div>
 
         {/* Date */}
-        <div>
-          <label className="text-sm font-medium">Date</label>
-          <input
+        <div className="space-y-1.5">
+          <Label>Date</Label>
+          <Input
             type="date"
             {...register("payment_date")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
           />
         </div>
 
         {/* Notes */}
-        <div className="sm:col-span-2">
-          <label className="text-sm font-medium">Notes</label>
-          <input
+        <div className="sm:col-span-2 space-y-1.5">
+          <Label>Notes</Label>
+          <Input
             type="text"
             {...register("notes")}
-            className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
             placeholder="Optional notes..."
           />
         </div>
@@ -224,29 +224,26 @@ export function PaymentForm({
                 Membership Renewal (optional — auto-extends membership)
               </p>
             </div>
-            <div>
-              <label className="text-sm font-medium">Plan</label>
-              <input
+            <div className="space-y-1.5">
+              <Label>Plan</Label>
+              <Input
                 type="text"
                 {...register("membership_plan")}
-                className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
                 placeholder="Monthly / Quarterly"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Start Date</label>
-              <input
+            <div className="space-y-1.5">
+              <Label>Start Date</Label>
+              <Input
                 type="date"
                 {...register("membership_start")}
-                className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">End Date</label>
-              <input
+            <div className="space-y-1.5">
+              <Label>End Date</Label>
+              <Input
                 type="date"
                 {...register("membership_end")}
-                className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm"
               />
             </div>
           </>
@@ -254,20 +251,19 @@ export function PaymentForm({
 
         {/* Actions */}
         <div className="sm:col-span-2 flex gap-3 pt-2">
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {isSubmitting ? "Recording..." : "Record Payment"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={onCancel}
-            className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

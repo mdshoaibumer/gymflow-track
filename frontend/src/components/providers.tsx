@@ -40,6 +40,8 @@ export function Providers({ children }: { children: ReactNode }) {
             className: "text-sm",
           }}
         />
+        {/* Live region for screen readers to announce dynamic updates */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only" id="sr-announcements" />
       </ThemeProvider>
     </QueryClientProvider>
   );

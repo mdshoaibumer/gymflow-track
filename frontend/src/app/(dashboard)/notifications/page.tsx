@@ -14,6 +14,7 @@ import {
 import type { NotificationStatus } from "@/services/notification.service";
 import { DashboardCard } from "@/components/layout/dashboard-card";
 import { RoleGate } from "@/components/role-gate";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -159,31 +160,26 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       ) : notifications.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Bell className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">No notifications found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Click &quot;Scan Now&quot; to check for upcoming renewal reminders.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Bell}
+          title="No notifications found"
+          description='Click "Scan Now" to check for upcoming renewal reminders and payment overdue alerts.'
+        />
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-sm" role="table">
+                <caption className="sr-only">Notification queue</caption>
                 <thead className="border-b bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Scheduled</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sent At</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Retries</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Scheduled</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Sent At</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Retries</th>
                     {isAdminOrAbove && (
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
+                      <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                     )}
                   </tr>
                 </thead>
@@ -244,6 +240,51 @@ export default function NotificationsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 p-4 md:hidden">
+              {notifications.map((n) => (
+                <div key={n.id} className="flex items-start justify-between rounded-lg border p-3 gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="font-medium text-sm">
+                      {TYPE_LABELS[n.notification_type] || n.notification_type}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Scheduled: {new Date(n.scheduled_for).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                    {n.sent_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Sent: {new Date(n.sent_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                      </p>
+                    )}
+                    {n.retry_count > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Retries: {n.retry_count}
+                        {n.failure_reason && (
+                          <span className="ml-1 text-destructive" title={n.failure_reason}>⚠</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <Badge variant={STATUS_VARIANTS[n.status]} className="capitalize text-xs">
+                      {n.status}
+                    </Badge>
+                    {isAdminOrAbove && n.status === "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={() => cancelMutation.mutate(n.id)}
+                        disabled={cancelMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

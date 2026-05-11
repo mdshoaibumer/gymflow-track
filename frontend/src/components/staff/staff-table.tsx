@@ -188,8 +188,10 @@ export function StaffTable({
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        {/* Desktop table */}
+        <div className="overflow-x-auto hidden md:block">
+          <table className="w-full text-sm" role="table">
+            <caption className="sr-only">Staff members</caption>
             <thead className="border-b bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -200,6 +202,7 @@ export function StaffTable({
                     return (
                       <th
                         key={header.id}
+                        scope="col"
                         className={`px-4 py-3 text-left font-medium text-muted-foreground ${meta?.className ?? ""}`}
                       >
                         {flexRender(
@@ -238,6 +241,61 @@ export function StaffTable({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="space-y-3 p-4 md:hidden">
+          {users.map((u) => (
+            <div key={u.id} className="flex items-center gap-3 rounded-lg border p-3">
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                  {getInitials(u.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm truncate">{u.name}</p>
+                  <RoleBadge role={u.role} />
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                {u.phone && (
+                  <p className="text-xs text-muted-foreground">{u.phone}</p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Badge
+                  variant={u.is_active ? "success" : "secondary"}
+                  className="capitalize text-xs"
+                >
+                  {u.is_active ? "Active" : "Inactive"}
+                </Badge>
+                {isOwner && u.role !== "owner" && (
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => onEdit(u)}
+                      aria-label={`Edit ${u.name}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {u.id !== currentUserId && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-7 w-7 ${u.is_active ? "text-destructive" : "text-green-600"}`}
+                        onClick={() => onToggleStatus(u)}
+                        aria-label={u.is_active ? `Deactivate ${u.name}` : `Activate ${u.name}`}
+                      >
+                        {u.is_active ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

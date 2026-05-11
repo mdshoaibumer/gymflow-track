@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Menu, LogOut, User } from "lucide-react";
+import { Menu, LogOut, User, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUIStore } from "@/store/ui-store";
 import { authService } from "@/services/auth.service";
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+import { NotificationCenter } from "@/components/notification-center";
 
 export function Header() {
   const { role, user, logout } = useAuth();
@@ -24,7 +25,6 @@ export function Header() {
   const { toggleSidebar } = useUIStore();
 
   const handleLogout = () => {
-    // Call server to clear HttpOnly cookies and revoke tokens
     authService.logout().catch(() => {});
     logout();
     router.push("/login");
@@ -55,12 +55,27 @@ export function Header() {
       {/* Mobile logo */}
       <span className="text-lg font-bold text-primary md:hidden">GymFlow</span>
 
-      {/* Spacer for desktop */}
-      <div className="hidden md:block" />
+      {/* Desktop search trigger */}
+      <Button
+        variant="outline"
+        className="hidden md:inline-flex h-9 w-64 justify-start gap-2 text-sm text-muted-foreground"
+        onClick={() => {
+          document.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+          );
+        }}
+      >
+        <Search className="h-4 w-4" />
+        <span>Search…</span>
+        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          ⌘K
+        </kbd>
+      </Button>
 
       {/* Right section */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <ThemeToggle />
+        <NotificationCenter />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
