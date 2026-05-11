@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { formatPaise } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export-csv";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentFormValues } from "@/lib/validations/payment";
 
@@ -143,7 +144,9 @@ export default function PaymentsPage() {
                 downloadCsv(
                   "/payments/csv",
                   `payments_${new Date().toISOString().split("T")[0]}.csv`,
-                ).catch(() => {})
+                ).catch((err) => {
+                  toast.error(err instanceof Error ? err.message : "Export failed. Please try again.");
+                })
               }
             >
               <Download className="mr-2 h-4 w-4" />
@@ -166,7 +169,7 @@ export default function PaymentsPage() {
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
-              className="w-40"
+              className="w-full sm:w-40"
               aria-label="Filter payments from date"
             />
           </div>
@@ -176,7 +179,7 @@ export default function PaymentsPage() {
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
-              className="w-40"
+              className="w-full sm:w-40"
               aria-label="Filter payments to date"
             />
           </div>

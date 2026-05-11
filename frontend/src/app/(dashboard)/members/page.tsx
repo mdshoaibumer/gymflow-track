@@ -26,6 +26,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { formatPaise } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export-csv";
+import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
 import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import type { MemberFormValues } from "@/lib/validations/member";
@@ -215,7 +216,9 @@ export default function MembersPage() {
                   "/members/csv",
                   `members_${new Date().toISOString().split("T")[0]}.csv`,
                   debouncedSearch ? { search: debouncedSearch } : undefined,
-                ).catch(() => {})
+                ).catch((err) => {
+                  toast.error(err instanceof Error ? err.message : "Export failed. Please try again.");
+                })
               }
             >
               <Download className="mr-2 h-4 w-4" />
