@@ -1,5 +1,4 @@
 from uuid import UUID
-print("DEPENDENCIES.PY LOADED")
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -180,7 +179,7 @@ async def _check_user_active(user_id: UUID, iat: int | None = None) -> None:
                 # Use integer comparison for second-precision JWT iat.
                 # Allow tokens issued in the same second as the revocation (leeway).
                 if iat < int(revoked_ts):
-                    logger.error(f"DEBUG: Session REVOKED for user {user_id} (iat {iat} < revoked_at {revoked_ts})")
+                    logger.warning("Session revoked for user %s (iat %s < revoked_at %s)", user_id, iat, revoked_ts)
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Session has been revoked",

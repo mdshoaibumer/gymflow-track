@@ -200,8 +200,7 @@ class AuthService:
         # If the token was revoked within the grace period, return the replacement
         # token pair instead of revoking all sessions.
         if stored_token.revoked:
-            logger.info(f"Revoked token presented (reuse check) for user {user_id}")
-            logger.error(f"DEBUG: Reuse detected for user {user_id}. Revoking all sessions.")
+            logger.warning("Revoked refresh token presented for user %s — checking grace window", user_id)
             # Check if within grace window (concurrent multi-tab refresh)
             if (
                 stored_token.revoked_at is not None
