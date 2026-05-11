@@ -13,6 +13,8 @@ import {
   Rocket,
   Receipt,
   Settings,
+  ShieldCheck,
+  FileSpreadsheet,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,8 +36,10 @@ const navItems: NavItem[] = [
   { href: "/members", label: "Members", icon: Users },
   { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/attendance", label: "Attendance", icon: CalendarCheck },
+  { href: "/reports", label: "Reports", icon: FileSpreadsheet, roles: ["owner", "admin"] },
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/notifications", label: "Reminders", icon: Bell },
+  { href: "/staff", label: "Staff", icon: ShieldCheck, roles: ["owner"] },
   { href: "/billing/manage", label: "Billing", icon: Receipt, roles: ["owner"] },
   { href: "/setup", label: "Setup Wizard", icon: Rocket, roles: ["owner", "admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
@@ -61,6 +65,7 @@ function SidebarContent() {
           size="icon"
           className="md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
         >
           <X className="h-5 w-5" />
         </Button>
