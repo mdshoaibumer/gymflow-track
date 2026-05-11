@@ -70,7 +70,7 @@ class AuthService:
             raise AuthenticationError("User not found")
         if not user.is_active:
             raise AccountDisabledError("Account is disabled")
-        if user.gym_id != gym_id:
+        if gym_id is not None and user.gym_id != gym_id:
             raise AuthenticationError("Invalid session")
 
         return CurrentUserResponse.model_validate(user)
@@ -180,7 +180,8 @@ class AuthService:
             raise AuthenticationError("Invalid refresh token")
 
         user_id = UUID(payload["sub"])
-        gym_id = UUID(payload["gym_id"])
+        gym_id_raw = payload.get("gym_id")
+        gym_id = UUID(gym_id_raw) if gym_id_raw else None
 
         # Validate refresh token is tracked and not revoked
         token_hash = _hash_token(data.refresh_token)
@@ -242,7 +243,9 @@ class AuthService:
                 if replacement_token:
                     # Validate user is still active before returning tokens
                     user = await self.user_repo.get_by_id(user_id)
-                    if not user or not user.is_active or user.gym_id != gym_id:
+                    if not user or not user.is_active:
+                        raise AuthenticationError("Invalid session")
+                    if gym_id is not None and user.gym_id != gym_id:
                         raise AuthenticationError("Invalid session")
 
                     # Re-mint access token (cheap) but keep the same refresh token
@@ -311,7 +314,7 @@ class AuthService:
             raise AuthenticationError("User no longer exists")
         if not user.is_active:
             raise AccountDisabledError("Account is disabled")
-        if user.gym_id != gym_id:
+        if gym_id is not None and user.gym_id != gym_id:
             raise AuthenticationError("Invalid session — gym mismatch")
 
         # Rotate refresh token: revoke old, issue new

@@ -9,6 +9,7 @@ from app.models.base import BaseModel, PgEnum
 
 
 class UserRole(str, PyEnum):
+    SUPER_ADMIN = "super_admin"
     OWNER = "owner"
     ADMIN = "admin"
     STAFF = "staff"
@@ -20,8 +21,8 @@ class User(BaseModel):
         UniqueConstraint("gym_id", "email", name="uq_users_gym_email"),
     )
 
-    gym_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("gyms.id"), nullable=False, index=True
+    gym_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("gyms.id"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

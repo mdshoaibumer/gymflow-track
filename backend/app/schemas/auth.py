@@ -90,7 +90,7 @@ class CurrentUserResponse(BaseModel):
     """
 
     id: UUID
-    gym_id: UUID
+    gym_id: UUID | None
     name: str
     email: str
     phone: str

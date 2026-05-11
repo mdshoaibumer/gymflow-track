@@ -53,6 +53,7 @@ EXEMPT_PREFIXES = (
     "/redoc",
     "/openapi.json",
     "/api/v1/auth",
+    "/api/v1/admin",
     "/api/v1/billing/plans",
     "/api/v1/billing/webhook",
     "/api/v1/billing/subscribe",
@@ -94,8 +95,8 @@ def _extract_gym_id(request: Request) -> UUID | None:
 
     This is intentionally lightweight — full auth is handled by the
     dependency layer. We only need the gym_id to look up subscription status.
-    Returns None for unauthenticated requests (which are allowed through
-    so the auth dependency can return the proper 401).
+    Returns None for unauthenticated requests or super admin users
+    (which are allowed through so the auth dependency can return the proper 401).
     """
     auth_header = request.headers.get("authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -105,7 +106,11 @@ def _extract_gym_id(request: Request) -> UUID | None:
         payload = pyjwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-        return UUID(payload["gym_id"])
+        # Super admins have no gym_id — skip subscription check entirely
+        if payload.get("role") == "super_admin":
+            return None
+        gym_id_raw = payload.get("gym_id")
+        return UUID(gym_id_raw) if gym_id_raw else None
     except (InvalidTokenError, KeyError, ValueError):
         return None
 

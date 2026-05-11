@@ -19,7 +19,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
+def create_access_token(user_id: UUID, gym_id: UUID | None, role: str) -> str:
     """
     Create a short-lived access token containing identity + role.
 
@@ -27,6 +27,8 @@ def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     - Eliminates a DB query on every authenticated request
     - Role changes take effect on next token refresh (max 30 min stale)
     - Acceptable tradeoff for a gym SaaS where role changes are rare
+
+    Super admins have gym_id=None — the JWT omits gym_id for them.
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(
@@ -34,17 +36,18 @@ def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     )
     payload = {
         "sub": str(user_id),
-        "gym_id": str(gym_id),
         "role": role,
         "iat": now,
         "exp": expire,
         "jti": str(uuid4()),
         "type": "access",
     }
+    if gym_id is not None:
+        payload["gym_id"] = str(gym_id)
     return pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(user_id: UUID, gym_id: UUID, role: str) -> str:
+def create_refresh_token(user_id: UUID, gym_id: UUID | None, role: str) -> str:
     """
     Create a long-lived refresh token.
 
@@ -57,13 +60,14 @@ def create_refresh_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     )
     payload = {
         "sub": str(user_id),
-        "gym_id": str(gym_id),
         "role": role,
         "iat": now,
         "exp": expire,
         "jti": str(uuid4()),
         "type": "refresh",
     }
+    if gym_id is not None:
+        payload["gym_id"] = str(gym_id)
     return pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

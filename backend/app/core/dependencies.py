@@ -23,7 +23,7 @@ _USER_CACHE_TTL = 60  # seconds
 class CurrentUser:
     """Represents the authenticated user extracted from JWT."""
 
-    def __init__(self, user_id: UUID, gym_id: UUID, role: UserRole):
+    def __init__(self, user_id: UUID, gym_id: UUID | None, role: UserRole):
         self.user_id = user_id
         self.gym_id = gym_id
         self.role = role
@@ -35,6 +35,10 @@ class CurrentUser:
     @property
     def is_admin_or_above(self) -> bool:
         return self.role in (UserRole.OWNER, UserRole.ADMIN)
+
+    @property
+    def is_super_admin(self) -> bool:
+        return self.role == UserRole.SUPER_ADMIN
 
 
 async def get_current_user(
@@ -91,7 +95,8 @@ async def get_current_user(
         )
 
     user_id = UUID(payload["sub"])
-    gym_id = UUID(payload["gym_id"])
+    gym_id_raw = payload.get("gym_id")
+    gym_id = UUID(gym_id_raw) if gym_id_raw else None
 
     # Lightweight active-user check (cached, not every request hits DB)
     iat = payload.get("iat")
@@ -225,6 +230,7 @@ def require_role(*allowed_roles: UserRole):
 
 
 # Convenience dependencies for common patterns
+require_super_admin = require_role(UserRole.SUPER_ADMIN)
 require_owner = require_role(UserRole.OWNER)
 require_admin = require_role(UserRole.OWNER, UserRole.ADMIN)
 require_staff = require_role(UserRole.OWNER, UserRole.ADMIN, UserRole.STAFF)
@@ -232,4 +238,5 @@ require_staff = require_role(UserRole.OWNER, UserRole.ADMIN, UserRole.STAFF)
 
 def _set_log_context(user: CurrentUser) -> None:
     """Set request-scoped log context from authenticated user."""
-    set_tenant_context(str(user.gym_id))
+    if user.gym_id:
+        set_tenant_context(str(user.gym_id))

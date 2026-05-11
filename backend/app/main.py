@@ -17,7 +17,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.middleware.body_size_limit import BodySizeLimitMiddleware
-from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics
+from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin
 
 # Configure structured logging BEFORE anything else
 setup_logging()
@@ -158,6 +158,7 @@ app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["Super Admin"])
 
 
 @app.get("/health")
