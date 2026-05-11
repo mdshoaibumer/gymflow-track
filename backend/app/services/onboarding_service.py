@@ -27,8 +27,8 @@ import io
 import logging
 import random
 import re
-from datetime import date, timedelta
-from app.core.timezone import today_ist
+from datetime import date, timedelta, datetime, time
+from app.core.timezone import today_ist, IST
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, func
@@ -124,7 +124,9 @@ async def seed_demo_data(
     include_members: bool = True,
     include_payments: bool = True,
     include_equipment: bool = True,
-    member_count: int = 15,
+    include_attendance: bool = True,
+    include_feedback: bool = True,
+    member_count: int = 25,
 ) -> dict:
     """
     Seed realistic demo data for exploration.
@@ -132,7 +134,13 @@ async def seed_demo_data(
     All data is tagged with the gym_id — no cross-tenant leakage.
     Idempotent-ish: checks if demo data already exists (by member count).
     """
-    result = {"members_created": 0, "payments_created": 0, "equipment_created": 0}
+    result = {
+        "members_created": 0,
+        "payments_created": 0,
+        "equipment_created": 0,
+        "attendance_created": 0,
+        "feedback_created": 0,
+    }
     today = today_ist()
 
     if include_members:
@@ -153,7 +161,12 @@ async def seed_demo_data(
                 end = start + timedelta(days=plan_days)
 
                 # Determine status based on dates
-                if end < today:
+                # Force a few members to expire soon (next 3-7 days) for the chart
+                if i < 3:
+                    start = today - timedelta(days=25)
+                    end = today + timedelta(days=random.randint(2, 7))
+                    status = MembershipStatus.ACTIVE
+                elif end < today:
                     status = MembershipStatus.EXPIRED
                 elif random.random() < 0.1:
                     status = MembershipStatus.FROZEN
@@ -230,6 +243,65 @@ async def seed_demo_data(
                 result["equipment_created"] += 1
 
             await db.flush()
+
+    if include_attendance and result["members_created"] > 0:
+        from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
+        # Create attendance history for the last 14 days
+        members_result = await db.execute(
+            select(Member).where(
+                Member.gym_id == gym_id,
+                Member.membership_status == MembershipStatus.ACTIVE
+            )
+        )
+        active_members = list(members_result.scalars().all())
+        
+        for member in active_members:
+            # Most members visit 3-4 times a week
+            for days_ago in range(14):
+                if random.random() < 0.5: # 50% attendance rate
+                    visit_date = today - timedelta(days=days_ago)
+                    # Random check-in time between 6am and 9pm
+                    check_in_time = time(random.randint(6, 20), random.randint(0, 59))
+                    # Combine into datetime in IST
+                    check_in_at = datetime.combine(visit_date, check_in_time, tzinfo=IST)
+                    
+                    attendance = Attendance(
+                        id=uuid4(),
+                        gym_id=gym_id,
+                        member_id=member.id,
+                        check_in_at=check_in_at,
+                        check_in_date=visit_date,
+                        status=AttendanceStatus.CHECKED_IN,
+                        source=CheckInSource.MANUAL,
+                    )
+                    db.add(attendance)
+                    result["attendance_created"] += 1
+        await db.flush()
+
+    if include_feedback:
+        from app.models.user import User
+        # Link feedback to the first available user in the gym
+        user_result = await db.execute(select(User).where(User.gym_id == gym_id).limit(1))
+        user = user_result.scalar_one_or_none()
+        
+        if user:
+            demo_messages = [
+                "Great gym! Love the new equipment.",
+                "Can we get more fans in the cardio area?",
+                "The morning staff is very helpful.",
+                "Treadmill #2 is making a strange noise.",
+            ]
+            for msg in demo_messages:
+                fb = Feedback(
+                    id=uuid4(),
+                    gym_id=gym_id,
+                    user_id=user.id,
+                    category=random.choice(list(FeedbackCategory)),
+                    message=msg,
+                )
+                db.add(fb)
+                result["feedback_created"] += 1
+        await db.flush()
 
     logger.info(f"Demo data seeded for gym {gym_id}: {result}")
     return result

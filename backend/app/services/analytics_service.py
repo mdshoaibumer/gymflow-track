@@ -330,7 +330,7 @@ class AnalyticsService:
                 Member.is_deleted == False,  # noqa: E712
                 Member.membership_status == MembershipStatus.ACTIVE,
             )
-            .group_by(func.coalesce(Member.membership_plan, "No Plan"))
+            .group_by(Member.membership_plan)
             .order_by(func.count(Member.id).desc())
         )
         result = await self.db.execute(stmt)
@@ -377,7 +377,7 @@ class AnalyticsService:
                 Payment.payment_status == PaymentStatus.COMPLETED,
                 Member.is_deleted == False,  # noqa: E712
             )
-            .group_by(func.coalesce(Member.membership_plan, "No Plan"))
+            .group_by(Member.membership_plan)
         )
         result = await self.db.execute(stmt)
         return {str(r.plan): int(r.total) for r in result.all()}

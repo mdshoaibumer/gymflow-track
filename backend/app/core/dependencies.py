@@ -9,6 +9,9 @@ from app.core.cookies import ACCESS_COOKIE
 from app.core.security import decode_token
 from app.middleware.request_context import set_tenant_context
 from app.models.user import UserRole
+import logging
+
+logger = logging.getLogger("gymflow.auth")
 
 # Optional bearer scheme — does not reject requests missing the header,
 # allowing cookie-based auth to work as a fallback.
@@ -184,8 +187,7 @@ async def _check_user_active(user_id: UUID, iat: int | None = None) -> None:
         # access token was already validated; downstream routes still
         # enforce tenant isolation. Blocking here on transient DB errors
         # would cause cascading 401s for all users.
-        import logging
-        logging.getLogger("gymflow.auth").warning(
+        logger.warning(
             f"Active-user check failed for user {user_id} — DB unreachable, "
             "allowing request based on valid access token"
         )

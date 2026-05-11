@@ -121,6 +121,8 @@ async def load_demo_data(
         include_members=data.include_members,
         include_payments=data.include_payments,
         include_equipment=data.include_equipment,
+        include_attendance=data.include_attendance,
+        include_feedback=data.include_feedback,
         member_count=data.member_count,
     )
     return result
