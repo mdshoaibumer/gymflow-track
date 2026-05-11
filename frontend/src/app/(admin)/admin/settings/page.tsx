@@ -137,7 +137,7 @@ export default function SettingsPage() {
                 type="number"
                 min={1}
                 max={90}
-                value={getValue("default_trial_days", 14)}
+                value={getValue("default_trial_days", 3)}
                 onChange={(e) => updateField("default_trial_days", Number(e.target.value))}
                 className="mt-1"
               />

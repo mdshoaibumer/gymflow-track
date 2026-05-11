@@ -262,9 +262,9 @@ test.describe("8 — PLATFORM SETTINGS PAGE", () => {
 
     const trialInput = page.locator("#trial-days");
     await expect(trialInput).toBeVisible({ timeout: 10000 });
-    // Default trial days is 14 (or 21 if a previous test changed it)
+    // Default trial days is 3 (or 21 if a previous test changed it)
     const val = await trialInput.inputValue();
-    expect(["14", "21"]).toContain(val);
+    expect(["3", "21"]).toContain(val);
   });
 });
 
@@ -358,7 +358,7 @@ test.describe("9 — API ENDPOINT TESTS", () => {
 
     // Reset back
     await request.put(`${API_BASE}/admin/settings`, {
-      data: { default_trial_days: 14 },
+      data: { default_trial_days: 3 },
     });
   });
 
