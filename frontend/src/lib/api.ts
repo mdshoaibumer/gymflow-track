@@ -2,8 +2,8 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-// Legacy keys — kept temporarily for migration. New code uses HttpOnly cookies.
-// TODO: Remove after confirming all clients are on cookie-based auth.
+// Legacy localStorage keys — used only for one-time cleanup during migration
+// to HttpOnly cookie auth. auth-store.ts removes these on initialize().
 export const TOKEN_KEY = "gymflow_access_token";
 export const REFRESH_KEY = "gymflow_refresh_token";
 

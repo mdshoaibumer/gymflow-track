@@ -258,8 +258,8 @@ export default function SetupPage() {
                     </div>
 
                     {importPreview.rows.length > 0 && (
-                      <div className="max-h-40 overflow-y-auto text-xs">
-                        <table className="w-full">
+                      <div className="max-h-40 overflow-y-auto overflow-x-auto text-xs">
+                        <table className="w-full min-w-[300px]">
                           <thead>
                             <tr className="border-b text-left">
                               <th className="py-1">Name</th>
