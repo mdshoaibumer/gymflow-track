@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   Dumbbell,
 } from "lucide-react";
+import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import {
   AreaChart,
   Area,
@@ -209,21 +210,32 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y">
                 {expiring.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between py-3">
-                    <div>
+                  <div key={m.id} className="flex items-center justify-between py-3 gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">{m.name}</p>
                       <p className="text-xs text-muted-foreground">{m.phone}</p>
                     </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="text-xs">
-                        {m.membership_plan || "No plan"}
-                      </Badge>
-                      <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mt-1">
-                        Expires{" "}
-                        {m.membership_end
-                          ? new Date(m.membership_end).toLocaleDateString("en-IN")
-                          : "—"}
-                      </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <Badge variant="outline" className="text-xs">
+                          {m.membership_plan || "No plan"}
+                        </Badge>
+                        <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mt-1">
+                          Expires{" "}
+                          {m.membership_end
+                            ? new Date(m.membership_end).toLocaleDateString("en-IN")
+                            : "—"}
+                        </p>
+                      </div>
+                      <WhatsAppReminderButton
+                        compact
+                        member={{
+                          name: m.name,
+                          phone: m.phone,
+                          membership_end: m.membership_end,
+                          membership_plan: m.membership_plan,
+                        }}
+                      />
                     </div>
                   </div>
                 ))}

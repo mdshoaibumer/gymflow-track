@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
+import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { formatPaise } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export-csv";
 import type { MemberFormValues } from "@/lib/validations/member";
@@ -137,6 +138,16 @@ export default function MembersPage() {
               header: "",
               cell: ({ row }: { row: { original: Member } }) => (
                 <div className="flex justify-end gap-1">
+                  <WhatsAppReminderButton
+                    compact
+                    member={{
+                      name: row.original.name,
+                      phone: row.original.phone,
+                      membership_end: row.original.membership_end,
+                      membership_plan: row.original.membership_plan,
+                      amount_due: row.original.amount_paid,
+                    }}
+                  />
                   <Button
                     variant="ghost"
                     size="icon"

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Building2, Save, Loader2 } from "lucide-react";
+import { Building2, Save, Loader2, MessageSquare, RotateCcw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useGym, useUpdateGym } from "@/hooks/use-gym";
 import type { GymUpdatePayload } from "@/services/gym.service";
@@ -12,9 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  DEFAULT_WHATSAPP_TEMPLATE,
+  getTemplateForGym,
+  saveTemplate as saveWaTemplate,
+  PLACEHOLDER_KEYS,
+  PLACEHOLDER_LABELS,
+} from "@/lib/whatsapp";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { user, isOwner, isAdminOrAbove, isLoading: authLoading } = useAuth();
@@ -30,6 +39,8 @@ export default function SettingsPage() {
   }, [isAdminOrAbove, authLoading, router]);
 
   const [form, setForm] = useState<GymUpdatePayload>({});
+  const [waTemplate, setWaTemplate] = useState("");
+  const [waTemplateDirty, setWaTemplateDirty] = useState(false);
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -43,6 +54,7 @@ export default function SettingsPage() {
         address: gym.address || "",
         city: gym.city || "",
       });
+      setWaTemplate(getTemplateForGym(gym.id));
     }
   }, [gym]);
 
@@ -212,6 +224,80 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Theme</span>
             <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* WhatsApp Template */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base">WhatsApp Reminder Template</CardTitle>
+              <CardDescription>
+                Customize the default message sent to members via WhatsApp.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="wa-template">Default Message Template</Label>
+            <Textarea
+              id="wa-template"
+              value={waTemplate}
+              onChange={(e) => {
+                setWaTemplate(e.target.value);
+                setWaTemplateDirty(true);
+              }}
+              className="min-h-[160px] text-sm leading-relaxed font-mono"
+              placeholder="Enter your default WhatsApp reminder template..."
+            />
+            <p className="text-xs text-muted-foreground">
+              {waTemplate.length} characters
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Available placeholders:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PLACEHOLDER_KEYS.map((key) => (
+                <Badge key={key} variant="secondary" className="text-xs font-mono">
+                  {`{{${key}}}`}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={!waTemplateDirty || !gym}
+              onClick={() => {
+                if (gym) {
+                  saveWaTemplate(gym.id, waTemplate);
+                  setWaTemplateDirty(false);
+                  toast.success("WhatsApp template saved");
+                }
+              }}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save Template
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setWaTemplate(DEFAULT_WHATSAPP_TEMPLATE);
+                setWaTemplateDirty(true);
+              }}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset to Default
+            </Button>
           </div>
         </CardContent>
       </Card>

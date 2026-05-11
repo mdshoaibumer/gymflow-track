@@ -10,6 +10,7 @@ import { useMemberPayments } from "@/hooks/use-payments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
   active: "success",
@@ -69,9 +70,20 @@ export default function MemberDetailPage({
           <h1 className="text-2xl font-bold tracking-tight">{member.name}</h1>
           <p className="text-sm text-muted-foreground">{member.phone}</p>
         </div>
-        <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="ml-auto capitalize">
-          {member.membership_status}
-        </Badge>
+        <div className="ml-auto flex items-center gap-2">
+          <WhatsAppReminderButton
+            member={{
+              name: member.name,
+              phone: member.phone,
+              membership_end: member.membership_end,
+              membership_plan: member.membership_plan,
+              amount_due: member.amount_paid,
+            }}
+          />
+          <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize">
+            {member.membership_status}
+          </Badge>
+        </div>
       </div>
 
       {/* Info Cards */}
