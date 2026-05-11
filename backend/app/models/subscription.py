@@ -3,7 +3,7 @@ Subscription + billing models for GymFlow Track SaaS.
 
 SaaS Subscription Lifecycle:
 ─────────────────────────────
-  Register → TRIAL (14 days free, full access)
+  Register → TRIAL (3 days free, full access)
      │
      ├─ Pay before trial ends → ACTIVE (monthly renewal)
      │

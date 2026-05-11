@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table(
         "platform_settings",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("default_trial_days", sa.Integer(), nullable=False, server_default="14"),
+        sa.Column("default_trial_days", sa.Integer(), nullable=False, server_default="3"),
         sa.Column("grace_period_days", sa.Integer(), nullable=False, server_default="7"),
         sa.Column("max_payment_retries", sa.Integer(), nullable=False, server_default="3"),
         sa.Column("maintenance_mode", sa.Boolean(), nullable=False, server_default="false"),
@@ -56,7 +56,7 @@ def upgrade() -> None:
     settings_id = str(uuid4())
     op.execute(
         f"INSERT INTO platform_settings (id, default_trial_days, grace_period_days, max_payment_retries) "
-        f"VALUES ('{settings_id}', 14, 7, 3)"
+        f"VALUES ('{settings_id}', 3, 7, 3)"
     )
 
 

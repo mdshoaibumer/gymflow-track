@@ -610,7 +610,7 @@ class AdminService:
         sub.status = status_value
 
         if status_value == BillingStatus.TRIAL:
-            sub.trial_end = today_ist() + timedelta(days=14)
+            sub.trial_end = today_ist() + timedelta(days=3)
 
         await self.db.flush()
         invalidate_subscription_cache(gym_id)
@@ -1089,7 +1089,7 @@ class AdminService:
 
         if not settings_row:
             return PlatformSettingsResponse(
-                default_trial_days=14,
+                default_trial_days=3,
                 grace_period_days=7,
                 max_payment_retries=3,
                 maintenance_mode=False,

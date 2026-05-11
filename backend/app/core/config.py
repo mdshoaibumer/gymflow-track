@@ -88,7 +88,7 @@ class Settings(BaseSettings):
     RAZORPAY_WEBHOOK_SECRET: str = ""
 
     # === Billing ===
-    TRIAL_DAYS: int = 14
+    TRIAL_DAYS: int = 3
 
     @field_validator("APP_ENV", mode="before")
     @classmethod

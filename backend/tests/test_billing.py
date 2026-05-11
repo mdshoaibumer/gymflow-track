@@ -146,7 +146,7 @@ class TestSubscriptionCreation:
 
         assert sub.status == BillingStatus.TRIAL
         assert sub.trial_start == date.today()
-        assert sub.trial_end == date.today() + timedelta(days=14)
+        assert sub.trial_end == date.today() + timedelta(days=3)
         assert sub.gym_id == billing_gym.id
 
     @pytest.mark.asyncio

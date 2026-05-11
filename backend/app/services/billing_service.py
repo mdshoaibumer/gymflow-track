@@ -51,7 +51,7 @@ logger = logging.getLogger("gymflow.billing")
 
 # === Constants ===
 
-TRIAL_DAYS = 14
+TRIAL_DAYS = 3
 GRACE_PERIOD_DAYS = 7
 MAX_PAYMENT_RETRIES = 3
 RETRY_INTERVAL_DAYS = 2  # Retry every 2 days (3 retries = 6 days within 7-day grace)

@@ -24,8 +24,8 @@ export function BillingBanner() {
 
   const { status, is_trial, days_remaining, cancel_at_period_end, current_period_end } = subscription;
 
-  // Trial ending soon (< 7 days)
-  if (is_trial && days_remaining !== null && days_remaining <= 7) {
+  // Trial ending soon (always show during 3-day trial)
+  if (is_trial && days_remaining !== null && days_remaining <= 3) {
     return (
       <div className={`px-4 py-2 text-sm text-center ${
         days_remaining <= 2 ? "bg-red-50 dark:bg-red-950/50 text-red-800 dark:text-red-200" : "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200"
