@@ -8,17 +8,19 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Plus, Receipt } from "lucide-react";
+import { Plus, Receipt, Download, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePayments, useCreatePayment } from "@/hooks/use-payments";
 import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { formatPaise } from "@/lib/utils";
+import { downloadCsv } from "@/lib/export-csv";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentFormValues } from "@/lib/validations/payment";
 
@@ -27,11 +29,15 @@ const PAGE_SIZE = 20;
 export default function PaymentsPage() {
   const { isAdminOrAbove } = useAuth();
   const [page, setPage] = useState(0);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const { data: paymentsData, isLoading } = usePayments({
+  const { data: paymentsData, isLoading, isError, refetch } = usePayments({
     skip: page * PAGE_SIZE,
     limit: PAGE_SIZE,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
   });
 
   const payments = paymentsData?.payments ?? [];
@@ -128,11 +134,68 @@ export default function PaymentsPage() {
           </p>
         </div>
         <RoleGate allowed={["owner", "admin"]}>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Record Payment
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                downloadCsv(
+                  "/payments/csv",
+                  `payments_${new Date().toISOString().split("T")[0]}.csv`,
+                ).catch(() => {})
+              }
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Record Payment
+            </Button>
+          </div>
         </RoleGate>
+      </div>
+
+      {/* Date Filters & Summary */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground">From</label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
+              className="w-40"
+              aria-label="Filter payments from date"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">To</label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
+              className="w-40"
+              aria-label="Filter payments to date"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setDateFrom(""); setDateTo(""); setPage(0); }}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+        {payments.length > 0 && (
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Page Total</p>
+            <p className="text-lg font-bold">
+              {formatPaise(payments.reduce((sum, p) => sum + p.amount_in_paise, 0))}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Form */}
@@ -144,7 +207,23 @@ export default function PaymentsPage() {
       )}
 
       {/* Table */}
-      {isLoading ? (
+      {isError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="rounded-full bg-destructive/10 p-3 mb-3">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold">Failed to load payments</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Something went wrong. Please try again.
+            </p>
+            <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <Card>
           <CardContent className="p-0">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -164,16 +243,22 @@ export default function PaymentsPage() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <Receipt className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold">No payments yet</h3>
+            <h3 className="text-lg font-semibold">
+              {dateFrom || dateTo ? "No payments found" : "No payments yet"}
+            </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Record your first payment to get started.
+              {dateFrom || dateTo
+                ? "Try adjusting the date range filters."
+                : "Record your first payment to get started."}
             </p>
-            <RoleGate allowed={["owner", "admin"]}>
-              <Button className="mt-4" onClick={() => setShowForm(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Record First Payment
-              </Button>
-            </RoleGate>
+            {!(dateFrom || dateTo) && (
+              <RoleGate allowed={["owner", "admin"]}>
+                <Button className="mt-4" onClick={() => setShowForm(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Record First Payment
+                </Button>
+              </RoleGate>
+            )}
           </CardContent>
         </Card>
       ) : (
