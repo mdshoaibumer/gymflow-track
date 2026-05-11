@@ -146,26 +146,32 @@ async def seed_default_plans(db: AsyncSession) -> None:
 
     seeded = []
     for defn in plan_definitions:
-        existing = await db.execute(
-            select(func.count()).select_from(SubscriptionPlan).where(
-                SubscriptionPlan.tier == defn["tier"],
-                SubscriptionPlan.is_active == True,  # noqa: E712
+        existing_res = await db.execute(
+            select(SubscriptionPlan).where(
+                SubscriptionPlan.tier == defn["tier"]
             )
         )
-        if existing.scalar_one() > 0:
-            continue
+        plan = existing_res.scalar_one_or_none()
 
-        plan = SubscriptionPlan(
-            billing_interval=BillingInterval.MONTHLY,
-            is_active=True,
-            **defn,
-        )
-        db.add(plan)
-        seeded.append(defn["name"])
+        if plan:
+            # Update existing plan
+            for key, value in defn.items():
+                if getattr(plan, key) != value:
+                    setattr(plan, key, value)
+            seeded.append(f"{defn['name']} (updated)")
+        else:
+            # Create new plan
+            plan = SubscriptionPlan(
+                billing_interval=BillingInterval.MONTHLY,
+                is_active=True,
+                **defn,
+            )
+            db.add(plan)
+            seeded.append(defn["name"])
 
     if seeded:
         await db.flush()
-        logger.info(f"Seeded subscription plans: {', '.join(seeded)}")
+        logger.info(f"Subscription plans synced: {', '.join(seeded)}")
 
 
 # === Subscription Operations ===

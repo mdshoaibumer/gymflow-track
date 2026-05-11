@@ -18,20 +18,11 @@ from sqlalchemy.orm import selectinload
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.timezone import today_ist
 from app.middleware.subscription_enforcement import invalidate_subscription_cache
-from app.models.audit_log import AuditAction, AuditLog
-from app.models.gym import Gym
-from app.models.member import Member, MembershipStatus
-from app.models.payment import Payment, PaymentStatus
-from app.models.platform_settings import PlatformSettings
-from app.models.subscription import (
-    BillingStatus,
-    GymSubscription,
-    Invoice,
-    InvoiceStatus,
-    PlanTier,
-    SubscriptionPlan,
+from app.models import (
+    AuditAction, AuditLog, Gym, Member, MembershipStatus, Payment, PaymentStatus,
+    PlatformSettings, BillingStatus, GymSubscription, Invoice, InvoiceStatus,
+    PlanTier, SubscriptionPlan, User, UserRole
 )
-from app.models.user import User, UserRole
 from app.schemas.admin import (
     AdminActionResponse,
     AuditLogEntry,
@@ -806,52 +797,40 @@ class AdminService:
 
     async def _get_monthly_counts(self, model, date_col, since: datetime) -> list[GrowthTrendPoint]:
         """Get monthly counts for any model with a datetime column."""
-        try:
-            # PostgreSQL
-            rows = (await self.db.execute(
-                select(
-                    func.to_char(date_col, "YYYY-MM").label("period"),
-                    func.count().label("cnt"),
-                ).where(date_col >= since)
-                .group_by(func.to_char(date_col, "YYYY-MM"))
-                .order_by(func.to_char(date_col, "YYYY-MM"))
-            )).all()
-        except Exception:
-            # SQLite fallback
-            rows = (await self.db.execute(
-                select(
-                    func.strftime("%Y-%m", date_col).label("period"),
-                    func.count().label("cnt"),
-                ).where(date_col >= since)
-                .group_by(func.strftime("%Y-%m", date_col))
-                .order_by(func.strftime("%Y-%m", date_col))
-            )).all()
+        dialect = self.db.bind.dialect.name
+        if dialect == "postgresql":
+            period_expr = func.to_char(date_col, "YYYY-MM")
+        else:
+            period_expr = func.strftime("%Y-%m", date_col)
+
+        rows = (await self.db.execute(
+            select(
+                period_expr.label("period"),
+                func.count().label("cnt"),
+            ).where(date_col >= since)
+            .group_by(period_expr)
+            .order_by(period_expr)
+        )).all()
         return [GrowthTrendPoint(period=str(r[0]), count=r[1]) for r in rows]
 
     async def _get_monthly_revenue_trend(self, since: datetime) -> list[GrowthTrendPoint]:
         """Monthly revenue across all gyms."""
-        try:
-            rows = (await self.db.execute(
-                select(
-                    func.to_char(Payment.payment_date, "YYYY-MM").label("period"),
-                    func.coalesce(func.sum(Payment.amount_in_paise), 0).label("total"),
-                ).where(
-                    Payment.payment_status == PaymentStatus.COMPLETED,
-                    Payment.payment_date >= since.date(),
-                ).group_by(func.to_char(Payment.payment_date, "YYYY-MM"))
-                .order_by(func.to_char(Payment.payment_date, "YYYY-MM"))
-            )).all()
-        except Exception:
-            rows = (await self.db.execute(
-                select(
-                    func.strftime("%Y-%m", Payment.payment_date).label("period"),
-                    func.coalesce(func.sum(Payment.amount_in_paise), 0).label("total"),
-                ).where(
-                    Payment.payment_status == PaymentStatus.COMPLETED,
-                    Payment.payment_date >= since.date(),
-                ).group_by(func.strftime("%Y-%m", Payment.payment_date))
-                .order_by(func.strftime("%Y-%m", Payment.payment_date))
-            )).all()
+        dialect = self.db.bind.dialect.name
+        if dialect == "postgresql":
+            period_expr = func.to_char(Payment.payment_date, "YYYY-MM")
+        else:
+            period_expr = func.strftime("%Y-%m", Payment.payment_date)
+
+        rows = (await self.db.execute(
+            select(
+                period_expr.label("period"),
+                func.coalesce(func.sum(Payment.amount_in_paise), 0).label("total"),
+            ).where(
+                Payment.payment_status == PaymentStatus.COMPLETED,
+                Payment.payment_date >= since.date(),
+            ).group_by(period_expr)
+            .order_by(period_expr)
+        )).all()
         return [GrowthTrendPoint(period=str(r[0]), count=int(r[1])) for r in rows]
 
     # === Delete Gym ===

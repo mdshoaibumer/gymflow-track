@@ -1,1 +1,43 @@
-"""SQLAlchemy models."""
+"""SQLAlchemy models registry."""
+from app.models.base import BaseModel
+from app.models.gym import Gym
+from app.models.user import User, UserRole
+from app.models.member import Member, MembershipStatus
+from app.models.subscription import (
+    SubscriptionPlan, 
+    GymSubscription, 
+    Invoice, 
+    BillingStatus, 
+    InvoiceStatus, 
+    PlanTier
+)
+from app.models.payment import Payment, PaymentStatus
+from app.models.audit_log import AuditLog, AuditAction
+from app.models.platform_settings import PlatformSettings
+from app.models.attendance import Attendance
+from app.models.notification import Notification
+from app.models.asset import Asset, MaintenanceRecord
+
+__all__ = [
+    "BaseModel",
+    "Gym",
+    "User",
+    "UserRole",
+    "Member",
+    "MembershipStatus",
+    "SubscriptionPlan",
+    "GymSubscription",
+    "Invoice",
+    "BillingStatus",
+    "InvoiceStatus",
+    "PlanTier",
+    "Payment",
+    "PaymentStatus",
+    "AuditLog",
+    "AuditAction",
+    "PlatformSettings",
+    "Attendance",
+    "Notification",
+    "Asset",
+    "MaintenanceRecord",
+]

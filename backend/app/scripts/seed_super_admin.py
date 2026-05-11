@@ -17,6 +17,8 @@ from sqlalchemy import select
 from app.core.database import async_session_factory
 from app.core.security import hash_password
 from app.models.user import User, UserRole
+# Trigger all model imports via main
+import app.main  # noqa
 
 
 async def seed_super_admin(

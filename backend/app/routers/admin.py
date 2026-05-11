@@ -288,8 +288,8 @@ async def impersonate_gym_owner(
     """Start impersonation session as gym owner. SUPER_ADMIN only."""
     service = ImpersonationService(db)
     return await service.start_impersonation(
+        admin_id=current_user.user_id,
         gym_id=gym_id,
-        impersonator_id=current_user.user_id,
         ip_address=_get_client_ip(request),
     )
 
@@ -304,8 +304,8 @@ async def end_impersonation(
     """End impersonation session. SUPER_ADMIN only."""
     service = ImpersonationService(db)
     return await service.end_impersonation(
+        admin_id=current_user.user_id,
         gym_id=gym_id,
-        impersonator_id=current_user.user_id,
         ip_address=_get_client_ip(request),
     )
 
