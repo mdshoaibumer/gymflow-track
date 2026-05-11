@@ -178,12 +178,12 @@ export default function EquipmentPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Select
           value={filterStatus || "all"}
           onValueChange={(v) => setFilterStatus(v === "all" ? "" : (v as AssetStatus))}
         >
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -198,7 +198,7 @@ export default function EquipmentPage() {
           value={filterCategory || "all"}
           onValueChange={(v) => setFilterCategory(v === "all" ? "" : (v as AssetCategory))}
         >
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -213,7 +213,7 @@ export default function EquipmentPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search name or code..."
-          className="w-[200px]"
+          className="w-full sm:w-[200px]"
         />
         <span className="text-xs text-muted-foreground">
           {total} equipment{total !== 1 ? " items" : ""}
@@ -393,7 +393,7 @@ export default function EquipmentPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-9 text-xs"
                       onClick={() => setModal({ type: "history", asset: a })}
                     >
                       <History className="mr-1 h-3 w-3" />
@@ -404,7 +404,7 @@ export default function EquipmentPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-9 text-xs"
                           onClick={() => setModal({ type: "maintenance", asset: a })}
                         >
                           <Wrench className="mr-1 h-3 w-3" />
@@ -413,7 +413,7 @@ export default function EquipmentPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-9 text-xs"
                           onClick={() => setModal({ type: "edit", asset: a })}
                         >
                           <Pencil className="mr-1 h-3 w-3" />

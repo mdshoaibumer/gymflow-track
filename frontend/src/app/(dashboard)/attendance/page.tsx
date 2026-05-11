@@ -314,7 +314,7 @@ function AttendanceContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs"
+                        className="h-9 text-xs"
                         onClick={() => checkOut.mutate(a.id)}
                         disabled={checkOut.isPending}
                       >

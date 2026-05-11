@@ -274,7 +274,7 @@ export function StaffTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-9 w-9"
                       onClick={() => onEdit(u)}
                       aria-label={`Edit ${u.name}`}
                     >
@@ -284,7 +284,7 @@ export function StaffTable({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-7 w-7 ${u.is_active ? "text-destructive" : "text-green-600"}`}
+                        className={`h-9 w-9 ${u.is_active ? "text-destructive" : "text-green-600"}`}
                         onClick={() => onToggleStatus(u)}
                         aria-label={u.is_active ? `Deactivate ${u.name}` : `Activate ${u.name}`}
                       >

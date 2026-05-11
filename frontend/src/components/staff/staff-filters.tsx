@@ -45,7 +45,7 @@ export function StaffFilters({
         />
       </div>
       <Select value={roleFilter} onValueChange={onRoleFilterChange}>
-        <SelectTrigger className="w-[140px]" aria-label="Filter by role">
+        <SelectTrigger className="w-full sm:w-[140px]" aria-label="Filter by role">
           <SelectValue placeholder="All Roles" />
         </SelectTrigger>
         <SelectContent>
@@ -56,7 +56,7 @@ export function StaffFilters({
         </SelectContent>
       </Select>
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-[140px]" aria-label="Filter by status">
+        <SelectTrigger className="w-full sm:w-[140px]" aria-label="Filter by status">
           <SelectValue placeholder="All Status" />
         </SelectTrigger>
         <SelectContent>
