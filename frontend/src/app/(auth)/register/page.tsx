@@ -121,6 +121,7 @@ export default function RegisterPage() {
                   <Input
                     id="gym_name"
                     placeholder="Iron Paradise Gym"
+                    autoComplete="organization"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.gym_name}
                     {...reg("gym_name", { onChange: () => setFormError(null) })}
@@ -135,6 +136,7 @@ export default function RegisterPage() {
                   <Input
                     id="owner_name"
                     placeholder="Rajesh Kumar"
+                    autoComplete="name"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.owner_name}
                     {...reg("owner_name", { onChange: () => setFormError(null) })}
@@ -150,6 +152,7 @@ export default function RegisterPage() {
                 <Input
                   id="phone"
                   placeholder="9876543210"
+                  autoComplete="tel"
                   disabled={isSubmitting}
                   aria-invalid={!!errors.phone}
                   {...reg("phone", { onChange: () => setFormError(null) })}
@@ -165,6 +168,7 @@ export default function RegisterPage() {
                   id="email"
                   type="email"
                   placeholder="rajesh@gmail.com"
+                  autoComplete="email"
                   disabled={isSubmitting}
                   aria-invalid={!!errors.email}
                   {...reg("email", { onChange: () => setFormError(null) })}
@@ -180,6 +184,7 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.password}
                     {...reg("password", { onChange: () => setFormError(null) })}
