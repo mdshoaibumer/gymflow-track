@@ -292,7 +292,7 @@ async def submit_feedback(
 # === Internal Pilot Metrics ===
 
 
-@router.get("/admin/metrics")
+@router.get("/onboarding/admin/metrics")
 async def pilot_metrics(
     current_user: CurrentUser = Depends(require_owner),
     db: AsyncSession = Depends(get_db),

@@ -31,13 +31,20 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
+  const user = useAuthStore((s) => s.user);
 
-  // Redirect to dashboard if already authenticated (e.g., user navigated back to /login)
+  // Redirect if already authenticated (e.g., user navigated back to /login).
+  // Skip during active form submission — onSubmit handles routing itself.
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.replace("/dashboard");
+    if (submittingRef.current) return;
+    if (!isLoading && isAuthenticated && user) {
+      if (user.role === "super_admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/dashboard");
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   const {
     register,
