@@ -24,10 +24,16 @@ class AuditAction(str, PyEnum):
     GYM_UNLOCKED = "gym_unlocked"
     PLAN_CHANGED = "plan_changed"
     SUBSCRIPTION_ACTIVATED = "subscription_activated"
+    SUBSCRIPTION_CANCELLED = "subscription_cancelled"
     IMPERSONATION_START = "impersonation_start"
     IMPERSONATION_END = "impersonation_end"
     BILLING_OVERRIDE = "billing_override"
+    PAYMENT_MARKED_RECEIVED = "payment_marked_received"
     SUPER_ADMIN_CREATED = "super_admin_created"
+    GYM_DELETED = "gym_deleted"
+    SETTINGS_UPDATED = "settings_updated"
+    ANNOUNCEMENT_UPDATED = "announcement_updated"
+    MAINTENANCE_MODE_TOGGLED = "maintenance_mode_toggled"
 
 
 class AuditLog(BaseModel):

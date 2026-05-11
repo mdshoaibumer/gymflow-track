@@ -22,7 +22,7 @@ test.describe.configure({ mode: "serial" });
 // ── Constants ─────────────────────────────────────────────────────────
 const RUN_ID = Date.now();
 const API_BASE = "http://localhost:8000/api/v1";
-const APP_BASE = "http://localhost:3000";
+const APP_BASE = ""; // Use Playwright baseURL from config
 const TEST_PASSWORD = "StrongPass1A";
 const OWNER_EMAIL = `qa_attend_owner_${RUN_ID}@testgym.com`;
 const OWNER_PHONE = `97${String(RUN_ID).slice(-8)}`;

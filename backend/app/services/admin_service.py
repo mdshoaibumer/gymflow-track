@@ -1,7 +1,8 @@
 """
 Admin service — super admin operations for SaaS platform management.
 
-Handles gym directory, subscription management, analytics, and audit logging.
+Handles gym directory, subscription management, analytics, health monitoring,
+platform settings, impersonation, and audit logging.
 All operations are tenant-safe: super admin can see all gyms, but every
 query still uses explicit gym_id filtering.
 """
@@ -19,8 +20,9 @@ from app.core.timezone import today_ist
 from app.middleware.subscription_enforcement import invalidate_subscription_cache
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.gym import Gym
-from app.models.member import Member
+from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment, PaymentStatus
+from app.models.platform_settings import PlatformSettings
 from app.models.subscription import (
     BillingStatus,
     GymSubscription,
@@ -38,9 +40,17 @@ from app.schemas.admin import (
     GymDirectoryItem,
     GymDirectoryResponse,
     GymOwnerInfo,
+    GrowthTrendPoint,
+    HealthAlert,
     InvoiceInfo,
+    PlanDistributionItem,
+    PlatformAnalyticsResponse,
+    PlatformHealthResponse,
+    PlatformSettingsResponse,
     SaaSMetricsResponse,
     StaffInfo,
+    SubscriptionTimelineEntry,
+    UpdatePlatformSettingsRequest,
 )
 
 logger = logging.getLogger("gymflow.admin")
@@ -71,6 +81,7 @@ class AdminService:
         status_map = {row[0].value if hasattr(row[0], 'value') else row[0]: row[1] for row in sub_counts}
         active_subs = status_map.get("active", 0) + status_map.get("past_due", 0)
         trial_gyms = status_map.get("trial", 0)
+        locked_gyms = status_map.get("expired", 0)
 
         # Suspended = gyms where is_active=False
         suspended_gyms = (await self.db.execute(
@@ -94,6 +105,9 @@ class AdminService:
                 GymSubscription.status.in_([BillingStatus.ACTIVE, BillingStatus.PAST_DUE])
             )
         )).scalar_one()
+
+        # ARR = MRR * 12
+        arr = mrr * 12
 
         # Failed payments in last 30 days
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
@@ -133,15 +147,28 @@ class AdminService:
             for row in plan_dist_rows
         ]
 
+        # Gym growth trend: count of gyms created per month (last 12 months)
+        twelve_months_ago = datetime.now(timezone.utc) - timedelta(days=365)
+        gym_growth_trend = await self._get_monthly_counts(
+            Gym, Gym.created_at, twelve_months_ago
+        )
+
+        # Revenue trend: sum of completed payments per month (last 12 months)
+        revenue_trend = await self._get_monthly_revenue_trend(twelve_months_ago)
+
         return SaaSMetricsResponse(
             total_gyms=total_gyms,
             active_subscriptions=active_subs,
             trial_gyms=trial_gyms,
             suspended_gyms=suspended_gyms,
+            locked_gyms=locked_gyms,
             total_members=total_members,
             mrr_in_paise=mrr,
+            arr_in_paise=arr,
             failed_payments=failed_payments,
             plan_distribution=plan_distribution,
+            gym_growth_trend=gym_growth_trend,
+            revenue_trend=revenue_trend,
         )
 
     # === Gym Directory ===
@@ -231,6 +258,19 @@ class AdminService:
         )).all()
         last_payment_map = {row[0]: row[1] for row in last_payments}
 
+        # Active staff counts
+        staff_counts = (await self.db.execute(
+            select(
+                User.gym_id,
+                func.count().label("cnt"),
+            ).where(
+                User.gym_id.in_(gym_ids),
+                User.role.in_([UserRole.ADMIN, UserRole.STAFF]),
+                User.is_active == True,  # noqa: E712
+            ).group_by(User.gym_id)
+        )).all()
+        staff_map = {row[0]: row[1] for row in staff_counts}
+
         # Build response
         items = []
         for gym in gyms:
@@ -269,6 +309,7 @@ class AdminService:
                 trial_end=sub.trial_end if sub else None,
                 current_period_end=sub.current_period_end if sub else None,
                 member_count=member_map.get(gym.id, 0),
+                active_staff=staff_map.get(gym.id, 0),
                 revenue_in_paise=revenue_map.get(gym.id, 0),
                 last_payment_date=last_payment_map.get(gym.id),
             ))
@@ -342,6 +383,33 @@ class AdminService:
             ).order_by(Invoice.created_at.desc()).limit(20)
         )).scalars().all()
 
+        # Subscription timeline (audit log events for this gym)
+        timeline_actions = [
+            AuditAction.SUBSCRIPTION_ACTIVATED,
+            AuditAction.SUBSCRIPTION_CANCELLED,
+            AuditAction.PLAN_CHANGED,
+            AuditAction.TRIAL_EXTENDED,
+            AuditAction.GYM_SUSPENDED,
+            AuditAction.GYM_UNSUSPENDED,
+            AuditAction.GYM_LOCKED,
+            AuditAction.GYM_UNLOCKED,
+            AuditAction.PAYMENT_MARKED_RECEIVED,
+        ]
+        timeline_rows = (await self.db.execute(
+            select(AuditLog).where(
+                AuditLog.target_gym_id == gym_id,
+                AuditLog.action.in_([a.value for a in timeline_actions]),
+            ).order_by(AuditLog.created_at.desc()).limit(50)
+        )).scalars().all()
+        subscription_timeline = [
+            SubscriptionTimelineEntry(
+                date=row.created_at,
+                action=row.action,
+                description=row.description,
+                metadata=row.metadata_json,
+            ) for row in timeline_rows
+        ]
+
         # Days remaining
         days_remaining = None
         today = today_ist()
@@ -401,6 +469,7 @@ class AdminService:
                     paid_at=inv.paid_at,
                 ) for inv in invoices
             ],
+            subscription_timeline=subscription_timeline,
         )
 
     # === Admin Actions ===
@@ -638,11 +707,14 @@ class AdminService:
 
     async def get_audit_logs(
         self, skip: int = 0, limit: int = 50, gym_id: UUID | None = None,
+        action_filter: str | None = None,
     ) -> AuditLogResponse:
         query = select(AuditLog).order_by(AuditLog.created_at.desc())
 
         if gym_id:
             query = query.where(AuditLog.target_gym_id == gym_id)
+        if action_filter:
+            query = query.where(AuditLog.action == action_filter)
 
         total = (await self.db.execute(
             select(func.count()).select_from(query.subquery())
@@ -731,3 +803,353 @@ class AdminService:
             "AUDIT: %s by user %s on gym %s: %s",
             action.value, actor_id, target_gym_id, description,
         )
+
+    async def _get_monthly_counts(self, model, date_col, since: datetime) -> list[GrowthTrendPoint]:
+        """Get monthly counts for any model with a datetime column."""
+        try:
+            # PostgreSQL
+            rows = (await self.db.execute(
+                select(
+                    func.to_char(date_col, "YYYY-MM").label("period"),
+                    func.count().label("cnt"),
+                ).where(date_col >= since)
+                .group_by(func.to_char(date_col, "YYYY-MM"))
+                .order_by(func.to_char(date_col, "YYYY-MM"))
+            )).all()
+        except Exception:
+            # SQLite fallback
+            rows = (await self.db.execute(
+                select(
+                    func.strftime("%Y-%m", date_col).label("period"),
+                    func.count().label("cnt"),
+                ).where(date_col >= since)
+                .group_by(func.strftime("%Y-%m", date_col))
+                .order_by(func.strftime("%Y-%m", date_col))
+            )).all()
+        return [GrowthTrendPoint(period=str(r[0]), count=r[1]) for r in rows]
+
+    async def _get_monthly_revenue_trend(self, since: datetime) -> list[GrowthTrendPoint]:
+        """Monthly revenue across all gyms."""
+        try:
+            rows = (await self.db.execute(
+                select(
+                    func.to_char(Payment.payment_date, "YYYY-MM").label("period"),
+                    func.coalesce(func.sum(Payment.amount_in_paise), 0).label("total"),
+                ).where(
+                    Payment.payment_status == PaymentStatus.COMPLETED,
+                    Payment.payment_date >= since.date(),
+                ).group_by(func.to_char(Payment.payment_date, "YYYY-MM"))
+                .order_by(func.to_char(Payment.payment_date, "YYYY-MM"))
+            )).all()
+        except Exception:
+            rows = (await self.db.execute(
+                select(
+                    func.strftime("%Y-%m", Payment.payment_date).label("period"),
+                    func.coalesce(func.sum(Payment.amount_in_paise), 0).label("total"),
+                ).where(
+                    Payment.payment_status == PaymentStatus.COMPLETED,
+                    Payment.payment_date >= since.date(),
+                ).group_by(func.strftime("%Y-%m", Payment.payment_date))
+                .order_by(func.strftime("%Y-%m", Payment.payment_date))
+            )).all()
+        return [GrowthTrendPoint(period=str(r[0]), count=int(r[1])) for r in rows]
+
+    # === Delete Gym ===
+
+    async def delete_gym(
+        self, gym_id: UUID, confirm_name: str, reason: str,
+        actor_id: UUID, ip_address: str | None = None,
+    ) -> AdminActionResponse:
+        """Permanently delete a gym and all associated data. Destructive operation."""
+        gym = await self._get_gym(gym_id)
+
+        if gym.name.lower() != confirm_name.lower():
+            raise ValidationError("Gym name confirmation does not match. Deletion cancelled.")
+
+        gym_name = gym.name
+
+        # Delete in order: payments, members, attendance, subscriptions, invoices, users, gym
+        from app.models.attendance import Attendance
+        from app.models.notification import Notification
+        from app.models.asset import Asset, MaintenanceRecord
+
+        await self.db.execute(select(func.count()).select_from(MaintenanceRecord).where(MaintenanceRecord.gym_id == gym_id))
+        for model in [MaintenanceRecord, Asset, Notification, Attendance, Payment, Invoice, GymSubscription, Member]:
+            await self.db.execute(
+                model.__table__.delete().where(model.gym_id == gym_id)
+            )
+        await self.db.execute(
+            User.__table__.delete().where(User.gym_id == gym_id)
+        )
+        await self.db.execute(
+            Gym.__table__.delete().where(Gym.id == gym_id)
+        )
+        await self.db.flush()
+
+        await self._log_action(
+            actor_id=actor_id,
+            action=AuditAction.GYM_DELETED,
+            description=f"Gym '{gym_name}' permanently deleted. Reason: {reason}",
+            metadata={"gym_name": gym_name, "reason": reason},
+            ip_address=ip_address,
+        )
+
+        return AdminActionResponse(
+            success=True,
+            message=f"Gym '{gym_name}' has been permanently deleted",
+            gym_id=str(gym_id),
+            action="gym_deleted",
+        )
+
+    # === Platform Analytics ===
+
+    async def get_platform_analytics(self) -> PlatformAnalyticsResponse:
+        """Global platform analytics for super admin."""
+        twelve_months_ago = datetime.now(timezone.utc) - timedelta(days=365)
+
+        # Member growth
+        member_growth = await self._get_monthly_counts(
+            Member, Member.created_at, twelve_months_ago
+        )
+
+        # Gym growth
+        gym_growth = await self._get_monthly_counts(
+            Gym, Gym.created_at, twelve_months_ago
+        )
+
+        # Revenue trend
+        revenue_trend = await self._get_monthly_revenue_trend(twelve_months_ago)
+
+        # Payment success rate
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        total_invoices = (await self.db.execute(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.created_at >= thirty_days_ago,
+            )
+        )).scalar_one()
+        paid_invoices = (await self.db.execute(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.created_at >= thirty_days_ago,
+                Invoice.status == InvoiceStatus.PAID,
+            )
+        )).scalar_one()
+        payment_success_rate = (paid_invoices / total_invoices * 100) if total_invoices > 0 else None
+
+        # Top gyms by revenue
+        top_gyms_rows = (await self.db.execute(
+            select(
+                Gym.id, Gym.name,
+                func.coalesce(func.sum(Payment.amount_in_paise), 0).label("revenue"),
+            ).join(Payment, Payment.gym_id == Gym.id)
+            .where(Payment.payment_status == PaymentStatus.COMPLETED)
+            .group_by(Gym.id, Gym.name)
+            .order_by(func.sum(Payment.amount_in_paise).desc())
+            .limit(10)
+        )).all()
+        top_gyms = [
+            {"id": str(r[0]), "name": r[1], "revenue_in_paise": int(r[2])}
+            for r in top_gyms_rows
+        ]
+
+        # Inactive gyms (no login / payment in 30 days)
+        inactive_threshold = today_ist() - timedelta(days=30)
+        inactive_gyms_rows = (await self.db.execute(
+            select(Gym.id, Gym.name, Gym.created_at)
+            .outerjoin(Payment, and_(
+                Payment.gym_id == Gym.id,
+                Payment.payment_date >= inactive_threshold,
+            ))
+            .where(Payment.id.is_(None), Gym.is_active == True)  # noqa: E712
+            .limit(20)
+        )).all()
+        inactive_gyms = [
+            {"id": str(r[0]), "name": r[1], "created_at": str(r[2]) if r[2] else None}
+            for r in inactive_gyms_rows
+        ]
+
+        # Feature adoption (count gyms using each feature via plan flags)
+        feature_adoption = {}
+        feature_cols = {
+            "qr_attendance": SubscriptionPlan.qr_attendance_enabled,
+            "advanced_analytics": SubscriptionPlan.advanced_analytics_enabled,
+            "export_reports": SubscriptionPlan.export_reports_enabled,
+            "automated_whatsapp": SubscriptionPlan.automated_whatsapp_enabled,
+        }
+        for feature_name, col in feature_cols.items():
+            count = (await self.db.execute(
+                select(func.count()).select_from(GymSubscription)
+                .join(SubscriptionPlan, GymSubscription.plan_id == SubscriptionPlan.id)
+                .where(
+                    col == True,  # noqa: E712
+                    GymSubscription.status.in_([BillingStatus.ACTIVE, BillingStatus.TRIAL]),
+                )
+            )).scalar_one()
+            feature_adoption[feature_name] = count
+
+        return PlatformAnalyticsResponse(
+            member_growth=member_growth,
+            gym_growth=gym_growth,
+            revenue_trend=revenue_trend,
+            payment_success_rate=payment_success_rate,
+            top_gyms=top_gyms,
+            inactive_gyms=inactive_gyms,
+            feature_adoption=feature_adoption,
+        )
+
+    # === Platform Health ===
+
+    async def get_platform_health(self) -> PlatformHealthResponse:
+        """Operational health dashboard for super admin."""
+        now = datetime.now(timezone.utc)
+        twenty_four_h = now - timedelta(hours=24)
+        seven_days = now - timedelta(days=7)
+        thirty_days = now - timedelta(days=30)
+
+        # Failed payments
+        failed_24h = (await self.db.execute(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.status == InvoiceStatus.FAILED,
+                Invoice.created_at >= twenty_four_h,
+            )
+        )).scalar_one()
+
+        failed_7d = (await self.db.execute(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.status == InvoiceStatus.FAILED,
+                Invoice.created_at >= seven_days,
+            )
+        )).scalar_one()
+
+        # Inactive gyms (no activity in 30 days)
+        inactive_threshold = today_ist() - timedelta(days=30)
+        inactive_30d = (await self.db.execute(
+            select(func.count()).select_from(Gym)
+            .outerjoin(Payment, and_(
+                Payment.gym_id == Gym.id,
+                Payment.payment_date >= inactive_threshold,
+            ))
+            .where(Payment.id.is_(None), Gym.is_active == True)  # noqa: E712
+        )).scalar_one()
+
+        # Build alerts
+        alerts: list[HealthAlert] = []
+
+        if failed_24h > 0:
+            alerts.append(HealthAlert(
+                level="critical" if failed_24h > 5 else "warning",
+                title="Failed Payments",
+                description=f"{failed_24h} payment(s) failed in the last 24 hours",
+                count=failed_24h,
+            ))
+
+        if inactive_30d > 5:
+            alerts.append(HealthAlert(
+                level="warning",
+                title="Inactive Gyms",
+                description=f"{inactive_30d} gyms have had no activity in 30 days",
+                count=inactive_30d,
+            ))
+
+        # Expired subscriptions needing attention
+        expired_subs = (await self.db.execute(
+            select(func.count()).select_from(GymSubscription).where(
+                GymSubscription.status == BillingStatus.EXPIRED,
+            )
+        )).scalar_one()
+        if expired_subs > 0:
+            alerts.append(HealthAlert(
+                level="info",
+                title="Expired Subscriptions",
+                description=f"{expired_subs} gym(s) with expired subscriptions",
+                count=expired_subs,
+            ))
+
+        # Determine overall status
+        status = "healthy"
+        if any(a.level == "critical" for a in alerts):
+            status = "critical"
+        elif any(a.level == "warning" for a in alerts):
+            status = "degraded"
+
+        return PlatformHealthResponse(
+            status=status,
+            failed_payments_24h=failed_24h,
+            failed_payments_7d=failed_7d,
+            inactive_gyms_30d=inactive_30d,
+            alerts=alerts,
+        )
+
+    # === Platform Settings ===
+
+    async def get_platform_settings(self) -> PlatformSettingsResponse:
+        """Get platform-wide settings."""
+        settings_row = (await self.db.execute(
+            select(PlatformSettings).limit(1)
+        )).scalar_one_or_none()
+
+        if not settings_row:
+            return PlatformSettingsResponse(
+                default_trial_days=14,
+                grace_period_days=7,
+                max_payment_retries=3,
+                maintenance_mode=False,
+                maintenance_message=None,
+                announcement_active=False,
+                announcement_message=None,
+                announcement_type="info",
+                max_gyms=10000,
+                feature_flags=None,
+            )
+
+        return PlatformSettingsResponse(
+            default_trial_days=settings_row.default_trial_days,
+            grace_period_days=settings_row.grace_period_days,
+            max_payment_retries=settings_row.max_payment_retries,
+            maintenance_mode=settings_row.maintenance_mode,
+            maintenance_message=settings_row.maintenance_message,
+            announcement_active=settings_row.announcement_active,
+            announcement_message=settings_row.announcement_message,
+            announcement_type=settings_row.announcement_type,
+            max_gyms=settings_row.max_gyms,
+            feature_flags=settings_row.feature_flags,
+        )
+
+    async def update_platform_settings(
+        self, data: UpdatePlatformSettingsRequest,
+        actor_id: UUID, ip_address: str | None = None,
+    ) -> PlatformSettingsResponse:
+        """Update platform settings."""
+        settings_row = (await self.db.execute(
+            select(PlatformSettings).limit(1)
+        )).scalar_one_or_none()
+
+        if not settings_row:
+            raise NotFoundError("Platform settings not found. Run migrations.")
+
+        update_data = data.model_dump(exclude_unset=True)
+        changes = {}
+        for field, value in update_data.items():
+            old_value = getattr(settings_row, field, None)
+            if old_value != value:
+                changes[field] = {"old": str(old_value), "new": str(value)}
+                setattr(settings_row, field, value)
+
+        if changes:
+            await self.db.flush()
+
+            # Determine which audit action
+            action = AuditAction.SETTINGS_UPDATED
+            if "maintenance_mode" in changes:
+                action = AuditAction.MAINTENANCE_MODE_TOGGLED
+            elif "announcement_active" in changes or "announcement_message" in changes:
+                action = AuditAction.ANNOUNCEMENT_UPDATED
+
+            await self._log_action(
+                actor_id=actor_id,
+                action=action,
+                description=f"Platform settings updated: {list(changes.keys())}",
+                metadata=changes,
+                ip_address=ip_address,
+            )
+
+        return await self.get_platform_settings()

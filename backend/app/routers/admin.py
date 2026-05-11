@@ -23,16 +23,23 @@ from app.schemas.admin import (
     AdminActionResponse,
     AuditLogResponse,
     ChangePlanRequest,
+    DeleteGymRequest,
     ExtendTrialRequest,
     GymDetailResponse,
     GymDirectoryResponse,
+    ImpersonationResponse,
     LockGymRequest,
+    PlatformAnalyticsResponse,
+    PlatformHealthResponse,
+    PlatformSettingsResponse,
     SaaSMetricsResponse,
     SuspendGymRequest,
     UnlockGymRequest,
     UnsuspendGymRequest,
+    UpdatePlatformSettingsRequest,
 )
 from app.services.admin_service import AdminService
+from app.services.impersonation_service import ImpersonationService
 
 logger = logging.getLogger("gymflow.admin")
 
@@ -235,9 +242,124 @@ async def get_audit_logs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     gym_id: UUID | None = Query(None),
+    action: str | None = Query(None),
     current_user: CurrentUser = Depends(require_super_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """View audit logs. SUPER_ADMIN only."""
     service = AdminService(db)
-    return await service.get_audit_logs(skip=skip, limit=limit, gym_id=gym_id)
+    return await service.get_audit_logs(
+        skip=skip, limit=limit, gym_id=gym_id, action_filter=action,
+    )
+
+
+# === Delete Gym ===
+
+
+@router.delete("/gyms/{gym_id}", response_model=AdminActionResponse)
+async def delete_gym(
+    gym_id: UUID,
+    data: DeleteGymRequest,
+    request: Request,
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a gym and all data. SUPER_ADMIN only. DESTRUCTIVE."""
+    service = AdminService(db)
+    return await service.delete_gym(
+        gym_id=gym_id,
+        confirm_name=data.confirm_name,
+        reason=data.reason,
+        actor_id=current_user.user_id,
+        ip_address=_get_client_ip(request),
+    )
+
+
+# === Impersonation ===
+
+
+@router.post("/gyms/{gym_id}/impersonate", response_model=ImpersonationResponse)
+async def impersonate_gym_owner(
+    gym_id: UUID,
+    request: Request,
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start impersonation session as gym owner. SUPER_ADMIN only."""
+    service = ImpersonationService(db)
+    return await service.start_impersonation(
+        gym_id=gym_id,
+        impersonator_id=current_user.user_id,
+        ip_address=_get_client_ip(request),
+    )
+
+
+@router.post("/gyms/{gym_id}/end-impersonation", response_model=AdminActionResponse)
+async def end_impersonation(
+    gym_id: UUID,
+    request: Request,
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """End impersonation session. SUPER_ADMIN only."""
+    service = ImpersonationService(db)
+    return await service.end_impersonation(
+        gym_id=gym_id,
+        impersonator_id=current_user.user_id,
+        ip_address=_get_client_ip(request),
+    )
+
+
+# === Platform Analytics ===
+
+
+@router.get("/analytics", response_model=PlatformAnalyticsResponse)
+async def get_platform_analytics(
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Global platform analytics. SUPER_ADMIN only."""
+    service = AdminService(db)
+    return await service.get_platform_analytics()
+
+
+# === Platform Health ===
+
+
+@router.get("/health", response_model=PlatformHealthResponse)
+async def get_platform_health(
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform health monitoring. SUPER_ADMIN only."""
+    service = AdminService(db)
+    return await service.get_platform_health()
+
+
+# === Platform Settings ===
+
+
+@router.get("/settings", response_model=PlatformSettingsResponse)
+async def get_platform_settings(
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get platform settings. SUPER_ADMIN only."""
+    service = AdminService(db)
+    return await service.get_platform_settings()
+
+
+@router.put("/settings", response_model=PlatformSettingsResponse)
+async def update_platform_settings(
+    data: UpdatePlatformSettingsRequest,
+    request: Request,
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update platform settings. SUPER_ADMIN only."""
+    service = AdminService(db)
+    return await service.update_platform_settings(
+        data=data,
+        actor_id=current_user.user_id,
+        ip_address=_get_client_ip(request),
+    )

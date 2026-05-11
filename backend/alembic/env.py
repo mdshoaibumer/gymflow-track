@@ -17,6 +17,7 @@ from app.models.asset import Asset, MaintenanceRecord  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
 from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  # noqa: F401
 from app.models.auth_token import RefreshToken, PasswordResetToken  # noqa: F401
+from app.models.platform_settings import PlatformSettings  # noqa: F401
 
 config = context.config
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { UserPlus, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUsers, useCreateUser, useUpdateUser, useDeactivateUser } from "@/hooks/use-users";
@@ -149,11 +148,8 @@ export default function StaffPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
+    <div
+      className="space-y-6 animate-fadeInUp"
     >
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -162,6 +158,7 @@ export default function StaffPage() {
           <p className="text-muted-foreground text-sm">
             {users
               ? `${users.length} user${users.length !== 1 ? "s" : ""} in your gym`
+              : "Loading..."}
             {!usage.isLoading && !usage.isUnlimitedStaff && (
               <span className="ml-1">
                 ({usage.currentStaff} of {usage.maxStaff} slots used)
@@ -187,8 +184,7 @@ export default function StaffPage() {
           max={usage.maxStaff}
           isUnlimited={usage.isUnlimitedStaff}
         />
-      )}tton>
-      </div>
+      )}
 
       {/* Filters */}
       <StaffFilters
@@ -262,6 +258,6 @@ export default function StaffPage() {
         isPending={updateMutation.isPending}
         currentUserId={user?.id}
       />
-    </motion.div>
+    </div>
   );
 }

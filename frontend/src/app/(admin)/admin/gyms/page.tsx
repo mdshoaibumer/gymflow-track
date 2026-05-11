@@ -15,6 +15,8 @@ import {
   Lock,
   Unlock,
   RefreshCw,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -201,6 +203,7 @@ export default function GymDirectoryPage() {
                       <th className="px-4 py-3 text-left font-medium">Plan</th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-right font-medium">Members</th>
+                      <th className="px-4 py-3 text-right font-medium">Staff</th>
                       <th className="px-4 py-3 text-right font-medium">Revenue</th>
                       <th className="px-4 py-3 text-right font-medium">Actions</th>
                     </tr>
@@ -245,6 +248,9 @@ export default function GymDirectoryPage() {
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
                           {gym.member_count}
+                        </td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">
+                          {gym.active_staff}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
                           {formatPaise(gym.revenue_in_paise)}
@@ -407,6 +413,14 @@ function GymActions({
             View Details
           </Link>
         </DropdownMenuItem>
+        {gym.owner && (
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/gyms/${gym.id}?impersonate=true`}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Impersonate Owner
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {gym.subscription_status === "trial" && (
           <DropdownMenuItem onClick={() => onAction("extend_trial", gym)}>

@@ -2,14 +2,30 @@ import { apiClient } from "@/lib/api";
 
 // === Types ===
 
+export interface GrowthTrendPoint {
+  period: string;
+  count: number;
+}
+
+export interface PlanDistributionItem {
+  tier: string;
+  name: string;
+  count: number;
+}
+
 export interface SaaSMetrics {
   total_gyms: number;
   active_subscriptions: number;
   trial_gyms: number;
   suspended_gyms: number;
+  locked_gyms: number;
   total_members: number;
   mrr_in_paise: number;
+  arr_in_paise: number;
   failed_payments: number;
+  plan_distribution: PlanDistributionItem[];
+  gym_growth_trend: GrowthTrendPoint[];
+  revenue_trend: GrowthTrendPoint[];
 }
 
 export interface GymOwnerInfo {
@@ -34,6 +50,7 @@ export interface GymDirectoryItem {
   trial_end: string | null;
   current_period_end: string | null;
   member_count: number;
+  active_staff: number;
   revenue_in_paise: number;
   last_payment_date: string | null;
 }
@@ -62,6 +79,13 @@ export interface InvoiceInfo {
   paid_at: string | null;
 }
 
+export interface SubscriptionTimelineEntry {
+  date: string;
+  action: string;
+  description: string;
+  metadata: Record<string, unknown> | null;
+}
+
 export interface GymDetail {
   id: string;
   name: string;
@@ -88,6 +112,7 @@ export interface GymDetail {
   total_revenue_in_paise: number;
   staff: StaffInfo[];
   invoices: InvoiceInfo[];
+  subscription_timeline: SubscriptionTimelineEntry[];
 }
 
 export interface AdminActionResponse {
@@ -115,6 +140,57 @@ export interface AuditLogResponse {
   total: number;
 }
 
+export interface ImpersonationResponse {
+  access_token: string;
+  token_type: string;
+  expires_in_minutes: number;
+  gym_id: string;
+  gym_name: string;
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
+  impersonator_id: string;
+}
+
+export interface PlatformAnalytics {
+  member_growth: GrowthTrendPoint[];
+  gym_growth: GrowthTrendPoint[];
+  revenue_trend: GrowthTrendPoint[];
+  payment_success_rate: number | null;
+  top_gyms: Array<{ id: string; name: string; revenue_in_paise: number }>;
+  inactive_gyms: Array<{ id: string; name: string; created_at: string | null }>;
+  feature_adoption: Record<string, number>;
+}
+
+export interface HealthAlert {
+  level: "info" | "warning" | "critical";
+  title: string;
+  description: string;
+  count: number;
+  timestamp: string | null;
+}
+
+export interface PlatformHealth {
+  status: "healthy" | "degraded" | "critical";
+  failed_payments_24h: number;
+  failed_payments_7d: number;
+  inactive_gyms_30d: number;
+  alerts: HealthAlert[];
+}
+
+export interface PlatformSettings {
+  default_trial_days: number;
+  grace_period_days: number;
+  max_payment_retries: number;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
+  announcement_active: boolean;
+  announcement_message: string | null;
+  announcement_type: string;
+  max_gyms: number;
+  feature_flags: Record<string, unknown> | null;
+}
+
 // === API ===
 
 export interface ListGymsParams {
@@ -125,9 +201,11 @@ export interface ListGymsParams {
 }
 
 export const adminService = {
+  // Dashboard
   getMetrics: () =>
     apiClient<SaaSMetrics>("/admin/metrics"),
 
+  // Gym Directory
   listGyms: (params: ListGymsParams = {}) => {
     const query = new URLSearchParams();
     if (params.skip) query.set("skip", String(params.skip));
@@ -141,6 +219,7 @@ export const adminService = {
   getGymDetail: (gymId: string) =>
     apiClient<GymDetail>(`/admin/gyms/${gymId}`),
 
+  // Gym Actions
   extendTrial: (gymId: string, days: number, reason: string) =>
     apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/extend-trial`, {
       method: "POST",
@@ -182,11 +261,48 @@ export const adminService = {
       method: "POST",
     }),
 
-  getAuditLogs: (params: { skip?: number; limit?: number; gym_id?: string } = {}) => {
+  deleteGym: (gymId: string, confirmName: string, reason: string) =>
+    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}`, {
+      method: "DELETE",
+      body: { confirm_name: confirmName, reason },
+    }),
+
+  // Impersonation
+  impersonateGymOwner: (gymId: string) =>
+    apiClient<ImpersonationResponse>(`/admin/gyms/${gymId}/impersonate`, {
+      method: "POST",
+    }),
+
+  endImpersonation: (gymId: string) =>
+    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/end-impersonation`, {
+      method: "POST",
+    }),
+
+  // Analytics
+  getAnalytics: () =>
+    apiClient<PlatformAnalytics>("/admin/analytics"),
+
+  // Health
+  getHealth: () =>
+    apiClient<PlatformHealth>("/admin/health"),
+
+  // Settings
+  getSettings: () =>
+    apiClient<PlatformSettings>("/admin/settings"),
+
+  updateSettings: (data: Partial<PlatformSettings>) =>
+    apiClient<PlatformSettings>("/admin/settings", {
+      method: "PUT",
+      body: data,
+    }),
+
+  // Audit Logs
+  getAuditLogs: (params: { skip?: number; limit?: number; gym_id?: string; action?: string } = {}) => {
     const query = new URLSearchParams();
     if (params.skip) query.set("skip", String(params.skip));
     if (params.limit) query.set("limit", String(params.limit));
     if (params.gym_id) query.set("gym_id", params.gym_id);
+    if (params.action) query.set("action", params.action);
     const qs = query.toString();
     return apiClient<AuditLogResponse>(`/admin/audit-logs${qs ? `?${qs}` : ""}`);
   },

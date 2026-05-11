@@ -35,13 +35,44 @@ export function useAdminGymDetail(gymId: string | null) {
   });
 }
 
-export function useAuditLogs(params: { skip?: number; limit?: number; gym_id?: string } = {}) {
+export function useAuditLogs(params: { skip?: number; limit?: number; gym_id?: string; action?: string } = {}) {
   const token = useAuthStore((s) => s.token);
   return useQuery({
     queryKey: ["admin", "audit-logs", params],
     queryFn: () => adminService.getAuditLogs(params),
     enabled: !!token,
     staleTime: 15_000,
+  });
+}
+
+export function useAdminAnalytics() {
+  const token = useAuthStore((s) => s.token);
+  return useQuery({
+    queryKey: ["admin", "analytics"],
+    queryFn: () => adminService.getAnalytics(),
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+}
+
+export function useAdminHealth() {
+  const token = useAuthStore((s) => s.token);
+  return useQuery({
+    queryKey: ["admin", "health"],
+    queryFn: () => adminService.getHealth(),
+    enabled: !!token,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useAdminSettings() {
+  const token = useAuthStore((s) => s.token);
+  return useQuery({
+    queryKey: ["admin", "settings"],
+    queryFn: () => adminService.getSettings(),
+    enabled: !!token,
+    staleTime: 60_000,
   });
 }
 
@@ -133,6 +164,40 @@ export function useActivateSubscription() {
     onSuccess: (data) => {
       toast.success(data.message);
       queryClient.invalidateQueries({ queryKey: ["admin"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useDeleteGym() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gymId, confirmName, reason }: { gymId: string; confirmName: string; reason: string }) =>
+      adminService.deleteGym(gymId, confirmName, reason),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useImpersonateGymOwner() {
+  return useMutation({
+    mutationFn: ({ gymId }: { gymId: string }) =>
+      adminService.impersonateGymOwner(gymId),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUpdatePlatformSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof adminService.updateSettings>[0]) =>
+      adminService.updateSettings(data),
+    onSuccess: () => {
+      toast.success("Platform settings updated");
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });

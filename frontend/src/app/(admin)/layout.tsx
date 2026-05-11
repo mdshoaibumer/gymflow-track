@@ -9,6 +9,10 @@ import {
   ScrollText,
   LogOut,
   Shield,
+  CreditCard,
+  BarChart3,
+  Activity,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,7 +25,11 @@ import { ErrorBoundary } from "@/components/error-boundary";
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/gyms", label: "Gym Directory", icon: Building2 },
+  { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/health", label: "Health", icon: Activity },
   { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({

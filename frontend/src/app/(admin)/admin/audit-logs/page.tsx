@@ -8,11 +8,19 @@ import {
   Shield,
   Building2,
   Clock,
+  Filter,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuditLogs } from "@/hooks/use-admin";
 
 const PAGE_SIZE = 30;
@@ -25,18 +33,26 @@ const actionLabels: Record<string, { label: string; color: string }> = {
   gym_unlocked: { label: "Gym Unlocked", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
   plan_changed: { label: "Plan Changed", color: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400" },
   subscription_activated: { label: "Subscription Activated", color: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
+  subscription_cancelled: { label: "Subscription Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400" },
   impersonation_start: { label: "Impersonation Start", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400" },
   impersonation_end: { label: "Impersonation End", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400" },
   billing_override: { label: "Billing Override", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400" },
+  payment_marked_received: { label: "Payment Marked", color: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400" },
+  gym_deleted: { label: "Gym Deleted", color: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400" },
+  settings_updated: { label: "Settings Updated", color: "bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-400" },
+  announcement_updated: { label: "Announcement Updated", color: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" },
+  maintenance_mode_toggled: { label: "Maintenance Toggle", color: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
   super_admin_created: { label: "Admin Created", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
 };
 
 export default function AuditLogsPage() {
   const [page, setPage] = useState(0);
+  const [actionFilter, setActionFilter] = useState<string>("all");
 
   const { data, isLoading } = useAuditLogs({
     skip: page * PAGE_SIZE,
     limit: PAGE_SIZE,
+    action: actionFilter !== "all" ? actionFilter : undefined,
   });
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
@@ -48,6 +64,22 @@ export default function AuditLogsPage() {
         <p className="text-muted-foreground">
           Track all administrative actions performed on the platform.
         </p>
+      </div>
+
+      {/* Filter */}
+      <div className="flex gap-3">
+        <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-[220px]">
+            <Filter className="mr-2 h-3.5 w-3.5" />
+            <SelectValue placeholder="Filter by action" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Actions</SelectItem>
+            {Object.entries(actionLabels).map(([key, config]) => (
+              <SelectItem key={key} value={key}>{config.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

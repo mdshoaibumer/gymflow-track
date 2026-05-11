@@ -19,6 +19,8 @@ import {
   RefreshCw,
   Play,
   Pause,
+  UserCheck,
+  History,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,7 @@ import {
   useUnlockGym,
   useChangePlan,
   useActivateSubscription,
+  useImpersonateGymOwner,
 } from "@/hooks/use-admin";
 import { formatPaise } from "@/lib/utils";
 
@@ -79,6 +82,7 @@ export default function GymDetailPage() {
   const unlockMutation = useUnlockGym();
   const changePlanMutation = useChangePlan();
   const activateMutation = useActivateSubscription();
+  const impersonateMutation = useImpersonateGymOwner();
 
   const closeAction = () => {
     setActionType(null);
@@ -168,6 +172,27 @@ export default function GymDetailPage() {
             <p className="text-sm text-muted-foreground">{gym.slug} · {gym.city || "No city"}</p>
           </div>
         </div>
+        {gym.owner && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => impersonateMutation.mutate(
+              { gymId: gym.id },
+              {
+                onSuccess: (data) => {
+                  window.open(
+                    `/dashboard?impersonation_token=${data.access_token}`,
+                    "_blank"
+                  );
+                },
+              }
+            )}
+            disabled={impersonateMutation.isPending}
+          >
+            <UserCheck className="mr-2 h-4 w-4" />
+            {impersonateMutation.isPending ? "Starting..." : "Impersonate Owner"}
+          </Button>
+        )}
       </div>
 
       {/* Status Banners */}
@@ -500,6 +525,38 @@ export default function GymDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Subscription Timeline */}
+      {gym.subscription_timeline && gym.subscription_timeline.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="h-4 w-4" />
+              Subscription Timeline
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative space-y-4 pl-6 before:absolute before:left-2 before:top-2 before:h-[calc(100%-16px)] before:w-px before:bg-border">
+              {gym.subscription_timeline.map((entry, i) => (
+                <div key={i} className="relative">
+                  <div className="absolute -left-[18px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-primary bg-background" />
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:gap-3">
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {entry.date ? new Date(entry.date).toLocaleString() : "—"}
+                    </span>
+                    <div>
+                      <Badge variant="outline" className="mb-1 text-xs capitalize">
+                        {entry.action.replace(/_/g, " ")}
+                      </Badge>
+                      <p className="text-sm">{entry.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Dialog */}
       <Dialog open={!!actionType} onOpenChange={(open) => !open && closeAction()}>
