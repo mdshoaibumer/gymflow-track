@@ -47,6 +47,7 @@ export function Header() {
         size="icon"
         className="md:hidden"
         onClick={toggleSidebar}
+        aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
       </Button>
