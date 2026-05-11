@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
 
+    # === Redis ===
+    REDIS_URL: str = ""  # e.g. redis://redis:6379/0
+
+    # === Sentry ===
+    SENTRY_DSN: str = ""  # Set in production for error tracking
+
     # === JWT ===
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
@@ -60,11 +66,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_AUTH: int = 10  # login/register attempts per minute per IP
     RATE_LIMIT_API: int = 100  # general API requests per minute per IP
 
-    # === Proxy ===
-    # Enable in production behind reverse proxy (Railway/Render/Fly/nginx).
+    # === Proxy / Host ===
+    # Enable in production behind reverse proxy (Caddy/nginx/cloud platforms).
     # When true, X-Forwarded-For and X-Real-IP headers are trusted for
     # client IP extraction (affects rate limiting and audit logging).
     TRUST_PROXY_HEADERS: bool = False
+    # Comma-separated allowed hostnames. Enforced by TrustedHostMiddleware in production.
+    ALLOWED_HOSTS: str = "*"
 
     # === WhatsApp ===
     WHATSAPP_PROVIDER: str = "log_only"  # "log_only" | "aisensy"
@@ -98,6 +106,10 @@ class Settings(BaseSettings):
     @property
     def is_development(self) -> bool:
         return self.APP_ENV == "development"
+
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        return [h.strip() for h in self.ALLOWED_HOSTS.split(",") if h.strip()]
 
     def validate_for_startup(self) -> None:
         """

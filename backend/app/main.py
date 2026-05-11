@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.core.config import settings
 from app.core.database import async_session_factory
@@ -29,6 +31,9 @@ async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle. Validates config before accepting requests."""
     settings.validate_for_startup()
     logger.info(f"Starting {settings.APP_NAME} (env={settings.APP_ENV})")
+
+    # Initialize Sentry for production error tracking (no-op if DSN not set)
+    _setup_sentry()
 
     # Configure WhatsApp provider based on settings
     _setup_whatsapp_provider()
@@ -63,6 +68,26 @@ def _setup_whatsapp_provider() -> None:
         provider = LogOnlyProvider()
         logger.info("WhatsApp provider: log_only (no messages will be sent)")
     configure_provider(provider)
+
+
+def _setup_sentry() -> None:
+    """Initialize Sentry error tracking if SENTRY_DSN is configured."""
+    if not settings.SENTRY_DSN:
+        logger.info("Sentry: disabled (no SENTRY_DSN)")
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.APP_ENV,
+            traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+            integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        )
+        logger.info("Sentry: initialized")
+    except ImportError:
+        logger.warning("Sentry: sentry-sdk not installed, skipping")
 
 
 def _setup_payment_provider() -> None:
@@ -143,6 +168,17 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # [Outermost] 1. Request context — ensures tracing/logging consistency for the entire request lifecycle
 app.add_middleware(RequestContextMiddleware)
+
+# 0. Trusted Host — reject requests with spoofed Host headers (production only)
+if settings.is_production and settings.ALLOWED_HOSTS != "*":
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.allowed_hosts_list,
+    )
+
+# Proxy headers — trust X-Forwarded-For/Proto from reverse proxy (Caddy)
+if settings.TRUST_PROXY_HEADERS:
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])

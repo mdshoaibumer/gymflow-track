@@ -1,0 +1,104 @@
+# ==============================================================
+# GymFlow Track — Caddy Reverse Proxy Configuration
+# ==============================================================
+# Automatic HTTPS via Let's Encrypt / ZeroSSL
+# Cloudflare DNS must point A records to this server's IP
+#
+# Subdomains:
+#   app.gymflowtrack.in   → Frontend (Next.js)
+#   admin.gymflowtrack.in → Frontend /admin routes
+#   api.gymflowtrack.in   → Backend (FastAPI)
+# ==============================================================
+
+# Global options
+{
+	# Email for Let's Encrypt certificate notifications
+	email {$ACME_EMAIL:admin@gymflowtrack.in}
+
+	# Staging CA for testing (uncomment to avoid rate limits during setup):
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# ── App Frontend ─────────────────────────────────────────────
+app.gymflowtrack.in {
+	encode gzip zstd
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		X-XSS-Protection "0"
+		# Remove server identity
+		-Server
+	}
+
+	reverse_proxy frontend:3000 {
+		health_uri /
+		health_interval 30s
+		health_timeout 5s
+	}
+}
+
+# ── Admin Portal ─────────────────────────────────────────────
+admin.gymflowtrack.in {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		X-XSS-Protection "0"
+		-Server
+	}
+
+	reverse_proxy frontend:3000 {
+		health_uri /
+		health_interval 30s
+		health_timeout 5s
+	}
+}
+
+# ── Backend API ──────────────────────────────────────────────
+api.gymflowtrack.in {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-XSS-Protection "0"
+		-Server
+		# Allow API to be called from app/admin subdomains
+		Access-Control-Allow-Origin "{header.Origin}"
+	}
+
+	# API rate limiting (global safety net — app-level rate limiting is primary)
+	# Caddy rate limiting requires the caddy-ratelimit plugin; omit if not installed.
+
+	reverse_proxy backend:8000 {
+		# Pass real client IP (Cloudflare → Caddy → Backend)
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+
+		health_uri /health/live
+		health_interval 30s
+		health_timeout 5s
+	}
+}
+
+# ── Marketing Site (optional — redirect to main domain) ─────
+gymflowtrack.in {
+	# For now, redirect to the app. Replace with a static marketing site later.
+	redir https://app.gymflowtrack.in{uri} permanent
+}
+
+www.gymflowtrack.in {
+	redir https://gymflowtrack.in{uri} permanent
+}

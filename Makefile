@@ -27,16 +27,42 @@ migrate: ## Run database migrations
 migrate-create: ## Create new migration (usage: make migrate-create msg="description")
 	cd backend && alembic revision --autogenerate -m "$(msg)"
 
-# === Docker ===
+# === Docker (Development) ===
 
-up: ## Start all services
+up: ## Start all services (dev)
 	docker-compose up -d
 
-down: ## Stop all services
+down: ## Stop all services (dev)
 	docker-compose down
 
-db-only: ## Start only database
+db-only: ## Start only database (dev)
 	docker-compose up -d db
+
+# === Docker (Production) ===
+
+prod-up: ## Start production stack
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down: ## Stop production stack
+	docker compose -f docker-compose.prod.yml down
+
+prod-build: ## Build production images
+	docker compose -f docker-compose.prod.yml build --no-cache
+
+prod-logs: ## Tail production logs
+	docker compose -f docker-compose.prod.yml logs -f --tail=50
+
+prod-ps: ## Show production container status
+	docker compose -f docker-compose.prod.yml ps
+
+prod-migrate: ## Run migrations in production
+	docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+prod-backup: ## Create production database backup
+	./scripts/backup-db.sh
+
+prod-deploy: ## Full production deployment
+	./scripts/deploy.sh
 
 # === Quality ===
 
