@@ -1,11 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  Users,
-  UserCheck,
-  Clock,
-  IndianRupee,
   TrendingUp,
   AlertCircle,
   CalendarCheck,
@@ -14,8 +11,6 @@ import {
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,6 +29,14 @@ import {
 } from "@/hooks/use-payments";
 import { useAttendanceStats, useAttendanceTrend } from "@/hooks/use-attendance";
 import { useNotificationStats } from "@/hooks/use-notifications";
+import {
+  DashboardFilters,
+  getFilterState,
+  type DashboardFilterState,
+} from "@/components/dashboard/filters/dashboard-filters";
+import { EnhancedKPIGrid } from "@/components/dashboard/overview/enhanced-kpi-grid";
+import { RevenueTrendChart } from "@/components/dashboard/financials/revenue-trend-chart";
+import { MembershipDistributionChart } from "@/components/dashboard/growth/membership-distribution-chart";
 
 const container = {
   hidden: { opacity: 0 },
@@ -49,7 +52,15 @@ const item = {
 };
 
 export default function DashboardPage() {
-  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const [filters, setFilters] = useState<DashboardFilterState>(() =>
+    getFilterState("30d"),
+  );
+
+  const handleFilterChange = useCallback((state: DashboardFilterState) => {
+    setFilters(state);
+  }, []);
+
+  const { data: metrics } = useDashboardMetrics();
   const { data: expiring } = useExpiringMembers(7);
   const { data: recentPayments } = useRecentPayments(5);
   const { data: notifStats } = useNotificationStats();
@@ -71,43 +82,30 @@ export default function DashboardPage() {
       animate="show"
       className="space-y-6"
     >
-      <motion.div variants={item}>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Welcome back! Here&apos;s your gym overview.
-        </p>
+      {/* Header + Filters */}
+      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm">
+            Welcome back! Here&apos;s your gym analytics overview.
+          </p>
+        </div>
+        <DashboardFilters value={filters} onChange={handleFilterChange} />
       </motion.div>
 
-      {/* Metric Cards */}
-      <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DashboardCard
-          title="Total Members"
-          value={String(metrics?.total_members ?? 0)}
-          description="Registered members"
-          icon={Users}
-          loading={metricsLoading}
-        />
-        <DashboardCard
-          title="Active Members"
-          value={String(metrics?.active_members ?? 0)}
-          description="Currently active"
-          icon={UserCheck}
-          loading={metricsLoading}
-        />
-        <DashboardCard
-          title="Expiring Soon"
-          value={String(metrics?.expiring_soon ?? 0)}
-          description="Next 7 days"
-          icon={Clock}
-          loading={metricsLoading}
-        />
-        <DashboardCard
-          title="Revenue (Month)"
-          value={formatPaise(metrics?.monthly_revenue_paise ?? 0)}
-          description="Current month"
-          icon={IndianRupee}
-          loading={metricsLoading}
-        />
+      {/* Enhanced KPI Cards */}
+      <motion.div variants={item}>
+        <EnhancedKPIGrid periodDays={filters.periodDays} />
+      </motion.div>
+
+      {/* Analytics Charts Row */}
+      <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <RevenueTrendChart dateFrom={filters.dateFrom} dateTo={filters.dateTo} />
+        </div>
+        <div className="lg:col-span-2">
+          <MembershipDistributionChart />
+        </div>
       </motion.div>
 
       {/* Attendance Quick Stats */}
@@ -134,9 +132,8 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Charts Row */}
-      <motion.div variants={item} className="grid gap-6 lg:grid-cols-2">
-        {/* Attendance Trend Chart */}
+      {/* Attendance Trend Chart */}
+      <motion.div variants={item}>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Attendance Trend</CardTitle>
@@ -182,58 +179,6 @@ export default function DashboardPage() {
             ) : (
               <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
                 No attendance data yet
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Revenue from recent payments */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentPayments && recentPayments.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart
-                  data={recentPayments.map((p) => ({
-                    date: new Date(p.payment_date).toLocaleDateString("en-IN", {
-                      month: "short",
-                      day: "numeric",
-                    }),
-                    amount: p.amount_in_paise / 100,
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12 }}
-                    className="fill-muted-foreground"
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    className="fill-muted-foreground"
-                    tickFormatter={(v) => `₹${v}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, "Amount"]}
-                  />
-                  <Bar
-                    dataKey="amount"
-                    fill="hsl(var(--chart-2))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
-                No payment data yet
               </div>
             )}
           </CardContent>
