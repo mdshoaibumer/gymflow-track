@@ -5,21 +5,21 @@ Adds standard security headers to every response. These headers instruct
 browsers to apply security policies that prevent common attack vectors.
 
 Headers added:
-- X-Content-Type-Options: nosniff — prevents MIME type sniffing
-- X-Frame-Options: DENY — prevents clickjacking via iframes
-- Referrer-Policy: strict-origin-when-cross-origin — limits referrer leakage
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- Referrer-Policy: strict-origin-when-cross-origin
 - Permissions-Policy: restricts browser feature access
-- X-XSS-Protection: 0 — modern browsers use CSP instead (legacy header)
+- X-XSS-Protection: 0 (modern browsers use CSP instead)
 - Content-Security-Policy: Restricts resource loading origins
-- Cache-Control: no-store — prevents caching of authenticated API responses
-
-Not added (handled elsewhere):
-- Strict-Transport-Security: Set by reverse proxy (Railway/Render/Cloudflare)
+- Cache-Control: no-store
+- Strict-Transport-Security: Enforces HTTPS in production (when COOKIE_SECURE=True)
 """
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+
+from app.core.config import settings
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -37,15 +37,26 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Prevent browsers/proxies from caching authenticated API responses
         response.headers["Cache-Control"] = "no-store"
 
+        # HSTS: enforce HTTPS for 1 year when running in production (COOKIE_SECURE=True).
+        # In development (COOKIE_SECURE=False / localhost), HSTS is omitted to avoid
+        # browsers caching an HTTPS-only policy for localhost.
+        if settings.COOKIE_SECURE:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+
         # CSP policy: restrict resource loading.
-        # API routes don't need CSP (consumed by JS clients, not rendered in browser).
+        # API routes get a minimal CSP (defense-in-depth).
         # Swagger/ReDoc docs need cdn.jsdelivr.net for UI assets.
         # All other routes get strict same-origin CSP.
-        if not request.url.path.startswith("/api/"):
+        if request.url.path.startswith("/api/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; frame-ancestors 'none'"
+            )
+        else:
             is_docs = request.url.path in ("/docs", "/redoc", "/openapi.json") or \
                       request.url.path.startswith("/docs/") or request.url.path.startswith("/redoc/")
             if is_docs:
-                # Swagger UI / ReDoc: allow CDN assets (FastAPI default swagger CDN)
                 response.headers["Content-Security-Policy"] = (
                     "default-src 'self'; "
                     "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "

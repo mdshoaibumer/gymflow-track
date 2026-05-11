@@ -1,6 +1,8 @@
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.schemas.sanitize import strip_html_tags
 
 
 class GymResponse(BaseModel):
@@ -22,3 +24,8 @@ class GymUpdateRequest(BaseModel):
     email: EmailStr | None = None
     address: str | None = None
     city: str | None = None
+
+    @field_validator("name", "address", "city")
+    @classmethod
+    def sanitize_text_fields(cls, v: str | None) -> str | None:
+        return strip_html_tags(v) if v else v

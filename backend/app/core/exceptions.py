@@ -55,3 +55,14 @@ class ValidationError(GymFlowException):
     """Business rule validation failure (e.g., expired membership, invalid input)."""
 
     pass
+
+
+class ConflictError(GymFlowException):
+    """Optimistic locking conflict — raised when a concurrent update is detected.
+
+    The client sends a `version` field with each update request. If the
+    version on disk no longer matches, another user/tab modified the
+    resource first. The client should refresh and retry.
+    """
+
+    pass

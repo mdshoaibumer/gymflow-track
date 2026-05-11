@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+
 import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,12 +30,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
-      >
+      <div className="w-full max-w-sm animate-fade-in-up">
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
@@ -98,7 +93,7 @@ export default function ForgotPasswordPage() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </main>
   );
 }

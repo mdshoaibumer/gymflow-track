@@ -2,7 +2,9 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import type { Member } from "@/services/member.service";
 
 interface MemberFormProps {
@@ -30,7 +32,7 @@ export function MemberForm({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     setError,
   } = useForm({
     resolver: zodResolver(memberFormSchema),
@@ -46,6 +48,9 @@ export function MemberForm({
       ...defaultValues,
     },
   });
+
+  // Warn user about unsaved changes on page refresh/close
+  useUnsavedChanges(isDirty);
 
   const handleFormSubmit = async (data: Record<string, unknown>) => {
     try {
@@ -190,8 +195,11 @@ export function MemberForm({
           <button
             type="submit"
             disabled={isSubmitting || isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
+            {(isSubmitting || isPending) && (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            )}
             {isSubmitting || isPending ? "Saving..." : submitLabel}
           </button>
           <button

@@ -18,6 +18,7 @@ from app.core.exceptions import (
     AlreadyExistsError,
     AuthenticationError,
     AuthorizationError,
+    ConflictError,
     GymFlowException,
     NotFoundError,
     ValidationError,
@@ -58,6 +59,7 @@ def _get_status_code(exc: GymFlowException) -> int:
     mapping: dict[type, int] = {
         NotFoundError: 404,
         AlreadyExistsError: 409,
+        ConflictError: 409,
         AuthenticationError: 401,
         AuthorizationError: 403,
         AccountDisabledError: 403,

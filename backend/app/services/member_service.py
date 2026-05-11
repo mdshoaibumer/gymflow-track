@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import AlreadyExistsError, NotFoundError, ValidationError
+from app.core.exceptions import AlreadyExistsError, ConflictError, NotFoundError, ValidationError
 from app.models.member import Member
 from app.repositories.member_repository import MemberRepository
 from app.schemas.member import MemberCreateRequest, MemberListResponse, MemberUpdateRequest
@@ -60,6 +60,16 @@ class MemberService:
 
         update_data = data.model_dump(exclude_unset=True)
 
+        # Optimistic locking: reject stale updates to prevent silent data loss.
+        # The client includes the `version` it read; if the DB version differs,
+        # another concurrent edit landed first → return 409 Conflict.
+        client_version = update_data.pop("version", None)
+        if client_version is not None and client_version != member.version:
+            raise ConflictError(
+                "This member was modified by another user. "
+                "Please refresh and try again."
+            )
+
         # Block direct manipulation of protected lifecycle fields if they are actually changing
         for field_name in _PROTECTED_FIELDS:
             if field_name in update_data:
@@ -87,6 +97,9 @@ class MemberService:
 
         for field, value in update_data.items():
             setattr(member, field, value)
+
+        # Bump version so the next concurrent edit will detect the conflict
+        member.version = (member.version or 0) + 1
 
         try:
             return await self.member_repo.update(member)

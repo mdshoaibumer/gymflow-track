@@ -11,7 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { Search, Pencil, Trash2, Plus, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useMembers, useCreateMember, useUpdateMember, useDeleteMember } from "@/hooks/use-members";
+import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import type { Member, CreateMemberPayload } from "@/services/member.service";
 import { RoleGate } from "@/components/role-gate";
 import { MemberForm, memberToFormValues } from "@/components/members/member-form";
@@ -31,6 +31,10 @@ export default function MembersPage() {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Multi-tab sync: invalidates member queries when another browser tab
+  // creates, updates, or deletes a member (via BroadcastChannel).
+  useMemberTabSync();
 
   // Form states
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -70,6 +74,8 @@ export default function MembersPage() {
   const handleEdit = async (values: MemberFormValues) => {
     if (!editingMember || updateMutation.isPending) return;
     const payload = formValuesToPayload(values);
+    // Include version for optimistic locking — server returns 409 if stale
+    payload.version = editingMember.version;
     await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
     setEditingMember(null);
   };

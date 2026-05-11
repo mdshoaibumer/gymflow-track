@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.config import settings
 from app.models.user import UserRole
+from app.schemas.sanitize import strip_html_tags
 from app.schemas.validators import validate_password_strength
 
 
@@ -22,6 +23,11 @@ class GymRegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     city: str | None = None
+
+    @field_validator("gym_name", "owner_name", "city")
+    @classmethod
+    def sanitize_text_fields(cls, v: str | None) -> str | None:
+        return strip_html_tags(v) if v else v
 
     @field_validator("password")
     @classmethod

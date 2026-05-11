@@ -11,6 +11,9 @@ export interface Member {
   membership_start: string | null;
   membership_end: string | null;
   amount_paid: number;
+  version: number;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface MemberListResponse {
@@ -27,6 +30,7 @@ export interface CreateMemberPayload {
   membership_start?: string;
   membership_end?: string;
   amount_paid?: number;
+  version?: number;
 }
 
 export interface ListMembersParams {

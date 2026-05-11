@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -95,12 +95,7 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
-      >
+      <div className="w-full max-w-md animate-fade-in-up">
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
@@ -224,7 +219,7 @@ export default function RegisterPage() {
             </p>
           </CardContent>
         </Card>
-      </motion.div>
+      </div>
     </main>
   );
 }

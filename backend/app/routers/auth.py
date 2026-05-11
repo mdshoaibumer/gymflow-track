@@ -28,9 +28,9 @@ router = APIRouter()
 
 # Login-specific rate limiting: stricter than the general auth rate limiter.
 # Tracks per-IP failed login attempts with progressive cooldown.
-_LOGIN_MAX_ATTEMPTS = 5       # max attempts before lockout
-_LOGIN_WINDOW_SECONDS = 300   # 5-minute window for tracking failures
-_LOGIN_LOCKOUT_SECONDS = 300  # 5-minute lockout after exceeding limit
+_LOGIN_MAX_ATTEMPTS = 10      # allow more attempts for real users behind shared IPs
+_LOGIN_WINDOW_SECONDS = 300   # 5-minute sliding window for failure tracking
+_LOGIN_LOCKOUT_SECONDS = 60   # shorter lockout — balances security vs. user friction
 
 
 def _get_client_ip(request: Request) -> str:
@@ -58,7 +58,7 @@ def _check_login_rate_limit(request: Request) -> None:
         logger.warning(f"Login attempt during lockout: {client_ip}")
         raise HTTPException(
             status_code=429,
-            detail="Too many login attempts. Please try again in a few minutes.",
+            detail=f"Too many login attempts. Please try again in {_LOGIN_LOCKOUT_SECONDS} seconds.",
             headers={"Retry-After": str(_LOGIN_LOCKOUT_SECONDS)},
         )
 

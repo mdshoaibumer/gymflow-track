@@ -83,9 +83,12 @@ api.interceptors.response.use(
       return Promise.reject(new Error("Session expired. Please log in again."));
     }
 
-    // Rate limited
+    // Rate limited — surface the server's specific retry timing to the user
+    // (e.g. "Too many login attempts. Please try again in 60 seconds.")
     if (error.response?.status === 429) {
-      return Promise.reject(new Error("Too many requests. Please wait a moment and try again."));
+      const retryDetail = error.response?.data?.detail;
+      const retryMsg = typeof retryDetail === "string" ? retryDetail : "Too many requests. Please wait a moment and try again.";
+      return Promise.reject(new Error(retryMsg));
     }
 
     // Extract error detail — handle both string and array formats
