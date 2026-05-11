@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from jwt import InvalidTokenError
 import jwt as pyjwt
@@ -28,14 +28,17 @@ def create_access_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     - Role changes take effect on next token refresh (max 30 min stale)
     - Acceptable tradeoff for a gym SaaS where role changes are rare
     """
-    expire = datetime.now(timezone.utc) + timedelta(
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     payload = {
         "sub": str(user_id),
         "gym_id": str(gym_id),
         "role": role,
+        "iat": now,
         "exp": expire,
+        "jti": str(uuid4()),
         "type": "access",
     }
     return pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
@@ -48,14 +51,17 @@ def create_refresh_token(user_id: UUID, gym_id: UUID, role: str) -> str:
     Role is included so that refresh responses can mint accurate access tokens
     without a DB lookup — but the refresh endpoint still validates user state.
     """
-    expire = datetime.now(timezone.utc) + timedelta(
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )
     payload = {
         "sub": str(user_id),
         "gym_id": str(gym_id),
         "role": role,
+        "iat": now,
         "exp": expire,
+        "jti": str(uuid4()),
         "type": "refresh",
     }
     return pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)

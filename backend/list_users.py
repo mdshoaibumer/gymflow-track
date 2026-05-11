@@ -2,7 +2,11 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.models.user import User
-from app.models.gym import Gym  # Import Gym to resolve relationship
+from app.models.gym import Gym
+from app.models.member import Member
+from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice
+from app.models.payment import Payment
+from app.models.attendance import Attendance
 from app.core.config import settings
 
 async def list_users():

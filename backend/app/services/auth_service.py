@@ -9,6 +9,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import get_cache_backend
 from app.core.config import settings
 from app.core.exceptions import (
     AccountDisabledError,
@@ -186,17 +187,20 @@ class AuthService:
         result = await self.db.execute(
             select(RefreshToken).where(
                 RefreshToken.token_hash == token_hash,
-            )
+            ).with_for_update()
         )
         stored_token = result.scalar_one_or_none()
 
         if not stored_token:
+            logger.warning(f"Refresh token NOT FOUND in DB: {token_hash[:10]}...")
             raise AuthenticationError("Refresh token revoked or invalid")
 
         # Reuse detection with grace window for multi-tab concurrent refreshes.
         # If the token was revoked within the grace period, return the replacement
         # token pair instead of revoking all sessions.
         if stored_token.revoked:
+            logger.info(f"Revoked token presented (reuse check) for user {user_id}")
+            logger.error(f"DEBUG: Reuse detected for user {user_id}. Revoking all sessions.")
             # Check if within grace window (concurrent multi-tab refresh)
             if (
                 stored_token.revoked_at is not None
@@ -205,15 +209,36 @@ class AuthService:
                     < self.REFRESH_GRACE_SECONDS
             ):
                 # Look up the replacement token to verify it's still valid.
-                # FOR UPDATE prevents concurrent tabs from mutating the same
-                # replacement row simultaneously (one wins, others block briefly).
-                replacement = await self.db.execute(
-                    select(RefreshToken).where(
-                        RefreshToken.token_hash == stored_token.replaced_by_hash,
-                        RefreshToken.revoked == False,  # noqa: E712
-                    ).with_for_update()
-                )
-                replacement_token = replacement.scalar_one_or_none()
+                # If multiple concurrent refreshes occur, they might form a chain
+                # of replacements. We follow the chain to find an active one.
+                current_replacement_hash = stored_token.replaced_by_hash
+                replacement_token = None
+                
+                while current_replacement_hash:
+                    replacement = await self.db.execute(
+                        select(RefreshToken).where(
+                            RefreshToken.token_hash == current_replacement_hash,
+                        ).with_for_update()
+                    )
+                    temp_token = replacement.scalar_one_or_none()
+                    if not temp_token:
+                        break
+                    
+                    if not temp_token.revoked:
+                        replacement_token = temp_token
+                        break
+                    
+                    # If this replacement is also revoked, check if IT is within its own grace window
+                    if (
+                        temp_token.revoked_at is not None
+                        and (datetime.now(timezone.utc) - temp_token.revoked_at).total_seconds()
+                            < self.REFRESH_GRACE_SECONDS
+                        and temp_token.replaced_by_hash
+                    ):
+                        current_replacement_hash = temp_token.replaced_by_hash
+                    else:
+                        break
+
                 if replacement_token:
                     # Validate user is still active before returning tokens
                     user = await self.user_repo.get_by_id(user_id)
@@ -222,18 +247,22 @@ class AuthService:
 
                     # Re-mint access token (cheap) but keep the same refresh token
                     new_access = create_access_token(user_id, user.gym_id, user.role.value)
-                    # Re-create the same refresh JWT for the existing replacement record
+                    # Use the FOUND replacement token to mint the response
+                    # Since we don't have the plaintext of replacement_token, 
+                    # we must re-mint a new JWT and update the replacement's hash.
                     new_refresh = create_refresh_token(user_id, user.gym_id, user.role.value)
-                    # Update the replacement record's hash to match the new refresh JWT
                     new_hash = _hash_token(new_refresh)
+                    
                     replacement_token.token_hash = new_hash
-                    # Also update the parent's replaced_by_hash pointer
+                    # If we followed a chain, update the ORIGINAL stored_token's 
+                    # replaced_by_hash to point to the LATEST one for future efficiency.
                     stored_token.replaced_by_hash = new_hash
-                    await self.db.flush()
+                    
+                    await self.db.commit() # Commit changes
 
                     logger.info(
                         f"Grace-period refresh for user {user_id} — "
-                        f"concurrent tab served without reuse revocation"
+                        f"concurrent tab served via replacement chain"
                     )
                     return TokenResponse(
                         access_token=new_access,
@@ -249,7 +278,21 @@ class AuthService:
                 )
                 .values(revoked=True, revoked_at=datetime.now(timezone.utc))
             )
-            await self.db.flush()
+            # NUCLEAR REVOCATION: Invalidate all existing access tokens too
+            await self.db.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(sessions_revoked_at=datetime.now(timezone.utc))
+            )
+            # Commit immediately because we are about to raise an exception 
+            # which would normally trigger a rollback in the get_db dependency.
+            await self.db.commit()
+
+            # Invalidate cache to ensure immediate enforcement
+            cache = get_cache_backend()
+            cache.delete(f"user_active:{user_id}")
+            cache.delete(f"user_revoked_at:{user_id}")
+
             logger.warning(
                 f"Refresh token reuse detected for user {user_id} — "
                 f"all sessions revoked (potential token theft)"
@@ -315,6 +358,11 @@ class AuthService:
                 .values(revoked=True)
             )
             logger.info(f"Revoked ALL refresh tokens for user {user_id}")
+            
+            # Invalidate cache
+            cache = get_cache_backend()
+            cache.delete(f"user_active:{user_id}")
+            cache.delete(f"user_revoked_at:{user_id}")
 
     async def forgot_password(self, email: str) -> str:
         """

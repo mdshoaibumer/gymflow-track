@@ -1,4 +1,5 @@
 from uuid import UUID
+print("DEPENDENCIES.PY LOADED")
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -57,17 +58,25 @@ async def get_current_user(
         token = request.cookies.get(ACCESS_COOKIE)
 
     if not token:
+        logger.warning(f"Auth failed: No token found in Authorization header or {ACCESS_COOKIE} cookie")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
 
     payload = decode_token(token)
-
-    if payload is None or payload.get("type") != "access":
+    if payload is None:
+        logger.warning("Auth failed: Token decoding failed (invalid signature or malformed)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
+        )
+    
+    if payload.get("type") != "access":
+        logger.warning(f"Auth failed: Wrong token type (expected access, got {payload.get('type')})")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
         )
 
     try:
@@ -82,7 +91,8 @@ async def get_current_user(
     gym_id = UUID(payload["gym_id"])
 
     # Lightweight active-user check (cached, not every request hits DB)
-    await _check_user_active(user_id)
+    iat = payload.get("iat")
+    await _check_user_active(user_id, iat)
 
     user = CurrentUser(
         user_id=user_id,
@@ -93,22 +103,39 @@ async def get_current_user(
     return user
 
 
-async def _check_user_active(user_id: UUID) -> None:
-    """Check if user is still active using a time-based cache."""
+async def _check_user_active(user_id: UUID, iat: int | None = None) -> None:
+    """Check if user is still active using a time-based cache.
+    
+    Also checks if the session has been globally revoked.
+    """
     uid_str = str(user_id)
     cache = get_cache_backend()
 
-    # Check cache
+    # Check cache for basic active status
     cached = cache.get(f"user_active:{uid_str}")
+    cached_revoked_at = cache.get(f"user_revoked_at:{uid_str}")
+    
     if cached is not None:
         if cached == "0":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is disabled",
             )
-        return
+        # If active, check if session is revoked
+        if cached_revoked_at and iat:
+            revoked_at_ts = float(cached_revoked_at)
+            # Use integer comparison for second-precision JWT iat.
+            # Allow tokens issued in the same second as the revocation (leeway).
+            if iat < int(revoked_at_ts):
+                logger.warning(f"Session REVOKED (CACHED) for user {user_id} (iat {iat} < revoked_at {revoked_at_ts})")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Session has been revoked",
+                )
+        if cached == "1" and cached_revoked_at is not None:
+             return # Fully cached
 
-    # Cache miss — query DB
+    # Cache miss or need fresh revocation data — query DB
     from app.core.database import async_session_factory
     from sqlalchemy import select
     from app.models.user import User
@@ -116,18 +143,40 @@ async def _check_user_active(user_id: UUID) -> None:
     try:
         async with async_session_factory() as session:
             result = await session.execute(
-                select(User.is_active).where(User.id == user_id)
+                select(User.is_active, User.sessions_revoked_at).where(User.id == user_id)
             )
-            row = result.scalar_one_or_none()
-            is_active = bool(row) if row is not None else False
+            row = result.fetchone()
+            if row is None:
+                is_active = False
+                revoked_at = None
+            else:
+                is_active = row.is_active
+                revoked_at = row.sessions_revoked_at
 
+            # Update cache
             cache.set(f"user_active:{uid_str}", "1" if is_active else "0", _USER_CACHE_TTL)
+            if revoked_at:
+                revoked_at_ts = int(revoked_at.timestamp())
+                cache.set(f"user_revoked_at:{uid_str}", str(revoked_at_ts), _USER_CACHE_TTL)
+            else:
+                cache.set(f"user_revoked_at:{uid_str}", "", _USER_CACHE_TTL)
 
             if not is_active:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Account is disabled",
                 )
+            
+            if revoked_at and iat:
+                revoked_ts = revoked_at.timestamp()
+                # Use integer comparison for second-precision JWT iat.
+                # Allow tokens issued in the same second as the revocation (leeway).
+                if iat < int(revoked_ts):
+                    logger.error(f"DEBUG: Session REVOKED for user {user_id} (iat {iat} < revoked_at {revoked_ts})")
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Session has been revoked",
+                    )
     except HTTPException:
         raise
     except Exception:

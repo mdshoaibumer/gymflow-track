@@ -1,7 +1,7 @@
 import uuid
+from datetime import datetime
 from enum import Enum as PyEnum
-
-from sqlalchemy import String, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Boolean, ForeignKey, UniqueConstraint, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,9 @@ class User(BaseModel):
         PgEnum(UserRole, name="userrole"), default=UserRole.OWNER, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sessions_revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     gym = relationship("Gym", back_populates="users")
