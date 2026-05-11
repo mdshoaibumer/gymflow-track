@@ -104,6 +104,35 @@ class AdminService:
             )
         )).scalar_one()
 
+        # Plan distribution: count of active+trial subscriptions per plan
+        plan_dist_rows = (await self.db.execute(
+            select(
+                SubscriptionPlan.tier,
+                SubscriptionPlan.name,
+                func.count().label("cnt"),
+            )
+            .select_from(GymSubscription)
+            .join(SubscriptionPlan, GymSubscription.plan_id == SubscriptionPlan.id)
+            .where(
+                GymSubscription.status.in_([
+                    BillingStatus.ACTIVE,
+                    BillingStatus.TRIAL,
+                    BillingStatus.PAST_DUE,
+                ])
+            )
+            .group_by(SubscriptionPlan.tier, SubscriptionPlan.name)
+        )).all()
+
+        from app.schemas.admin import PlanDistributionItem
+        plan_distribution = [
+            PlanDistributionItem(
+                tier=row[0].value if hasattr(row[0], 'value') else row[0],
+                name=row[1],
+                count=row[2],
+            )
+            for row in plan_dist_rows
+        ]
+
         return SaaSMetricsResponse(
             total_gyms=total_gyms,
             active_subscriptions=active_subs,
@@ -112,6 +141,7 @@ class AdminService:
             total_members=total_members,
             mrr_in_paise=mrr,
             failed_payments=failed_payments,
+            plan_distribution=plan_distribution,
         )
 
     # === Gym Directory ===

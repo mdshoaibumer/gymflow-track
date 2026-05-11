@@ -97,22 +97,50 @@ async def seed_default_plans(db: AsyncSession) -> None:
         {
             "tier": PlanTier.STARTER,
             "name": "Starter",
-            "price_in_paise": 149900,
-            "description": "For small gyms getting started. Up to 50 members.",
-            "max_members": 50,
+            "price_in_paise": 99900,
+            "yearly_price_in_paise": 999900,
+            "description": "For small gyms getting started. Up to 100 active members.",
+            "max_members": 100,
             "max_staff_users": 2,
-            "sms_notifications_enabled": False,
+            "sms_notifications_enabled": True,
             "advanced_reports_enabled": False,
+            "qr_attendance_enabled": False,
+            "advanced_analytics_enabled": False,
+            "export_reports_enabled": False,
+            "multi_branch_enabled": False,
+            "automated_whatsapp_enabled": False,
         },
         {
             "tier": PlanTier.PRO,
             "name": "Pro",
-            "price_in_paise": 299900,
-            "description": "For growing gyms. Up to 200 members, SMS, and reports.",
-            "max_members": 200,
+            "price_in_paise": 199900,
+            "yearly_price_in_paise": 1999900,
+            "description": "For growing gyms. Up to 500 members, QR attendance, analytics, and exports.",
+            "max_members": 500,
             "max_staff_users": 5,
             "sms_notifications_enabled": True,
             "advanced_reports_enabled": True,
+            "qr_attendance_enabled": True,
+            "advanced_analytics_enabled": True,
+            "export_reports_enabled": True,
+            "multi_branch_enabled": False,
+            "automated_whatsapp_enabled": False,
+        },
+        {
+            "tier": PlanTier.ELITE,
+            "name": "Elite",
+            "price_in_paise": 299900,
+            "yearly_price_in_paise": 2999900,
+            "description": "Unlimited members, all features, multi-branch, automated WhatsApp, dedicated support.",
+            "max_members": 999999,
+            "max_staff_users": 999999,
+            "sms_notifications_enabled": True,
+            "advanced_reports_enabled": True,
+            "qr_attendance_enabled": True,
+            "advanced_analytics_enabled": True,
+            "export_reports_enabled": True,
+            "multi_branch_enabled": True,
+            "automated_whatsapp_enabled": True,
         },
     ]
 
@@ -565,42 +593,122 @@ async def check_member_limit(db: AsyncSession, gym_id: UUID) -> dict:
     """
     Check if gym has reached its member limit.
 
-    Returns limit info for the feature gating response.
+    Only ACTIVE members count toward the limit.
+    Inactive/frozen/deleted/expired members don't count.
     """
-    from app.models.member import Member
+    from app.models.member import Member, MembershipStatus
 
     subscription = await get_subscription(db, gym_id)
     if not subscription:
-        return {"allowed": False, "reason": "No active subscription"}
+        return {"allowed": False, "reason": "No active subscription", "max_members": 0, "current_members": 0, "remaining": 0}
 
     plan = subscription.plan if hasattr(subscription, "plan") and subscription.plan else None
     if not plan:
-        # Load plan manually
         plan_result = await db.execute(
             select(SubscriptionPlan).where(SubscriptionPlan.id == subscription.plan_id)
         )
         plan = plan_result.scalar_one_or_none()
 
-    max_members = plan.max_members if plan else 50
+    max_members = plan.max_members if plan else 100
+    is_unlimited = max_members >= 999999
 
     current_count = (await db.execute(
         select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
             Member.is_deleted == False,  # noqa: E712
+            Member.membership_status == MembershipStatus.ACTIVE,
         )
     )).scalar_one()
 
     return {
-        "allowed": current_count < max_members,
+        "allowed": is_unlimited or current_count < max_members,
         "max_members": max_members,
         "current_members": current_count,
-        "remaining": max(0, max_members - current_count),
+        "remaining": 999999 if is_unlimited else max(0, max_members - current_count),
+        "is_unlimited": is_unlimited,
+    }
+
+
+async def check_staff_limit(db: AsyncSession, gym_id: UUID) -> dict:
+    """
+    Check if gym has reached its staff account limit.
+
+    Counts all active users (including the owner).
+    """
+    from app.models.user import User
+
+    subscription = await get_subscription(db, gym_id)
+    if not subscription:
+        return {"allowed": False, "reason": "No active subscription", "max_staff": 0, "current_staff": 0, "remaining": 0}
+
+    plan = subscription.plan if hasattr(subscription, "plan") and subscription.plan else None
+    if not plan:
+        plan_result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.id == subscription.plan_id)
+        )
+        plan = plan_result.scalar_one_or_none()
+
+    max_staff = plan.max_staff_users if plan else 2
+    is_unlimited = max_staff >= 999999
+
+    current_count = (await db.execute(
+        select(func.count()).select_from(User).where(
+            User.gym_id == gym_id,
+            User.is_active == True,  # noqa: E712
+        )
+    )).scalar_one()
+
+    return {
+        "allowed": is_unlimited or current_count < max_staff,
+        "max_staff": max_staff,
+        "current_staff": current_count,
+        "remaining": 999999 if is_unlimited else max(0, max_staff - current_count),
+        "is_unlimited": is_unlimited,
+    }
+
+
+async def check_feature_access(db: AsyncSession, gym_id: UUID, feature: str) -> dict:
+    """
+    Check if a specific feature is available on the gym's current plan.
+
+    Features: qr_attendance, advanced_analytics, export_reports,
+              multi_branch, automated_whatsapp, advanced_reports
+
+    Returns dict with 'allowed' boolean and plan info for upgrade prompts.
+    """
+    subscription = await get_subscription(db, gym_id)
+    if not subscription:
+        return {"allowed": False, "plan_tier": "none", "required_plan": "starter"}
+
+    plan_result = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.id == subscription.plan_id)
+    )
+    plan = plan_result.scalar_one_or_none()
+    if not plan:
+        return {"allowed": False, "plan_tier": "none", "required_plan": "starter"}
+
+    feature_map = {
+        "qr_attendance": (plan.qr_attendance_enabled, "pro"),
+        "advanced_analytics": (plan.advanced_analytics_enabled, "pro"),
+        "export_reports": (plan.export_reports_enabled, "pro"),
+        "multi_branch": (plan.multi_branch_enabled, "elite"),
+        "automated_whatsapp": (plan.automated_whatsapp_enabled, "elite"),
+        "advanced_reports": (plan.advanced_reports_enabled, "pro"),
+        "sms_notifications": (plan.sms_notifications_enabled, "starter"),
+    }
+
+    enabled, required_plan = feature_map.get(feature, (False, "elite"))
+
+    return {
+        "allowed": enabled,
+        "plan_tier": plan.tier.value,
+        "required_plan": required_plan,
     }
 
 
 async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
     """Get full feature limits for a gym based on their plan."""
-    from app.models.member import Member
+    from app.models.member import Member, MembershipStatus
     from app.models.user import User
 
     subscription = await get_subscription(db, gym_id)
@@ -608,6 +716,7 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
     if not subscription:
         return {
             "plan_tier": "none",
+            "plan_name": "No Plan",
             "max_members": 0,
             "current_members": 0,
             "members_remaining": 0,
@@ -615,8 +724,21 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
             "current_staff_users": 0,
             "sms_notifications_enabled": False,
             "advanced_reports_enabled": False,
+            "qr_attendance_enabled": False,
+            "advanced_analytics_enabled": False,
+            "export_reports_enabled": False,
+            "multi_branch_enabled": False,
+            "automated_whatsapp_enabled": False,
             "is_at_member_limit": True,
             "is_at_staff_limit": True,
+            "member_usage_percent": 100,
+            "staff_usage_percent": 100,
+            "is_unlimited_members": False,
+            "is_unlimited_staff": False,
+            "subscription_status": "none",
+            "days_remaining": 0,
+            "current_period_end": None,
+            "yearly_price_in_paise": 0,
         }
 
     plan_result = await db.execute(
@@ -624,28 +746,67 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
     )
     plan = plan_result.scalar_one()
 
+    # Only count ACTIVE members toward limit
     member_count = (await db.execute(
         select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
             Member.is_deleted == False,  # noqa: E712
+            Member.membership_status == MembershipStatus.ACTIVE,
         )
     )).scalar_one()
 
     staff_count = (await db.execute(
-        select(func.count()).select_from(User).where(User.gym_id == gym_id)
+        select(func.count()).select_from(User).where(
+            User.gym_id == gym_id,
+            User.is_active == True,  # noqa: E712
+        )
     )).scalar_one()
+
+    is_unlimited_members = plan.max_members >= 999999
+    is_unlimited_staff = plan.max_staff_users >= 999999
+
+    member_usage_pct = 0 if is_unlimited_members else min(100, round(member_count / max(plan.max_members, 1) * 100))
+    staff_usage_pct = 0 if is_unlimited_staff else min(100, round(staff_count / max(plan.max_staff_users, 1) * 100))
+
+    # Compute days remaining
+    days_remaining = None
+    today = today_ist()
+    if subscription.trial_end and subscription.status == BillingStatus.TRIAL:
+        days_remaining = max(0, (subscription.trial_end - today).days)
+    elif subscription.current_period_end:
+        days_remaining = max(0, (subscription.current_period_end - today).days)
+
+    period_end = None
+    if subscription.current_period_end:
+        period_end = subscription.current_period_end.isoformat()
+    elif subscription.trial_end:
+        period_end = subscription.trial_end.isoformat()
 
     return {
         "plan_tier": plan.tier.value,
+        "plan_name": plan.name,
         "max_members": plan.max_members,
         "current_members": member_count,
-        "members_remaining": max(0, plan.max_members - member_count),
+        "members_remaining": 999999 if is_unlimited_members else max(0, plan.max_members - member_count),
         "max_staff_users": plan.max_staff_users,
         "current_staff_users": staff_count,
         "sms_notifications_enabled": plan.sms_notifications_enabled,
         "advanced_reports_enabled": plan.advanced_reports_enabled,
-        "is_at_member_limit": member_count >= plan.max_members,
-        "is_at_staff_limit": staff_count >= plan.max_staff_users,
+        "qr_attendance_enabled": plan.qr_attendance_enabled,
+        "advanced_analytics_enabled": plan.advanced_analytics_enabled,
+        "export_reports_enabled": plan.export_reports_enabled,
+        "multi_branch_enabled": plan.multi_branch_enabled,
+        "automated_whatsapp_enabled": plan.automated_whatsapp_enabled,
+        "is_at_member_limit": not is_unlimited_members and member_count >= plan.max_members,
+        "is_at_staff_limit": not is_unlimited_staff and staff_count >= plan.max_staff_users,
+        "member_usage_percent": member_usage_pct,
+        "staff_usage_percent": staff_usage_pct,
+        "is_unlimited_members": is_unlimited_members,
+        "is_unlimited_staff": is_unlimited_staff,
+        "subscription_status": subscription.status.value,
+        "days_remaining": days_remaining,
+        "current_period_end": period_end,
+        "yearly_price_in_paise": plan.yearly_price_in_paise,
     }
 
 

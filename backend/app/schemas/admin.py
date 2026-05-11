@@ -12,6 +12,12 @@ from pydantic import BaseModel, Field
 # === SaaS Metrics ===
 
 
+class PlanDistributionItem(BaseModel):
+    tier: str
+    name: str
+    count: int
+
+
 class SaaSMetricsResponse(BaseModel):
     total_gyms: int
     active_subscriptions: int
@@ -20,6 +26,7 @@ class SaaSMetricsResponse(BaseModel):
     total_members: int
     mrr_in_paise: int
     failed_payments: int
+    plan_distribution: list[PlanDistributionItem] = []
 
 
 # === Gym Directory ===

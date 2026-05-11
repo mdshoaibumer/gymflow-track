@@ -26,12 +26,15 @@ import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { formatPaise } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export-csv";
+import { useUsageInfo } from "@/hooks/use-feature-access";
+import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
 
 export default function MembersPage() {
   const { isAdminOrAbove } = useAuth();
+  const usage = useUsageInfo();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -196,6 +199,11 @@ export default function MembersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Members</h1>
           <p className="text-muted-foreground text-sm">
             {total} member{total !== 1 ? "s" : ""} in your gym
+            {!usage.isLoading && !usage.isUnlimitedMembers && (
+              <span className="ml-1">
+                ({usage.currentMembers} of {usage.maxMembers} active slots used)
+              </span>
+            )}
           </p>
         </div>
         <RoleGate allowed={["owner", "admin"]}>
@@ -237,6 +245,17 @@ export default function MembersPage() {
           aria-label="Search members"
         />
       </div>
+
+      {/* Usage warning */}
+      {usage.memberWarningLevel !== "none" && (
+        <UpgradePrompt
+          level={usage.memberWarningLevel}
+          resource="members"
+          current={usage.currentMembers}
+          max={usage.maxMembers}
+          isUnlimited={usage.isUnlimitedMembers}
+        />
+      )}
 
       {/* Create Form */}
       {showCreateForm && (

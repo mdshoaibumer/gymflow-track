@@ -3,10 +3,23 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CreditCard, Loader2 } from "lucide-react";
+import {
+  CreditCard,
+  Loader2,
+  CalendarCheck,
+  BarChart3,
+  FileDown,
+  Building2,
+  MessageSquare,
+  Check,
+  X as XIcon,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPaise } from "@/lib/utils";
 import { useSubscription, useBillingHistory, useCancelSubscription } from "@/hooks/use-billing";
+import { useUsageInfo } from "@/hooks/use-feature-access";
+import { UsageProgressCard } from "@/components/subscription/usage-progress-card";
+import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +31,7 @@ export default function BillingManagePage() {
   const { data: subscription, isLoading: subLoading } = useSubscription(isOwner);
   const { data: history } = useBillingHistory(isOwner);
   const cancelMutation = useCancelSubscription();
+  const usage = useUsageInfo();
 
   useEffect(() => {
     if (!authLoading && !isOwner) {
@@ -43,7 +57,7 @@ export default function BillingManagePage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="max-w-2xl space-y-6"
+      className="max-w-3xl space-y-6"
     >
       <h1 className="text-2xl font-bold tracking-tight">Billing & Subscription</h1>
 
@@ -105,6 +119,12 @@ export default function BillingManagePage() {
                   </span>
                 </div>
               )}
+              {usage.daysRemaining !== null && (
+                <div>
+                  <span className="text-muted-foreground">Renews in: </span>
+                  <span className="font-medium">{usage.daysRemaining} days</span>
+                </div>
+              )}
             </div>
 
             {isOwner && (
@@ -144,6 +164,96 @@ export default function BillingManagePage() {
             <Button className="mt-4" asChild>
               <a href="/billing">View Plans</a>
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Usage Dashboard */}
+      {!usage.isLoading && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Usage</h2>
+
+          {/* Usage Progress Cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <UsageProgressCard
+              label="Active Members"
+              current={usage.currentMembers}
+              max={usage.maxMembers}
+              isUnlimited={usage.isUnlimitedMembers}
+              percent={usage.memberUsagePercent}
+              variant="members"
+            />
+            <UsageProgressCard
+              label="Staff Accounts"
+              current={usage.currentStaff}
+              max={usage.maxStaff}
+              isUnlimited={usage.isUnlimitedStaff}
+              percent={usage.staffUsagePercent}
+              variant="staff"
+            />
+          </div>
+
+          {/* Usage Warnings */}
+          {usage.memberWarningLevel !== "none" && (
+            <UpgradePrompt
+              level={usage.memberWarningLevel}
+              resource="members"
+              current={usage.currentMembers}
+              max={usage.maxMembers}
+              isUnlimited={usage.isUnlimitedMembers}
+            />
+          )}
+          {usage.staffWarningLevel !== "none" && (
+            <UpgradePrompt
+              level={usage.staffWarningLevel}
+              resource="staff"
+              current={usage.currentStaff}
+              max={usage.maxStaff}
+              isUnlimited={usage.isUnlimitedStaff}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Feature Access Summary */}
+      {!usage.isLoading && usage.limits && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Feature Access</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FeatureAccessRow
+                icon={<CalendarCheck className="h-4 w-4" />}
+                label="QR Attendance"
+                enabled={usage.limits.qr_attendance_enabled}
+                requiredPlan="Pro"
+              />
+              <FeatureAccessRow
+                icon={<BarChart3 className="h-4 w-4" />}
+                label="Advanced Analytics"
+                enabled={usage.limits.advanced_analytics_enabled}
+                requiredPlan="Pro"
+              />
+              <FeatureAccessRow
+                icon={<FileDown className="h-4 w-4" />}
+                label="Export Reports"
+                enabled={usage.limits.export_reports_enabled}
+                requiredPlan="Pro"
+              />
+              <FeatureAccessRow
+                icon={<Building2 className="h-4 w-4" />}
+                label="Multi-Branch"
+                enabled={usage.limits.multi_branch_enabled}
+                requiredPlan="Elite"
+              />
+              <FeatureAccessRow
+                icon={<MessageSquare className="h-4 w-4" />}
+                label="Automated WhatsApp"
+                enabled={usage.limits.automated_whatsapp_enabled}
+                requiredPlan="Elite"
+              />
+            </div>
           </CardContent>
         </Card>
       )}
@@ -193,6 +303,32 @@ export default function BillingManagePage() {
         </Card>
       )}
     </motion.div>
+  );
+}
+
+function FeatureAccessRow({
+  icon,
+  label,
+  enabled,
+  requiredPlan,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  enabled: boolean;
+  requiredPlan: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border px-3 py-2.5">
+      <div className="text-muted-foreground">{icon}</div>
+      <span className="flex-1 text-sm font-medium">{label}</span>
+      {enabled ? (
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+          <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground">{requiredPlan}+</span>
+      )}
+    </div>
   );
 }
 

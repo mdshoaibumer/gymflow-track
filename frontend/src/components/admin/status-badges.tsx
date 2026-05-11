@@ -45,7 +45,7 @@ export function PlanBadge({ tier, name, className }: PlanBadgeProps) {
     return <Badge variant="outline" className={className}>No Plan</Badge>;
   }
 
-  const variant = tier === "pro" ? "default" : tier === "enterprise" ? "default" : "secondary";
+  const variant = tier === "pro" ? "default" : tier === "elite" ? "default" : "secondary";
 
   return (
     <Badge variant={variant} className={cn("capitalize", className)}>

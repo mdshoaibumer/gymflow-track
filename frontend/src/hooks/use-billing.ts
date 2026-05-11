@@ -53,6 +53,7 @@ export function useFeatureLimits() {
     queryKey: keys.features(),
     queryFn: () => billingService.getFeatureLimits(),
     enabled: !!token,
+    staleTime: 60 * 1000,
   });
 }
 

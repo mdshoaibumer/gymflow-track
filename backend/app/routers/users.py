@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_owner, require_admin
+from app.core.billing_dependencies import require_active_subscription, require_staff_capacity
 from app.schemas.user import CreateUserRequest, UpdateUserRequest, UserResponse
 from app.services.user_service import UserService
 
@@ -33,9 +34,11 @@ async def list_users(
 async def create_user(
     data: CreateUserRequest,
     current_user: CurrentUser = Depends(require_owner),
+    _sub: CurrentUser = Depends(require_active_subscription),
+    _cap: CurrentUser = Depends(require_staff_capacity),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new staff/admin user. Owner only."""
+    """Create a new staff/admin user. Owner only. Requires active subscription and staff capacity."""
     service = UserService(db)
     return await service.create_user(current_user.gym_id, data)
 

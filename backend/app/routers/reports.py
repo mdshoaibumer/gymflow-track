@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_admin
+from app.core.billing_dependencies import require_export_reports
 from app.core.timezone import today_ist
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
@@ -43,9 +44,10 @@ def _csv_response(output: io.StringIO, filename: str) -> StreamingResponse:
 async def export_members_csv(
     search: str | None = Query(None, max_length=100),
     current_user: CurrentUser = Depends(require_admin),
+    _export: CurrentUser = Depends(require_export_reports),
     db: AsyncSession = Depends(get_db),
 ):
-    """Export all members as CSV. ADMIN/OWNER only."""
+    """Export all members as CSV. ADMIN/OWNER only. Requires Pro plan or above."""
     repo = MemberRepository(db)
     members = await repo.list_by_gym(
         current_user.gym_id, skip=0, limit=MAX_EXPORT_ROWS, search=search
@@ -80,9 +82,10 @@ async def export_payments_csv(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     current_user: CurrentUser = Depends(require_admin),
+    _export: CurrentUser = Depends(require_export_reports),
     db: AsyncSession = Depends(get_db),
 ):
-    """Export payments as CSV with optional date filter. ADMIN/OWNER only."""
+    """Export payments as CSV with optional date filter. Requires Pro plan or above."""
     repo = PaymentRepository(db)
     payments = await repo.list_by_gym(
         current_user.gym_id,
@@ -119,9 +122,10 @@ async def export_attendance_csv(
     start_date: date | None = Query(None),
     end_date: date | None = Query(None),
     current_user: CurrentUser = Depends(require_admin),
+    _export: CurrentUser = Depends(require_export_reports),
     db: AsyncSession = Depends(get_db),
 ):
-    """Export attendance history as CSV. ADMIN/OWNER only."""
+    """Export attendance history as CSV. Requires Pro plan or above."""
     repo = AttendanceRepository(db)
     records = await repo.list_history(
         current_user.gym_id,

@@ -16,10 +16,13 @@ import { EditStaffDialog } from "@/components/staff/edit-staff-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useUsageInfo } from "@/hooks/use-feature-access";
+import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 
 export default function StaffPage() {
   const router = useRouter();
   const { user, isOwner, role, isLoading: authLoading } = useAuth();
+  const usage = useUsageInfo();
 
   // RBAC: Only owner can access this page
   useEffect(() => {
@@ -159,13 +162,32 @@ export default function StaffPage() {
           <p className="text-muted-foreground text-sm">
             {users
               ? `${users.length} user${users.length !== 1 ? "s" : ""} in your gym`
-              : "Manage your gym's staff and admin accounts"}
+            {!usage.isLoading && !usage.isUnlimitedStaff && (
+              <span className="ml-1">
+                ({usage.currentStaff} of {usage.maxStaff} slots used)
+              </span>
+            )}
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
+        <Button
+          onClick={() => setAddOpen(true)}
+          disabled={usage.isAtStaffLimit && !usage.isUnlimitedStaff}
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Add Staff
         </Button>
+      </div>
+
+      {/* Staff usage warning */}
+      {usage.staffWarningLevel !== "none" && (
+        <UpgradePrompt
+          level={usage.staffWarningLevel}
+          resource="staff"
+          current={usage.currentStaff}
+          max={usage.maxStaff}
+          isUnlimited={usage.isUnlimitedStaff}
+        />
+      )}tton>
       </div>
 
       {/* Filters */}

@@ -22,6 +22,12 @@ class PlanResponse(BaseModel):
     max_staff_users: int
     sms_notifications_enabled: bool
     advanced_reports_enabled: bool
+    qr_attendance_enabled: bool = False
+    advanced_analytics_enabled: bool = False
+    export_reports_enabled: bool = False
+    multi_branch_enabled: bool = False
+    automated_whatsapp_enabled: bool = False
+    yearly_price_in_paise: int = 0
 
 
 # === Subscription Schemas ===
@@ -112,6 +118,7 @@ class BillingHistoryResponse(BaseModel):
 class FeatureLimitsResponse(BaseModel):
     """Current feature limits based on the gym's subscription."""
     plan_tier: str
+    plan_name: str = ""
     max_members: int
     current_members: int
     members_remaining: int
@@ -119,8 +126,21 @@ class FeatureLimitsResponse(BaseModel):
     current_staff_users: int
     sms_notifications_enabled: bool
     advanced_reports_enabled: bool
+    qr_attendance_enabled: bool = False
+    advanced_analytics_enabled: bool = False
+    export_reports_enabled: bool = False
+    multi_branch_enabled: bool = False
+    automated_whatsapp_enabled: bool = False
     is_at_member_limit: bool
     is_at_staff_limit: bool
+    member_usage_percent: int = 0
+    staff_usage_percent: int = 0
+    is_unlimited_members: bool = False
+    is_unlimited_staff: bool = False
+    subscription_status: str = "none"
+    days_remaining: int | None = None
+    current_period_end: str | None = None
+    yearly_price_in_paise: int = 0
 
 
 # === Metrics ===

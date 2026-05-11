@@ -16,7 +16,7 @@ SaaS Subscription Lifecycle:
      └─ User cancels → CANCELLED (access until period ends, then EXPIRED)
 
 MVP Pricing Simplicity:
-- 2 real plans (Starter, Pro), 1 placeholder (Enterprise)
+- 3 plans (Starter, Pro, Elite)
 - Monthly billing only (no annual complexity yet)
 - All prices in paise (INR * 100) for exact arithmetic
 - No proration, no mid-cycle changes (upgrade takes effect next cycle)
@@ -74,7 +74,7 @@ class PlanTier(str, PyEnum):
     """Available plan tiers."""
     STARTER = "starter"
     PRO = "pro"
-    ENTERPRISE = "enterprise"  # Future placeholder
+    ELITE = "elite"
 
 
 class BillingInterval(str, PyEnum):
@@ -120,6 +120,16 @@ class SubscriptionPlan(BaseModel):
     max_staff_users: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
     sms_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     advanced_reports_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Extended feature flags for plan-based gating
+    qr_attendance_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    advanced_analytics_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    export_reports_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    multi_branch_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    automated_whatsapp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+
+    # Pricing: monthly + yearly
+    yearly_price_in_paise: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

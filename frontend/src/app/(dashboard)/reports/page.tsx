@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { FeatureGate } from "@/components/subscription/feature-gate";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -33,6 +34,14 @@ function monthAgoStr() {
 }
 
 export default function ReportsPage() {
+  return (
+    <FeatureGate feature="export_reports">
+      <ReportsContent />
+    </FeatureGate>
+  );
+}
+
+function ReportsContent() {
   const { isAdminOrAbove } = useAuth();
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
   const { data: attendanceStats } = useAttendanceStats();

@@ -77,6 +77,12 @@ async def list_plans(db: AsyncSession = Depends(get_db)):
             max_staff_users=p.max_staff_users,
             sms_notifications_enabled=p.sms_notifications_enabled,
             advanced_reports_enabled=p.advanced_reports_enabled,
+            qr_attendance_enabled=p.qr_attendance_enabled,
+            advanced_analytics_enabled=p.advanced_analytics_enabled,
+            export_reports_enabled=p.export_reports_enabled,
+            multi_branch_enabled=p.multi_branch_enabled,
+            automated_whatsapp_enabled=p.automated_whatsapp_enabled,
+            yearly_price_in_paise=p.yearly_price_in_paise,
         )
         for p in plans
     ]
@@ -121,6 +127,12 @@ async def get_subscription(
             max_staff_users=sub.plan.max_staff_users,
             sms_notifications_enabled=sub.plan.sms_notifications_enabled,
             advanced_reports_enabled=sub.plan.advanced_reports_enabled,
+            qr_attendance_enabled=sub.plan.qr_attendance_enabled,
+            advanced_analytics_enabled=sub.plan.advanced_analytics_enabled,
+            export_reports_enabled=sub.plan.export_reports_enabled,
+            multi_branch_enabled=sub.plan.multi_branch_enabled,
+            automated_whatsapp_enabled=sub.plan.automated_whatsapp_enabled,
+            yearly_price_in_paise=sub.plan.yearly_price_in_paise,
         ),
         status=sub.status.value,
         trial_start=sub.trial_start,

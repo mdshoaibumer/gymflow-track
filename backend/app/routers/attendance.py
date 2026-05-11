@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
+from app.core.billing_dependencies import require_qr_attendance
 from app.models.attendance import Attendance
 from app.repositories.attendance_repository import AttendanceRepository
 from app.schemas.attendance import (
@@ -83,10 +84,12 @@ def _to_response(attendance: Attendance) -> AttendanceResponse:
 async def check_in_by_qr(
     body: CheckInByQRRequest,
     current_user: CurrentUser = Depends(get_current_user),
+    _qr: CurrentUser = Depends(require_qr_attendance),
     db: AsyncSession = Depends(get_db),
 ):
     """
     QR-based check-in. Staff scans member's QR code.
+    Requires Pro plan or above.
     Returns existing attendance if already checked in today (idempotent).
     Rejects expired memberships and cross-gym QR codes.
     """

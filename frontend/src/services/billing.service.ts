@@ -2,10 +2,12 @@ import { apiClient } from "@/lib/api";
 
 // === Types ===
 
+export type PlanTier = "starter" | "pro" | "elite" | "none";
+
 export interface Plan {
   id: string;
   name: string;
-  tier: string;
+  tier: PlanTier;
   price_in_paise: number;
   billing_interval: string;
   description: string | null;
@@ -13,6 +15,12 @@ export interface Plan {
   max_staff_users: number;
   sms_notifications_enabled: boolean;
   advanced_reports_enabled: boolean;
+  qr_attendance_enabled: boolean;
+  advanced_analytics_enabled: boolean;
+  export_reports_enabled: boolean;
+  multi_branch_enabled: boolean;
+  automated_whatsapp_enabled: boolean;
+  yearly_price_in_paise: number;
 }
 
 export interface Subscription {
@@ -67,7 +75,8 @@ export interface BillingHistory {
 }
 
 export interface FeatureLimits {
-  plan_tier: string;
+  plan_tier: PlanTier;
+  plan_name: string;
   max_members: number;
   current_members: number;
   members_remaining: number;
@@ -75,8 +84,21 @@ export interface FeatureLimits {
   current_staff_users: number;
   sms_notifications_enabled: boolean;
   advanced_reports_enabled: boolean;
+  qr_attendance_enabled: boolean;
+  advanced_analytics_enabled: boolean;
+  export_reports_enabled: boolean;
+  multi_branch_enabled: boolean;
+  automated_whatsapp_enabled: boolean;
   is_at_member_limit: boolean;
   is_at_staff_limit: boolean;
+  member_usage_percent: number;
+  staff_usage_percent: number;
+  is_unlimited_members: boolean;
+  is_unlimited_staff: boolean;
+  subscription_status: string;
+  days_remaining: number | null;
+  current_period_end: string | null;
+  yearly_price_in_paise: number;
 }
 
 export interface BillingMetrics {
@@ -88,6 +110,86 @@ export interface BillingMetrics {
   trial_conversion_rate: number | null;
   payment_failure_rate: number | null;
 }
+
+/**
+ * Feature names that can be gated based on subscription plan.
+ * Used as keys for the feature access check system.
+ */
+export type FeatureName =
+  | "qr_attendance"
+  | "advanced_analytics"
+  | "export_reports"
+  | "multi_branch"
+  | "automated_whatsapp"
+  | "advanced_reports"
+  | "sms_notifications";
+
+/**
+ * Maps each feature to the minimum plan tier required.
+ */
+export const FEATURE_REQUIRED_PLAN: Record<FeatureName, PlanTier> = {
+  qr_attendance: "pro",
+  advanced_analytics: "pro",
+  export_reports: "pro",
+  advanced_reports: "pro",
+  multi_branch: "elite",
+  automated_whatsapp: "elite",
+  sms_notifications: "starter",
+};
+
+/**
+ * Human-readable feature display names for upgrade prompts.
+ */
+export const FEATURE_DISPLAY_NAMES: Record<FeatureName, string> = {
+  qr_attendance: "QR Attendance",
+  advanced_analytics: "Advanced Analytics",
+  export_reports: "Export Reports",
+  advanced_reports: "Advanced Reports",
+  multi_branch: "Multi-Branch Management",
+  automated_whatsapp: "Automated WhatsApp Reminders",
+  sms_notifications: "SMS Notifications",
+};
+
+/**
+ * Feature descriptions for upgrade prompts.
+ */
+export const FEATURE_DESCRIPTIONS: Record<FeatureName, string[]> = {
+  qr_attendance: [
+    "QR-based attendance tracking",
+    "Faster member check-ins",
+    "Attendance analytics & insights",
+  ],
+  advanced_analytics: [
+    "Revenue trend analysis",
+    "Membership distribution insights",
+    "Business performance KPIs",
+  ],
+  export_reports: [
+    "Export members as CSV",
+    "Export payments as CSV",
+    "Export attendance reports",
+  ],
+  advanced_reports: [
+    "Detailed revenue reports",
+    "Member analytics reports",
+    "Custom date range filtering",
+  ],
+  multi_branch: [
+    "Manage multiple gym locations",
+    "Centralized dashboard",
+    "Cross-branch member management",
+  ],
+  automated_whatsapp: [
+    "Automated payment reminders",
+    "Membership renewal notifications",
+    "Scheduled bulk messaging",
+  ],
+  sms_notifications: [
+    "WhatsApp message reminders",
+    "Payment due notifications",
+    "Membership expiry alerts",
+  ],
+};
 
 // === Service ===
 

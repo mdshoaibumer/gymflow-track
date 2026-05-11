@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeatureGate } from "@/components/subscription/feature-gate";
 
 const STATUS_VARIANTS: Record<string, "success" | "secondary" | "outline"> = {
   checked_in: "success",
@@ -27,6 +28,14 @@ const STATUS_VARIANTS: Record<string, "success" | "secondary" | "outline"> = {
 };
 
 export default function AttendancePage() {
+  return (
+    <FeatureGate feature="qr_attendance">
+      <AttendanceContent />
+    </FeatureGate>
+  );
+}
+
+function AttendanceContent() {
   const { user } = useAuth();
   const [qrInput, setQrInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
