@@ -159,6 +159,8 @@ from app.models.asset import Asset, MaintenanceRecord  # noqa
 from app.models.feedback import Feedback  # noqa
 from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  # noqa
 from app.models.auth_token import RefreshToken, PasswordResetToken  # noqa
+from app.models.audit_log import AuditLog  # noqa
+from app.models.platform_settings import PlatformSettings  # noqa
 
 import asyncio
 
@@ -171,6 +173,49 @@ async def _init_db():
 
 
 asyncio.run(_init_db())
+
+# ── Seed super admin & default settings ────────────────────────────────
+from uuid import uuid4
+from sqlalchemy import select
+from app.core.security import hash_password
+from app.models.user import UserRole
+
+
+async def _seed_defaults():
+    """Seed super admin user and platform settings if they don't exist."""
+    from app.core.database import async_session_factory
+    async with async_session_factory() as session:
+        async with session.begin():
+            # Super admin
+            existing = (await session.execute(
+                select(User).where(User.role == UserRole.SUPER_ADMIN)
+            )).scalar_one_or_none()
+            if not existing:
+                admin = User(
+                    id=uuid4(),
+                    gym_id=None,
+                    name="GymFlow Track Admin",
+                    email="admin@gymflow.dev",
+                    phone="9999999999",
+                    password_hash=hash_password("SuperAdmin@2026!"),
+                    role=UserRole.SUPER_ADMIN,
+                    is_active=True,
+                )
+                session.add(admin)
+                print("[OK] Super admin seeded: admin@gymflow.dev / SuperAdmin@2026!")
+            else:
+                print(f"[OK] Super admin exists: {existing.email}")
+
+            # Platform settings
+            ps = (await session.execute(
+                select(PlatformSettings).limit(1)
+            )).scalar_one_or_none()
+            if not ps:
+                session.add(PlatformSettings())
+                print("[OK] Default platform settings seeded")
+
+
+asyncio.run(_seed_defaults())
 
 # ── Start uvicorn ──────────────────────────────────────────────────────
 if __name__ == "__main__":
