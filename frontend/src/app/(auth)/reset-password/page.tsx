@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
-              GymFlow
+              GymFlow Track
             </Link>
             <CardTitle className="text-xl">Set New Password</CardTitle>
             <CardDescription>Enter your reset token and new password</CardDescription>

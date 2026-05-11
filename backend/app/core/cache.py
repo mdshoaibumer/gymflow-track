@@ -1,5 +1,5 @@
 """
-Cache abstraction for GymFlow.
+Cache abstraction for GymFlow Track.
 
 Provides a simple key-value cache interface with TTL support.
 Default implementation is in-memory (dict-based) — suitable for

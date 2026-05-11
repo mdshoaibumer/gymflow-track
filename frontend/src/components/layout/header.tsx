@@ -53,7 +53,7 @@ export function Header() {
       </Button>
 
       {/* Mobile logo */}
-      <span className="text-lg font-bold text-primary md:hidden">GymFlow</span>
+      <span className="text-lg font-bold text-primary md:hidden">GymFlow Track</span>
 
       {/* Desktop search trigger */}
       <Button

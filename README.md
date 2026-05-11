@@ -1,4 +1,4 @@
-# GymFlow — Gym Management SaaS
+# GymFlow Track — Gym Management SaaS
 
 > Gym software that works in 10 minutes.
 

@@ -1,5 +1,5 @@
 """
-Event system for GymFlow business automation.
+Event system for GymFlow Track business automation.
 
 Architecture:
 - Services emit domain events after business operations complete

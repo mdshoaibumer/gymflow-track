@@ -1,5 +1,5 @@
 """
-Domain exceptions for GymFlow.
+Domain exceptions for GymFlow Track.
 
 These exceptions represent business-rule violations and are INDEPENDENT of any
 transport layer (HTTP, WebSocket, CLI).  Routers/handlers catch these and

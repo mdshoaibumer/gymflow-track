@@ -164,7 +164,7 @@ export default function SetupPage() {
           >
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                Welcome to GymFlow{status?.gym_name ? `, ${status.gym_name}` : ""}!
+                Welcome to GymFlow Track{status?.gym_name ? `, ${status.gym_name}` : ""}!
               </h1>
               <p className="mt-2 text-muted-foreground">
                 Let&apos;s get your gym set up in under 10 minutes.
@@ -186,7 +186,7 @@ export default function SetupPage() {
                 </div>
                 <div className="flex items-start gap-3 text-sm">
                   <Badge variant="outline" className="mt-0.5 shrink-0">3</Badge>
-                  <span>Start using GymFlow daily for check-ins and member management</span>
+                  <span>Start using GymFlow Track daily for check-ins and member management</span>
                 </div>
               </CardContent>
             </Card>
@@ -210,7 +210,7 @@ export default function SetupPage() {
             <div className="text-center">
               <h1 className="text-xl font-bold tracking-tight">Add Your Members</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Choose how you&apos;d like to add members to GymFlow.
+                Choose how you&apos;d like to add members to GymFlow Track.
               </p>
             </div>
 

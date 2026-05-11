@@ -319,7 +319,7 @@ export default function MembersPage() {
           description={
             debouncedSearch
               ? `No members matching "${debouncedSearch}"`
-              : "Add your first member to get started with GymFlow."
+              : "Add your first member to get started with GymFlow Track."
           }
           action={
             !debouncedSearch && isAdminOrAbove

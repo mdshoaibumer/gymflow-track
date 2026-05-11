@@ -1,12 +1,12 @@
-# GymFlow Architecture
+# GymFlow Track Architecture
 
 ## Overview
 
-GymFlow is a multi-tenant SaaS application using a **shared database** model with tenant isolation via `gym_id` on every table.
+GymFlow Track is a multi-tenant SaaS application using a **shared database** model with tenant isolation via `gym_id` on every table.
 
 ## Why Shared Database Multi-Tenancy?
 
-| Approach | Pros | Cons | Fit for GymFlow |
+| Approach | Pros | Cons | Fit for GymFlow Track |
 |----------|------|------|-----------------|
 | Shared DB + gym_id | Simple ops, cheap, fast queries | Row-level security needed | ✅ Best fit |
 | Schema per tenant | Good isolation | Migration complexity | ❌ Overkill |

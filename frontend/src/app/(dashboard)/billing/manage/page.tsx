@@ -87,7 +87,7 @@ export default function BillingManagePage() {
                 }`}
               >
                 {subscription.days_remaining === 0
-                  ? "Your trial expires today! Subscribe to keep using GymFlow."
+                  ? "Your trial expires today! Subscribe to keep using GymFlow Track."
                   : `${subscription.days_remaining} days remaining in your free trial.`}
               </div>
             )}

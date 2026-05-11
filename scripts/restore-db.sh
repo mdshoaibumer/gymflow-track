@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# GymFlow Database Restore Script
+# GymFlow Track Database Restore Script
 # ============================================================
 # Usage:
 #   ./scripts/restore-db.sh backups/gymflow_20260509_020000.dump

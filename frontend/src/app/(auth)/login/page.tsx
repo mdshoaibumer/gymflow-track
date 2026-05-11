@@ -95,10 +95,10 @@ export default function LoginPage() {
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
-              GymFlow
+              GymFlow Track
             </Link>
             <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your GymFlow account</CardDescription>
+            <CardDescription>Sign in to your GymFlow Track account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

@@ -75,7 +75,7 @@ function SidebarContent() {
     <>
       <div className="flex h-16 items-center justify-between border-b px-6">
         <Link href="/dashboard" className="text-xl font-bold text-primary">
-          GymFlow
+          GymFlow Track
         </Link>
         <Button
           variant="ghost"
@@ -126,7 +126,7 @@ function SidebarContent() {
       </nav>
       <div className="border-t p-4">
         <p className="text-xs text-muted-foreground text-center">
-          GymFlow v1.0
+          GymFlow Track v1.0
         </p>
       </div>
     </>

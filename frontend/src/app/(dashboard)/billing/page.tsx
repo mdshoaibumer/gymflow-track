@@ -100,7 +100,7 @@ export default function PricingPage() {
       key: orderData.razorpay_key_id,
       amount: orderData.amount_in_paise,
       currency: "INR",
-      name: "GymFlow",
+      name: "GymFlow Track",
       description: "Subscription Payment",
       order_id: orderData.razorpay_order_id,
       handler: async (response: {

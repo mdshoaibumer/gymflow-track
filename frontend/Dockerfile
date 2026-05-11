@@ -1,5 +1,5 @@
 # ==============================================================
-# GymFlow Frontend — Multi-stage Dockerfile
+# GymFlow Track Frontend — Multi-stage Dockerfile
 # ==============================================================
 # Stage 1: Install dependencies
 # Stage 2: Build Next.js (standalone output)

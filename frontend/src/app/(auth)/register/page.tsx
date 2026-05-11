@@ -99,7 +99,7 @@ export default function RegisterPage() {
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
-              GymFlow
+              GymFlow Track
             </Link>
             <CardTitle className="text-xl">Register your gym</CardTitle>
             <CardDescription>Get started in under 10 minutes</CardDescription>

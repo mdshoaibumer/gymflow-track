@@ -1,5 +1,5 @@
 """
-Subscription + billing models for GymFlow SaaS.
+Subscription + billing models for GymFlow Track SaaS.
 
 SaaS Subscription Lifecycle:
 ─────────────────────────────

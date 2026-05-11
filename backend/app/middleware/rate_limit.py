@@ -10,7 +10,7 @@ Rate tiers:
 - Health endpoints: No limit
 
 Why in-memory is acceptable for MVP:
-- GymFlow runs as a single uvicorn process (not clustered workers)
+- GymFlow Track runs as a single uvicorn process (not clustered workers)
 - Counter resets on restart (acceptable — rate limits are abuse prevention, not billing)
 - When scaling to multiple workers, swap to a Redis-backed implementation
   with the same middleware interface

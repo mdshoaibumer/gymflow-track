@@ -22,7 +22,7 @@ from app.models.user import User, UserRole
 async def seed_super_admin(
     email: str = "admin@gymflow.dev",
     password: str = "SuperAdmin@2026!",
-    name: str = "GymFlow Admin",
+    name: str = "GymFlow Track Admin",
     phone: str = "9999999999",
 ) -> None:
     async with async_session_factory() as session:

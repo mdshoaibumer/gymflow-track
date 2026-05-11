@@ -1,5 +1,5 @@
 ﻿"""
-Manual test script for GymFlow â€” runs WITHOUT Docker or PostgreSQL.
+Manual test script for GymFlow Track â€” runs WITHOUT Docker or PostgreSQL.
 Uses SQLite (in-memory) via aiosqlite as a lightweight substitute.
 
 Usage:
@@ -1054,7 +1054,7 @@ async def run_tests():
 # â”€â”€ Runner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def main():
     print("=" * 60)
-    print("  GymFlow Manual Test Suite (SQLite, no Docker/PostgreSQL)")
+    print("  GymFlow Track Manual Test Suite (SQLite, no Docker/PostgreSQL)")
     print("=" * 60)
 
     asyncio.run(run_tests())

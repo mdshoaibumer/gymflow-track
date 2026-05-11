@@ -1,5 +1,5 @@
 # ==============================================================
-# GymFlow Backend — Multi-stage Dockerfile
+# GymFlow Track Backend — Multi-stage Dockerfile
 # ==============================================================
 # Stage 1: Install dependencies (cached layer)
 # Stage 2: Production image (minimal, no build tools)

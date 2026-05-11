@@ -1,5 +1,5 @@
 """
-Test configuration and shared fixtures for GymFlow.
+Test configuration and shared fixtures for GymFlow Track.
 
 Uses a real PostgreSQL database (test-specific) to catch real constraint
 violations, async behavior, and migration issues. SQLite would hide

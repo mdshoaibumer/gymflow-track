@@ -26,7 +26,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # === App ===
-    APP_NAME: str = "GymFlow"
+    APP_NAME: str = "GymFlow Track"
     APP_ENV: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"

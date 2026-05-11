@@ -58,7 +58,7 @@ const plans = [
 ];
 
 const testimonials = [
-  { name: "Rajesh K.", gym: "FitZone Gym, Hyderabad", text: "GymFlow replaced 3 different apps we were using. Everything is in one place now — payments, attendance, reminders. My staff picked it up in minutes.", rating: 5 },
+  { name: "Rajesh K.", gym: "FitZone Gym, Hyderabad", text: "GymFlow Track replaced 3 different apps we were using. Everything is in one place now — payments, attendance, reminders. My staff picked it up in minutes.", rating: 5 },
   { name: "Priya M.", gym: "Iron Paradise, Bangalore", text: "The WhatsApp reminders alone saved us ₹20,000/month in missed renewals. We now have 95% renewal rates.", rating: 5 },
   { name: "Vikram S.", gym: "PowerHouse Fitness, Delhi", text: "Clean, fast, and built for Indian gyms. UPI payments, Indian phone validation, everything just works. No more Excel sheets.", rating: 5 },
 ];
@@ -67,7 +67,7 @@ const faqs = [
   { q: "How long does setup take?", a: "Under 10 minutes. Register, add your gym details, import members via CSV or add manually — and you're live." },
   { q: "Can my staff use it too?", a: "Yes! You can invite staff with specific roles (admin, front desk) so they only see what they need." },
   { q: "Is my data secure?", a: "Absolutely. We use industry-standard encryption, HttpOnly cookies for auth, and your data is never shared with third parties." },
-  { q: "Do you support UPI/cash/card payments?", a: "Yes — GymFlow tracks all payment methods including cash, UPI, card, and bank transfers. It's a recording system, not a payment gateway." },
+  { q: "Do you support UPI/cash/card payments?", a: "Yes — GymFlow Track records all payment methods including cash, UPI, card, and bank transfers. It’s a recording system, not a payment gateway." },
   { q: "Can I export my data?", a: "Yes. Export members, payments, and attendance as CSV files anytime. Your data is always yours." },
   { q: "Is there a free trial?", a: "Yes! Every new account gets a 14-day free trial on the Pro plan. No credit card required." },
 ];
@@ -89,7 +89,7 @@ export default function HomePage() {
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-xl font-bold text-primary">
-            GymFlow
+            GymFlow Track
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -156,7 +156,7 @@ export default function HomePage() {
                   <div className="h-3 w-3 rounded-full bg-yellow-400" />
                   <div className="h-3 w-3 rounded-full bg-green-400" />
                 </div>
-                <span className="text-xs text-muted-foreground ml-2">app.gymflow.in/dashboard</span>
+                <span className="text-xs text-muted-foreground ml-2">app.gymflowtrack.in/dashboard</span>
               </div>
               <div className="p-6 sm:p-10">
                 <div className="grid gap-4 sm:grid-cols-3 mb-6">
@@ -220,7 +220,7 @@ export default function HomePage() {
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Stop juggling spreadsheets, WhatsApp groups, and paper registers.
-              GymFlow brings it all together.
+              GymFlow Track brings it all together.
             </p>
           </motion.div>
 
@@ -391,7 +391,7 @@ export default function HomePage() {
               Ready to streamline your gym?
             </h2>
             <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
-              Join 500+ gym owners who stopped using spreadsheets and started using GymFlow.
+              Join 500+ gym owners who stopped using spreadsheets and started using GymFlow Track.
               Free trial, no credit card required.
             </p>
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
@@ -415,7 +415,7 @@ export default function HomePage() {
           <div className="grid gap-8 sm:grid-cols-4">
             <div className="sm:col-span-2">
               <Link href="/" className="text-xl font-bold text-primary">
-                GymFlow
+                GymFlow Track
               </Link>
               <p className="mt-2 text-sm text-muted-foreground max-w-xs">
                 Modern gym management software built for Indian fitness businesses.
@@ -441,7 +441,7 @@ export default function HomePage() {
           </div>
           <div className="mt-8 border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} GymFlow. All rights reserved.
+              © {new Date().getFullYear()} GymFlow Track. All rights reserved.
             </p>
             <div className="flex gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">

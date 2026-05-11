@@ -1,5 +1,5 @@
 """
-Launch the GymFlow backend on SQLite (no Docker/PostgreSQL needed).
+Launch the GymFlow Track backend on SQLite (no Docker/PostgreSQL needed).
 
 Applies the same monkey-patches as manual_test.py, then starts uvicorn
 on port 8000 so the Next.js frontend can talk to a real HTTP server.
@@ -176,7 +176,7 @@ asyncio.run(_init_db())
 if __name__ == "__main__":
     import uvicorn
 
-    print("\n=== GymFlow Backend (SQLite mode) ===")
+    print("\n=== GymFlow Track Backend (SQLite mode) ===")
     print("  API:  http://localhost:8000/api/v1")
     print("  Docs: http://localhost:8000/docs")
     print("  Press Ctrl+C to stop\n")

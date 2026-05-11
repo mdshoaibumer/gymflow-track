@@ -63,7 +63,7 @@ export function FeedbackWidget() {
         <div className="fixed bottom-20 right-6 z-50 w-80 rounded-lg border bg-background shadow-xl">
           <div className="border-b px-4 py-3">
             <h3 className="font-semibold text-sm">Send Feedback</h3>
-            <p className="text-xs text-muted-foreground">Help us improve GymFlow</p>
+            <p className="text-xs text-muted-foreground">Help us improve GymFlow Track</p>
           </div>
 
           {sent ? (

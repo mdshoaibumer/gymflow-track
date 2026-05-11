@@ -1,1 +1,1 @@
-"""GymFlow Backend Application."""
+"""GymFlow Track Backend Application."""

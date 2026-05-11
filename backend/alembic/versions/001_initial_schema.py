@@ -4,7 +4,7 @@ Revision ID: 001_initial_schema
 Revises:
 Create Date: 2026-05-08
 
-Creates the foundational tables for GymFlow multi-tenant SaaS:
+Creates the foundational tables for GymFlow Track multi-tenant SaaS:
 - gyms: tenant table
 - users: gym staff/owners (scoped to gym)
 - members: gym members (scoped to gym)

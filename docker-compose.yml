@@ -1,5 +1,5 @@
 # ==============================================================
-# GymFlow — Development Docker Compose
+# GymFlow Track — Development Docker Compose
 # ==============================================================
 # Usage: docker compose up
 # Hot-reload enabled for both backend and frontend.

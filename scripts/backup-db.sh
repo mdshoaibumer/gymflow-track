@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# GymFlow Database Backup Script
+# GymFlow Track Database Backup Script
 # ============================================================
 # Usage:
 #   ./scripts/backup-db.sh                    # Manual backup

@@ -2,7 +2,7 @@
 
 ## Overview
 
-GymFlow uses JWT-based stateless authentication with short-lived access tokens and long-lived refresh tokens.
+GymFlow Track uses JWT-based stateless authentication with short-lived access tokens and long-lived refresh tokens.
 
 ## Token Strategy
 
