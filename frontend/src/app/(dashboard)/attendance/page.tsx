@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { QrCode, UserCheck, Search } from "lucide-react";
+import { QrCode, UserCheck, Search, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useAttendanceToday,
@@ -32,7 +32,7 @@ export default function AttendancePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const qrInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: todayData, isLoading: todayLoading } = useAttendanceToday();
+  const { data: todayData, isLoading: todayLoading, isError: todayError, refetch: todayRefetch } = useAttendanceToday();
   const { data: stats } = useAttendanceStats();
   const { data: searchData } = useMembers({
     search: debouncedSearch || undefined,
@@ -195,7 +195,16 @@ export default function AttendancePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {todayLoading ? (
+          {todayError ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <AlertCircle className="h-6 w-6 text-destructive mb-2" />
+              <p className="text-sm font-medium">Failed to load attendance</p>
+              <Button variant="ghost" size="sm" className="mt-2" onClick={() => todayRefetch()}>
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Retry
+              </Button>
+            </div>
+          ) : todayLoading ? (
             <div className="space-y-0">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 border-b px-4 py-4 last:border-0">
@@ -230,14 +239,16 @@ export default function AttendancePage() {
                         <p className="text-xs text-muted-foreground">{a.member_phone || "—"}</p>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(a.check_in_at).toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {a.check_in_at
+                          ? new Date(a.check_in_at).toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="secondary" className="capitalize">
-                          {a.source}
+                          {a.source || "—"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
