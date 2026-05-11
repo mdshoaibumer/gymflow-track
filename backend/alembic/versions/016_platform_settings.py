@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision = "016_platform_settings"
-down_revision = "015_subscription_enforcement"
+down_revision = "014_super_admin"
 branch_labels = None
 depends_on = None
 
@@ -37,6 +37,8 @@ def upgrade() -> None:
     )
 
     # 2. Add new audit action enum values (PostgreSQL)
+    # NOTE: ALTER TYPE ... ADD VALUE cannot be executed in a transaction block.
+    op.execute("COMMIT")
     new_actions = [
         "subscription_cancelled",
         "payment_marked_received",

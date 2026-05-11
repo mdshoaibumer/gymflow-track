@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 revision = "014_super_admin"
-down_revision = "013_optimistic_locking"
+down_revision = "015_subscription_enforcement"
 branch_labels = None
 depends_on = None
 
