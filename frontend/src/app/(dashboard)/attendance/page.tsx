@@ -80,7 +80,7 @@ export default function AttendancePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
         <p className="text-sm text-muted-foreground">
-          QR check-in and daily attendance tracking.
+          Daily attendance tracking. Search members to mark check-in.
         </p>
       </div>
 
@@ -107,8 +107,8 @@ export default function AttendancePage() {
       )}
 
       {/* Check-In Section */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* QR Scanner Input */}
+      <div className="max-w-2xl">
+        {/* QR Scanner Input - Hidden until QR hardware/portal is ready
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -139,6 +139,7 @@ export default function AttendancePage() {
             </form>
           </CardContent>
         </Card>
+        */}
 
         {/* Manual Check-In */}
         <Card>
@@ -217,7 +218,7 @@ export default function AttendancePage() {
             </div>
           ) : todayList.length === 0 ? (
             <div className="py-10 text-center text-sm text-muted-foreground">
-              No check-ins today yet. Members can scan their QR code to check in.
+              No check-ins today yet. Search for a member to mark their attendance.
             </div>
           ) : (
             <div className="overflow-x-auto">

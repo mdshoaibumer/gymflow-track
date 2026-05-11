@@ -42,6 +42,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: deps
     ports:
       - "3000:3000"
     environment:
@@ -49,8 +50,9 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     command: npm run dev
 
 volumes:

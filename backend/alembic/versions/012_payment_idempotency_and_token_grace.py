@@ -19,7 +19,7 @@ NOTE: Revision ID shortened from '012_payment_idempotency_and_token_grace'
 to '012_pay_idem_token_grace' to fit within alembic_version.version_num
 VARCHAR(32) column limit. See env.py for automatic column-width safeguard.
 """
-from alembic import op
+from alembic import op, context
 import sqlalchemy as sa
 
 revision = "012_pay_idem_token_grace"
@@ -32,15 +32,21 @@ def upgrade() -> None:
     conn = op.get_bind()
 
     # --- Payment idempotency key (idempotent: skip if column exists) ---
-    result = conn.execute(sa.text(
-        "SELECT 1 FROM information_schema.columns "
-        "WHERE table_name = 'payments' AND column_name = 'idempotency_key'"
-    ))
-    if not result.fetchone():
-        op.add_column(
-            "payments",
-            sa.Column("idempotency_key", sa.String(64), nullable=True),
-        )
+    if not context.is_offline_mode():
+        result = conn.execute(sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'payments' AND column_name = 'idempotency_key'"
+        ))
+        if not result.fetchone():
+            op.add_column(
+                "payments",
+                sa.Column("idempotency_key", sa.String(64), nullable=True),
+            )
+    else:
+        # In offline mode, we just emit the SQL and hope for the best
+        # Actually, adding IF NOT EXISTS isn't possible for add_column in standard SQL
+        # but for postgres we could use a DO block.
+        op.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64)")
     # Partial unique index: only enforced when key is present.
     # Scoped per gym so different tenants can independently use keys.
     op.execute(
@@ -50,25 +56,29 @@ def upgrade() -> None:
     )
 
     # --- Refresh token grace-period columns (idempotent: skip if exists) ---
-    result = conn.execute(sa.text(
-        "SELECT 1 FROM information_schema.columns "
-        "WHERE table_name = 'refresh_tokens' AND column_name = 'revoked_at'"
-    ))
-    if not result.fetchone():
-        op.add_column(
-            "refresh_tokens",
-            sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        )
+    if not context.is_offline_mode():
+        result = conn.execute(sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'refresh_tokens' AND column_name = 'revoked_at'"
+        ))
+        if not result.fetchone():
+            op.add_column(
+                "refresh_tokens",
+                sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
+            )
 
-    result = conn.execute(sa.text(
-        "SELECT 1 FROM information_schema.columns "
-        "WHERE table_name = 'refresh_tokens' AND column_name = 'replaced_by_hash'"
-    ))
-    if not result.fetchone():
-        op.add_column(
-            "refresh_tokens",
-            sa.Column("replaced_by_hash", sa.String(64), nullable=True),
-        )
+        result = conn.execute(sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'refresh_tokens' AND column_name = 'replaced_by_hash'"
+        ))
+        if not result.fetchone():
+            op.add_column(
+                "refresh_tokens",
+                sa.Column("replaced_by_hash", sa.String(64), nullable=True),
+            )
+    else:
+        op.execute("ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMP WITH TIME ZONE")
+        op.execute("ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS replaced_by_hash VARCHAR(64)")
 
 
 def downgrade() -> None:
