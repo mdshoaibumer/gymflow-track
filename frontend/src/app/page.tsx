@@ -69,7 +69,7 @@ const faqs = [
   { q: "Is my data secure?", a: "Absolutely. We use industry-standard encryption, HttpOnly cookies for auth, and your data is never shared with third parties." },
   { q: "Do you support UPI/cash/card payments?", a: "Yes — GymFlow Track records all payment methods including cash, UPI, card, and bank transfers. It’s a recording system, not a payment gateway." },
   { q: "Can I export my data?", a: "Yes. Export members, payments, and attendance as CSV files anytime. Your data is always yours." },
-  { q: "Is there a free trial?", a: "Yes! Every new account gets a 14-day free trial on the Pro plan. No credit card required." },
+  { q: "Is there a free trial?", a: "Yes! Every new account gets a 3-day free trial on the Starter plan with up to 100 members. No credit card required." },
 ];
 
 const container = {
@@ -118,7 +118,7 @@ export default function HomePage() {
             transition={{ duration: 0.5 }}
           >
             <Badge variant="secondary" className="mb-6 text-xs">
-              <Zap className="mr-1 h-3 w-3" /> 14-day free trial — no credit card required
+              <Zap className="mr-1 h-3 w-3" /> 3-day free trial — no credit card required
             </Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Gym Management

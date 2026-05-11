@@ -23,7 +23,7 @@ class PlatformSettings(BaseModel):
 
     # Trial & billing defaults
     default_trial_days: Mapped[int] = mapped_column(
-        Integer, default=14, nullable=False
+        Integer, default=3, nullable=False
     )
     grace_period_days: Mapped[int] = mapped_column(
         Integer, default=7, nullable=False

@@ -600,6 +600,7 @@ export default function GymDetailPage() {
                   <SelectContent>
                     <SelectItem value="starter">Starter</SelectItem>
                     <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="elite">Elite</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

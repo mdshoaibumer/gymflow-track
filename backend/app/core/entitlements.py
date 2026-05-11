@@ -21,7 +21,7 @@ PLAN_FEATURES: dict[str, dict[str, Any]] = {
     "starter": {
         "max_members": 100,
         "max_staff_users": 2,
-        "sms_notifications": False,
+        "sms_notifications": True,
         "advanced_reports": False,
         "qr_attendance": False,
         "advanced_analytics": False,
