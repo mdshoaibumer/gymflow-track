@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck } from "lucide-react";
 import { useMember } from "@/hooks/use-members";
@@ -19,12 +20,8 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
   cancelled: "outline",
 };
 
-export default function MemberDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const { id } = params;
+export default function MemberDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const { data: member, isLoading } = useMember(id);
   const { data: paymentData } = useMemberPayments(id);
 

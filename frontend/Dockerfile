@@ -12,13 +12,13 @@
 # ==============================================================
 
 # --- Stage 1: Dependencies ---
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
 # --- Stage 2: Build ---
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -32,7 +32,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # --- Stage 3: Production ---
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Security: Non-root user with specific UID/GID
 RUN addgroup -S -g 1001 gymflow && adduser -S -u 1001 -G gymflow gymflow
