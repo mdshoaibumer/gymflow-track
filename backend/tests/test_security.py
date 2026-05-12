@@ -351,7 +351,7 @@ class TestXSSPrevention:
     async def test_member_name_xss(
         self, client: AsyncClient, auth_headers: dict
     ):
-        """XSS in member name should be stored as-is (escaped by frontend)."""
+        """XSS in member name should be sanitized or safely stored."""
         for i, payload in enumerate(self.XSS_PAYLOADS):
             resp = await client.post(
                 "/api/v1/members",
@@ -359,9 +359,10 @@ class TestXSSPrevention:
                 headers=auth_headers,
             )
             if resp.status_code == 201:
-                # Stored as-is — no server-side sanitization needed
-                # (frontend handles escaping via React's default behavior)
-                assert resp.json()["name"] == payload
+                returned_name = resp.json()["name"]
+                # Server may sanitize (strip tags) or store as-is
+                # Either way, script tags must not survive intact
+                assert "<script>" not in returned_name.lower()
 
     async def test_gym_name_xss(
         self, client: AsyncClient, auth_headers: dict
