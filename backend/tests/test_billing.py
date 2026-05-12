@@ -324,56 +324,58 @@ class TestAccessControl:
     """Test subscription-based access control."""
 
     def test_trial_has_full_access(self):
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.TRIAL
+        sub = GymSubscription(status=BillingStatus.TRIAL)
         assert get_access_level(sub) == "full"
 
     def test_active_has_full_access(self):
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.ACTIVE
+        sub = GymSubscription(status=BillingStatus.ACTIVE)
         assert get_access_level(sub) == "full"
 
     def test_past_due_has_full_access(self):
         """Past due = retrying payment, don't punish the user yet."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.PAST_DUE
+        sub = GymSubscription(status=BillingStatus.PAST_DUE)
         assert get_access_level(sub) == "full"
 
     def test_cancelled_in_period_has_full_access(self):
         """Cancelled but still in paid period = full access."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.CANCELLED
-        sub.current_period_end = date.today() + timedelta(days=10)
+        sub = GymSubscription(
+            status=BillingStatus.CANCELLED,
+            current_period_end=date.today() + timedelta(days=10),
+        )
         assert get_access_level(sub) == "full"
 
     def test_cancelled_in_grace_has_read_only(self):
         """Cancelled after period end, within grace = read-only."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.CANCELLED
-        sub.current_period_end = date.today() - timedelta(days=3)  # 3 days past
+        sub = GymSubscription(
+            status=BillingStatus.CANCELLED,
+            current_period_end=date.today() - timedelta(days=3),
+        )
         assert get_access_level(sub) == "read_only"
 
     def test_cancelled_past_grace_is_locked(self):
         """Cancelled and past grace period = locked."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.CANCELLED
-        sub.current_period_end = date.today() - timedelta(days=30)
+        sub = GymSubscription(
+            status=BillingStatus.CANCELLED,
+            current_period_end=date.today() - timedelta(days=30),
+        )
         assert get_access_level(sub) == "locked"
 
     def test_expired_in_grace_has_read_only(self):
         """Expired within grace period = read-only."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.EXPIRED
-        sub.current_period_end = date.today() - timedelta(days=2)
-        sub.trial_end = None
+        sub = GymSubscription(
+            status=BillingStatus.EXPIRED,
+            current_period_end=date.today() - timedelta(days=2),
+            trial_end=None,
+        )
         assert get_access_level(sub) == "read_only"
 
     def test_expired_past_grace_is_locked(self):
         """Expired past grace = locked."""
-        sub = GymSubscription.__new__(GymSubscription)
-        sub.status = BillingStatus.EXPIRED
-        sub.current_period_end = date.today() - timedelta(days=30)
-        sub.trial_end = None
+        sub = GymSubscription(
+            status=BillingStatus.EXPIRED,
+            current_period_end=date.today() - timedelta(days=30),
+            trial_end=None,
+        )
         assert get_access_level(sub) == "locked"
 
     def test_no_subscription_is_locked(self):
