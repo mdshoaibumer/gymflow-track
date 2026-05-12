@@ -33,26 +33,27 @@ class TestRegistration:
         assert "refresh_token" in data
         assert data["token_type"] == "bearer"
 
-    async def test_register_duplicate_email_returns_409(self, client: AsyncClient):
-        """Same email cannot register twice."""
-        payload = {
-            "gym_name": "Gym One",
-            "owner_name": "User One",
-            "phone": "9876500001",
-            "email": "duplicate@test.com",
+    async def test_register_same_email_different_gym_allowed(self, client: AsyncClient):
+        """Same email in different gyms is allowed (multi-tenant design)."""
+        payload1 = {
+            "gym_name": "Gym Alpha",
+            "owner_name": "Owner A",
+            "phone": "9876500003",
+            "email": "shared@test.com",
             "password": "SecurePass123",
         }
-
-        # First registration should succeed
-        resp1 = await client.post("/api/v1/auth/register", json=payload)
+        resp1 = await client.post("/api/v1/auth/register", json=payload1)
         assert resp1.status_code == 201
 
-        # Second registration with same email should fail
-        payload["gym_name"] = "Gym Two"
-        payload["phone"] = "9876500002"
-        resp2 = await client.post("/api/v1/auth/register", json=payload)
-        assert resp2.status_code == 409
-        assert "already registered" in resp2.json()["detail"].lower()
+        payload2 = {
+            "gym_name": "Gym Beta",
+            "owner_name": "Owner B",
+            "phone": "9876500004",
+            "email": "shared@test.com",
+            "password": "SecurePass123",
+        }
+        resp2 = await client.post("/api/v1/auth/register", json=payload2)
+        assert resp2.status_code == 201
 
     async def test_register_invalid_phone_returns_422(self, client: AsyncClient):
         """Phone validation rejects non-Indian numbers."""
