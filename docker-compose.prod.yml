@@ -238,6 +238,12 @@ services:
           cpus: "2.0"
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     cap_drop:
       - ALL
     security_opt:

@@ -73,7 +73,6 @@ CMD ["uvicorn", "app.main:app", \
      "--port", "8000", \
      "--workers", "2", \
      "--limit-max-requests", "10000", \
-     "--limit-request-body", "1048576", \
      "--timeout-graceful-shutdown", "30", \
      "--access-log", \
      "--proxy-headers", \
