@@ -17,6 +17,7 @@ from datetime import date, timedelta
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import get_cache_backend
 from app.core.security import create_access_token, hash_password
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
@@ -33,6 +34,7 @@ async def gym_a(db_session: AsyncSession) -> Gym:
     gym = Gym(id=uuid4(), name="Gym Alpha", slug=f"gym-alpha-{uuid4().hex[:6]}", phone="9111111111")
     db_session.add(gym)
     await db_session.flush()
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 
@@ -41,6 +43,7 @@ async def gym_b(db_session: AsyncSession) -> Gym:
     gym = Gym(id=uuid4(), name="Gym Beta", slug=f"gym-beta-{uuid4().hex[:6]}", phone="9222222222")
     db_session.add(gym)
     await db_session.flush()
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 

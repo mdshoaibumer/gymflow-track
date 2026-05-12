@@ -18,6 +18,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import get_cache_backend
 from app.core.security import create_access_token, hash_password
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
@@ -36,6 +37,7 @@ async def payment_gym(db_session: AsyncSession) -> Gym:
     gym = Gym(id=uuid4(), name="Payment Test Gym", slug=f"pay-gym-{uuid4().hex[:6]}", phone="9555555555")
     db_session.add(gym)
     await db_session.flush()
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 

@@ -26,6 +26,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.core.cache import get_cache_backend
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password
@@ -155,6 +156,8 @@ async def sample_gym(db_session: AsyncSession) -> Gym:
     )
     db_session.add(gym)
     await db_session.flush()
+    # Seed subscription cache so the enforcement middleware allows requests
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 
@@ -194,6 +197,8 @@ async def other_gym(db_session: AsyncSession) -> Gym:
     )
     db_session.add(gym)
     await db_session.flush()
+    # Seed subscription cache so the enforcement middleware allows requests
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 
