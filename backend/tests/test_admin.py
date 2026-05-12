@@ -207,7 +207,7 @@ class TestGymDetail:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["gym_name"] == "Managed Gym"
+        assert data["name"] == "Managed Gym"
 
     @pytest.mark.asyncio
     async def test_nonexistent_gym_returns_404(
