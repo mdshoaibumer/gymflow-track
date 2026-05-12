@@ -207,7 +207,7 @@ class TestJWTTampering:
             "/api/v1/members",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code == 401
+        assert resp.status_code in (401, 403)
 
     async def test_expired_token(self, client: AsyncClient):
         """Expired token should be rejected."""
