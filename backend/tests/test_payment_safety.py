@@ -26,7 +26,7 @@ from app.models.payment import Payment
 from app.models.user import User, UserRole
 from app.models.subscription import (
     SubscriptionPlan, GymSubscription, Invoice,
-    BillingStatus, InvoiceStatus, PlanTier, BillingInterval,
+    BillingStatus, InvoiceStatus, PlanTier,
 )
 
 
