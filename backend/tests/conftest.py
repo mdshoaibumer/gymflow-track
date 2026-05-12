@@ -7,7 +7,7 @@ PostgreSQL-specific behavior (UUID type, enums, async driver).
 
 Setup:
     1. Ensure a test PostgreSQL database exists:
-       CREATE DATABASE gymflow_test;
+       CREATE DATABASE gymflowtrack_test;
     2. Set TEST_DATABASE_URL env var or use the default below.
     3. Run: pytest
 
@@ -47,7 +47,7 @@ from app.models.user import User, UserRole
 # Test database URL — uses a separate database to avoid polluting dev data
 # We only replace the database name at the end of the URL
 _base_url, _db_name = settings.DATABASE_URL.rsplit("/", 1)
-TEST_DATABASE_URL = f"{_base_url}/gymflow_test"
+TEST_DATABASE_URL = f"{_base_url}/gymflowtrack_test"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
