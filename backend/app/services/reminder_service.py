@@ -117,17 +117,13 @@ class ReminderEngine:
         Schedule reminders for members with overdue payments (pending status).
         One reminder per member per day maximum.
         """
-        from app.repositories.payment_repository import PaymentRepository
-        from app.models.payment import PaymentStatus
-
-        payment_repo = PaymentRepository(self.db)
         created = 0
         today = today_ist()
 
         # Get members with pending payments
         # We use a targeted query to find distinct members with pending payments
         from sqlalchemy import select, distinct
-        from app.models.payment import Payment
+        from app.models.payment import Payment, PaymentStatus
 
         result = await self.db.execute(
             select(distinct(Payment.member_id)).where(

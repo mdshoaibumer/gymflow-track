@@ -12,14 +12,14 @@ Coverage:
 8. QR token tamper detection — modified tokens rejected
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
+from app.models.attendance import AttendanceStatus, CheckInSource
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 from app.models.user import User

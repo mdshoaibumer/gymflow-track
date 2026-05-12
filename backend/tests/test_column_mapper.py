@@ -20,7 +20,6 @@ import pytest
 
 from app.services.column_mapper import (
     ColumnMapper,
-    MappingResult,
     apply_mapping,
     build_mapping_from_overrides,
     _normalize_header,

@@ -25,8 +25,6 @@ from app.models.gym import Gym
 from app.models.subscription import (
     BillingStatus,
     GymSubscription,
-    Invoice,
-    InvoiceStatus,
     PlanTier,
     SubscriptionPlan,
 )
@@ -320,7 +318,7 @@ class TestTrialExpiration:
     @pytest.mark.asyncio
     async def test_active_trial_not_expired(self, db_session, billing_gym, starter_plan):
         """Trial with future end date is not expired."""
-        sub = await create_trial_subscription(db_session, billing_gym.id, "starter")
+        _ = await create_trial_subscription(db_session, billing_gym.id, "starter")
         count = await check_trial_expirations(db_session)
 
         assert count == 0

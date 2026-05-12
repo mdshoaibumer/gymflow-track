@@ -18,7 +18,7 @@ from app.core.exceptions import NotFoundError
 from app.core.events import emit, PaymentRecorded, MembershipRenewed
 from app.core.timezone import today_ist
 from app.models.member import Member
-from app.models.payment import Payment, PaymentMethod, PaymentStatus
+from app.models.payment import Payment, PaymentStatus
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.schemas.payment import PaymentCreateRequest, PaymentListResponse

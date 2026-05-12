@@ -18,7 +18,7 @@ Edge Cases Handled:
 """
 
 import logging
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.timezone import today_ist
 from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
-from app.models.member import Member, MembershipStatus
+from app.models.member import MembershipStatus
 from app.repositories.attendance_repository import AttendanceRepository
 from app.repositories.member_repository import MemberRepository
 from app.services.qr_service import validate_qr_token

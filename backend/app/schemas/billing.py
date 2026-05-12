@@ -3,7 +3,6 @@ Billing + subscription request/response schemas.
 """
 
 from datetime import date, datetime
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 

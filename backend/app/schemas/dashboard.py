@@ -3,8 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.models.member import MembershipStatus
-from app.models.payment import PaymentMethod, PaymentStatus
+from app.models.payment import PaymentMethod
 
 
 class DashboardMetrics(BaseModel):

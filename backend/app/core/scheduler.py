@@ -79,7 +79,7 @@ async def _scan_and_schedule_job() -> None:
         async with async_session_factory() as session:
             async with session.begin():
                 result = await session.execute(
-                    select(Gym.id).where(Gym.is_active == True)
+                    select(Gym.id).where(Gym.is_active)
                 )
                 gym_ids = list(result.scalars().all())
 
@@ -131,7 +131,7 @@ async def _retry_failed_job() -> None:
         async with async_session_factory() as session:
             async with session.begin():
                 result = await session.execute(
-                    select(Gym.id).where(Gym.is_active == True)
+                    select(Gym.id).where(Gym.is_active)
                 )
                 gym_ids = list(result.scalars().all())
 
@@ -167,7 +167,7 @@ async def _maintenance_scan_job() -> None:
         async with async_session_factory() as session:
             async with session.begin():
                 result = await session.execute(
-                    select(Gym.id).where(Gym.is_active == True)
+                    select(Gym.id).where(Gym.is_active)
                 )
                 gym_ids = list(result.scalars().all())
 
@@ -230,7 +230,7 @@ async def _token_cleanup_job() -> None:
     - Expired refresh tokens older than 7 days
     - Used or expired password reset tokens older than 7 days
     """
-    from sqlalchemy import delete, and_
+    from sqlalchemy import delete
     from app.models.auth_token import RefreshToken, PasswordResetToken
     from datetime import timedelta
 
@@ -245,7 +245,7 @@ async def _token_cleanup_job() -> None:
                 revoked_cutoff = now - timedelta(days=30)
                 result_revoked = await session.execute(
                     delete(RefreshToken).where(
-                        RefreshToken.revoked == True,  # noqa: E712
+                        RefreshToken.revoked,
                         RefreshToken.updated_at < revoked_cutoff,
                     )
                 )
@@ -261,10 +261,8 @@ async def _token_cleanup_job() -> None:
                 # Delete used/expired password reset tokens older than 7 days
                 result_reset = await session.execute(
                     delete(PasswordResetToken).where(
-                        and_(
-                            PasswordResetToken.created_at < expired_cutoff,
-                            (PasswordResetToken.used == True) | (PasswordResetToken.expires_at < now),  # noqa: E712
-                        )
+                        PasswordResetToken.created_at < expired_cutoff,
+                        PasswordResetToken.used | (PasswordResetToken.expires_at < now),
                     )
                 )
 

@@ -23,7 +23,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -38,7 +38,6 @@ from app.schemas.onboarding import (
     FeedbackResponse,
     ImportPreviewResponse,
     ImportResultResponse,
-    ImportWithMappingRequest,
     OnboardingStatusResponse,
 )
 from app.services.onboarding_service import (

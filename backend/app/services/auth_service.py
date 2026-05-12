@@ -5,10 +5,6 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
-# Maximum depth for following refresh token replacement chains.
-# Prevents DoS via adversarial token chains that cause unbounded DB queries.
-_MAX_CHAIN_DEPTH = 5
-
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,6 +36,10 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.services.billing_service import create_trial_subscription
+
+# Maximum depth for following refresh token replacement chains.
+# Prevents DoS via adversarial token chains that cause unbounded DB queries.
+_MAX_CHAIN_DEPTH = 5
 
 logger = logging.getLogger("gymflow.auth")
 
@@ -292,7 +292,7 @@ class AuthService:
                 update(RefreshToken)
                 .where(
                     RefreshToken.user_id == user_id,
-                    RefreshToken.revoked == False,  # noqa: E712
+                    RefreshToken.revoked.is_(False),
                 )
                 .values(revoked=True, revoked_at=datetime.now(timezone.utc))
             )
@@ -375,7 +375,7 @@ class AuthService:
                 update(RefreshToken)
                 .where(
                     RefreshToken.user_id == user_id,
-                    RefreshToken.revoked == False,  # noqa: E712
+                    RefreshToken.revoked.is_(False),
                 )
                 .values(revoked=True)
             )
@@ -401,7 +401,7 @@ class AuthService:
         if not user or not user.is_active:
             # Run a dummy hash to normalize response time (prevents timing enumeration)
             verify_password("dummy", _DUMMY_HASH)
-            logger.info(f"Password reset requested for unknown/inactive email")
+            logger.info("Password reset requested for unknown/inactive email")
             return "If an account exists with that email, a reset link has been sent."
 
         # Invalidate any existing reset tokens for this user
@@ -409,7 +409,7 @@ class AuthService:
             update(PasswordResetToken)
             .where(
                 PasswordResetToken.user_id == user.id,
-                PasswordResetToken.used == False,  # noqa: E712
+                PasswordResetToken.used.is_(False),
             )
             .values(used=True)
         )
@@ -449,7 +449,7 @@ class AuthService:
         result = await self.db.execute(
             select(PasswordResetToken).where(
                 PasswordResetToken.token_hash == token_hash,
-                PasswordResetToken.used == False,  # noqa: E712
+                PasswordResetToken.used.is_(False),
             )
         )
         reset_token = result.scalar_one_or_none()

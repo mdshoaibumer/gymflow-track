@@ -8,7 +8,6 @@ Tests:
 - GET /auth/me (valid token, invalid token, expired, inactive user)
 """
 
-import pytest
 from httpx import AsyncClient
 
 

@@ -20,7 +20,7 @@ Operational Reliability:
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -47,7 +47,7 @@ class MaintenanceAlertService:
         result = await self.db.execute(
             select(Asset).where(
                 Asset.gym_id == gym_id,
-                Asset.warranty_expiry != None,
+                Asset.warranty_expiry.isnot(None),
                 Asset.warranty_expiry >= today,
                 Asset.warranty_expiry <= cutoff,
                 Asset.status != AssetStatus.RETIRED,
@@ -62,7 +62,7 @@ class MaintenanceAlertService:
         result = await self.db.execute(
             select(Asset).where(
                 Asset.gym_id == gym_id,
-                Asset.warranty_expiry != None,
+                Asset.warranty_expiry.isnot(None),
                 Asset.warranty_expiry < today,
                 Asset.status != AssetStatus.RETIRED,
             )

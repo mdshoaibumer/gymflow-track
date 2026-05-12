@@ -19,7 +19,6 @@ Also tests:
 - Cross-gym admin cannot access other gym's resources
 """
 
-import pytest
 from httpx import AsyncClient
 
 

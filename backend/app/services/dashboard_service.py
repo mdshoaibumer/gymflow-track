@@ -9,7 +9,6 @@ Strategy:
 - Queries run sequentially on a single safe DB session
 """
 
-from datetime import date
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession

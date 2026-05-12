@@ -21,7 +21,7 @@ IMPORTANT: No external integrations are implemented here.
 Only the event dispatch structure is prepared.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Any
 from uuid import UUID

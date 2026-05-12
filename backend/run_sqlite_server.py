@@ -1,3 +1,4 @@
+# ruff: noqa: E402, F401
 """
 Launch the GymFlow Track backend on SQLite (no Docker/PostgreSQL needed).
 

@@ -31,7 +31,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
-    String,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship

@@ -1,7 +1,7 @@
 from uuid import UUID
-from datetime import date, timedelta
+from datetime import timedelta
 
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.timezone import today_ist
 

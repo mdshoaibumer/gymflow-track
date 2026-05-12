@@ -133,7 +133,7 @@ async def test_expired_members_get_expiry_notification(
 ):
     """Expired members should get a MEMBERSHIP_EXPIRED notification."""
     engine = ReminderEngine(db_session)
-    created = await engine.schedule_expiry_reminders(sample_gym.id)
+    _ = await engine.schedule_expiry_reminders(sample_gym.id)
 
     repo = NotificationRepository(db_session)
     notifications = await repo.list_by_gym(sample_gym.id)
@@ -221,7 +221,7 @@ async def test_max_retries_respected(
     db_session: AsyncSession, sample_notification: Notification, sample_gym: Gym
 ):
     """Notifications at max retry count should NOT be retried."""
-    repo = NotificationRepository(db_session)
+    _ = NotificationRepository(db_session)
 
     # Simulate max retries reached
     sample_notification.retry_count = 3

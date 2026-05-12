@@ -8,7 +8,6 @@ from app.models.notification import (
     Notification,
     NotificationStatus,
     NotificationType,
-    NotificationChannel,
 )
 
 

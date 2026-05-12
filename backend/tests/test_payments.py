@@ -20,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
-from app.models.user import User
 
 
 @pytest.fixture

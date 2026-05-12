@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date
 from enum import Enum as PyEnum
 
 from sqlalchemy import String, ForeignKey, Date, Integer, Text, Index

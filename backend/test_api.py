@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Quick API test script"""
 import httpx
-import json
 
 BASE_URL = "http://localhost:8000"
 

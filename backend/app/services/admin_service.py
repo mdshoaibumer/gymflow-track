@@ -8,10 +8,10 @@ query still uses explicit gym_id filtering.
 """
 
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select, case, and_
+from sqlalchemy import func, select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,7 +19,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.core.timezone import today_ist
 from app.middleware.subscription_enforcement import invalidate_subscription_cache
 from app.models import (
-    AuditAction, AuditLog, Gym, Member, MembershipStatus, Payment, PaymentStatus,
+    AuditAction, AuditLog, Gym, Member, Payment, PaymentStatus,
     PlatformSettings, BillingStatus, GymSubscription, Invoice, InvoiceStatus,
     PlanTier, SubscriptionPlan, User, UserRole
 )
@@ -127,8 +127,6 @@ class AdminService:
             )
             .group_by(SubscriptionPlan.tier, SubscriptionPlan.name)
         )).all()
-
-        from app.schemas.admin import PlanDistributionItem
         plan_distribution = [
             PlanDistributionItem(
                 tier=row[0].value if hasattr(row[0], 'value') else row[0],
@@ -716,8 +714,8 @@ class AdminService:
         )).scalars().all()
 
         # Batch load actor/gym names
-        actor_ids = {l.actor_id for l in logs if l.actor_id}
-        gym_ids = {l.target_gym_id for l in logs if l.target_gym_id}
+        actor_ids = {entry.actor_id for entry in logs if entry.actor_id}
+        gym_ids = {entry.target_gym_id for entry in logs if entry.target_gym_id}
 
         actor_map = {}
         if actor_ids:
@@ -736,18 +734,18 @@ class AdminService:
         return AuditLogResponse(
             entries=[
                 AuditLogEntry(
-                    id=str(l.id),
-                    actor_id=str(l.actor_id) if l.actor_id else None,
-                    actor_name=actor_map.get(l.actor_id),
-                    action=l.action.value,
-                    target_gym_id=str(l.target_gym_id) if l.target_gym_id else None,
-                    target_gym_name=gym_map.get(l.target_gym_id),
-                    description=l.description,
-                    metadata_json=l.metadata_json,
-                    ip_address=l.ip_address,
-                    created_at=l.created_at,
+                    id=str(entry.id),
+                    actor_id=str(entry.actor_id) if entry.actor_id else None,
+                    actor_name=actor_map.get(entry.actor_id),
+                    action=entry.action.value,
+                    target_gym_id=str(entry.target_gym_id) if entry.target_gym_id else None,
+                    target_gym_name=gym_map.get(entry.target_gym_id),
+                    description=entry.description,
+                    metadata_json=entry.metadata_json,
+                    ip_address=entry.ip_address,
+                    created_at=entry.created_at,
                 )
-                for l in logs
+                for entry in logs
             ],
             total=total,
         )
@@ -982,7 +980,6 @@ class AdminService:
         now = datetime.now(timezone.utc)
         twenty_four_h = now - timedelta(hours=24)
         seven_days = now - timedelta(days=7)
-        thirty_days = now - timedelta(days=30)
 
         # Failed payments
         failed_24h = (await self.db.execute(

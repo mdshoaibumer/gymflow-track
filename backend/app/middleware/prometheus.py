@@ -21,7 +21,6 @@ from prometheus_client import (
     Histogram,
     generate_latest,
     CONTENT_TYPE_LATEST,
-    CollectorRegistry,
     REGISTRY,
 )
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint

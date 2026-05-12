@@ -7,7 +7,6 @@ Tests:
 - Unauthenticated access rejected
 """
 
-import pytest
 from httpx import AsyncClient
 
 

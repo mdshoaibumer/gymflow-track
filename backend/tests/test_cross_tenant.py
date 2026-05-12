@@ -23,7 +23,6 @@ from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
 from app.models.asset import Asset, AssetStatus, AssetCategory
-from app.models.notification import Notification, NotificationStatus, NotificationType, NotificationChannel
 from app.models.user import User, UserRole
 
 

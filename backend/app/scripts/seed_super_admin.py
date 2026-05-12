@@ -9,7 +9,6 @@ Idempotent — skips if a super admin already exists.
 """
 
 import asyncio
-import sys
 from uuid import uuid4
 
 from sqlalchemy import select

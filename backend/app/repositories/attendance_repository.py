@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
+from app.models.attendance import Attendance, AttendanceStatus
 
 
 class AttendanceRepository:

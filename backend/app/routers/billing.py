@@ -217,7 +217,7 @@ async def verify_payment(
             subscription_status="unknown",
             message=e.detail,
         )
-    except Exception as e:
+    except Exception:
         # Unexpected system errors — log full traceback, return 500
         logger.exception(
             "Unexpected error during payment verification for gym %s",

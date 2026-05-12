@@ -2,8 +2,7 @@
 Onboarding schemas — setup wizard, demo data, member CSV import.
 """
 
-from datetime import date
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class OnboardingStatusResponse(BaseModel):

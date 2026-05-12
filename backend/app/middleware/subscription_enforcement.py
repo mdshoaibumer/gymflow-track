@@ -40,7 +40,6 @@ from fastapi.responses import JSONResponse
 from jwt import InvalidTokenError
 import jwt as pyjwt
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
 from app.core.config import settings
 

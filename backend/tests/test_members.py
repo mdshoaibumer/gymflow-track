@@ -11,12 +11,8 @@ Tests:
 - Tenant isolation (gym A cannot see gym B's members)
 """
 
-import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.gym import Gym
-from app.models.user import User
 
 
 class TestCreateMember:

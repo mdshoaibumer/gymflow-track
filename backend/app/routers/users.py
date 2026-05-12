@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import CurrentUser, get_current_user, require_owner, require_admin
+from app.core.dependencies import CurrentUser, require_owner, require_admin
 from app.core.billing_dependencies import require_active_subscription, require_staff_capacity
 from app.schemas.user import CreateUserRequest, UpdateUserRequest, UserResponse
 from app.services.user_service import UserService

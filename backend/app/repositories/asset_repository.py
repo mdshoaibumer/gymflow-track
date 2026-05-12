@@ -156,7 +156,7 @@ class MaintenanceRepository:
             select(MaintenanceRecord)
             .where(
                 MaintenanceRecord.gym_id == gym_id,
-                MaintenanceRecord.next_service_date != None,
+                MaintenanceRecord.next_service_date.isnot(None),
                 MaintenanceRecord.next_service_date >= as_of,
                 MaintenanceRecord.next_service_date <= end,
             )
@@ -173,7 +173,7 @@ class MaintenanceRepository:
             select(MaintenanceRecord)
             .where(
                 MaintenanceRecord.gym_id == gym_id,
-                MaintenanceRecord.next_service_date != None,
+                MaintenanceRecord.next_service_date.isnot(None),
                 MaintenanceRecord.next_service_date < as_of,
             )
             .order_by(MaintenanceRecord.next_service_date.asc())
@@ -206,7 +206,7 @@ class MaintenanceRepository:
             .select_from(MaintenanceRecord)
             .where(
                 MaintenanceRecord.gym_id == gym_id,
-                MaintenanceRecord.next_service_date != None,
+                MaintenanceRecord.next_service_date.isnot(None),
                 MaintenanceRecord.next_service_date >= as_of,
                 MaintenanceRecord.next_service_date <= end,
             )
@@ -239,7 +239,7 @@ class MaintenanceRepository:
             )
             .where(
                 MaintenanceRecord.gym_id == gym_id,
-                MaintenanceRecord.next_service_date != None,
+                MaintenanceRecord.next_service_date.isnot(None),
                 MaintenanceRecord.next_service_date < as_of,
             )
         )

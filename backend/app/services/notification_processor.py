@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.notification import Notification, NotificationStatus
+from app.models.notification import Notification
 from app.repositories.notification_repository import NotificationRepository
 from app.services.whatsapp_provider import (
     WhatsAppProvider,

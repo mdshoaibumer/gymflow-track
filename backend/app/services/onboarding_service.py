@@ -38,7 +38,6 @@ from app.core.exceptions import ValidationError
 from app.models.asset import Asset, AssetCategory, AssetStatus
 from app.models.feedback import Feedback, FeedbackCategory
 from app.models.member import Gender, Member, MembershipStatus
-from app.repositories.member_repository import MemberRepository
 
 logger = logging.getLogger("gymflow.onboarding")
 

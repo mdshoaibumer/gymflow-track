@@ -1,9 +1,7 @@
-import re
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.core.config import settings
 from app.models.user import UserRole
 from app.schemas.sanitize import strip_html_tags
 from app.schemas.validators import validate_password_strength
