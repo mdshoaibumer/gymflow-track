@@ -71,6 +71,7 @@ async def billing_gym(db_session: AsyncSession) -> Gym:
 async def billing_user(db_session: AsyncSession, billing_gym: Gym) -> User:
     """Create an owner user for billing tests."""
     from app.core.security import hash_password
+    from app.core.cache import get_cache_backend
 
     user = User(
         id=uuid4(),
@@ -83,6 +84,9 @@ async def billing_user(db_session: AsyncSession, billing_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 

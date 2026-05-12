@@ -175,6 +175,10 @@ async def sample_user(db_session: AsyncSession, sample_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    # Seed user-active cache so _check_user_active skips DB lookup
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 
@@ -216,6 +220,9 @@ async def other_user(db_session: AsyncSession, other_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 
@@ -243,6 +250,9 @@ async def admin_user(db_session: AsyncSession, sample_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 
@@ -267,6 +277,9 @@ async def staff_user(db_session: AsyncSession, sample_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 

@@ -50,6 +50,9 @@ async def payment_owner(db_session: AsyncSession, payment_gym: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 

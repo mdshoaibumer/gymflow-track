@@ -55,6 +55,9 @@ async def owner_a(db_session: AsyncSession, gym_a: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 
@@ -66,6 +69,9 @@ async def owner_b(db_session: AsyncSession, gym_b: Gym) -> User:
     )
     db_session.add(user)
     await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
     return user
 
 
