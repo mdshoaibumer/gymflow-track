@@ -628,9 +628,14 @@ class AdminService:
             raise NotFoundError("No subscription found")
 
         # Find the new plan
+        try:
+            tier = PlanTier(plan_tier)
+        except ValueError:
+            raise NotFoundError(f"Plan '{plan_tier}' not found or inactive")
+
         plan = (await self.db.execute(
             select(SubscriptionPlan).where(
-                SubscriptionPlan.tier == PlanTier(plan_tier),
+                SubscriptionPlan.tier == tier,
                 SubscriptionPlan.is_active == True,  # noqa: E712
             )
         )).scalar_one_or_none()
