@@ -53,5 +53,17 @@ alembic/versions/__pycache__/
 test-results/
 playwright-report/
 
+# Scratch/debug scripts (not production code)
+scratch_tests/
+backend/scratch_tests/
+backend/check_sub.py
+backend/check_subscription.py
+backend/raw_check.py
+backend/raw_enum_check.py
+backend/manual_test.py
+backend/force_sync_plans.py
+backend/list_plans.py
+backend/list_users.py
+
 # Copilot runtime bridge (auto-generated, session-specific)
 .copilot-bridge.json
