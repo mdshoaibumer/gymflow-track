@@ -588,7 +588,7 @@ class TestPlatformAnalytics:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert "growth_trend" in data or "plan_distribution" in data
+        assert "churn_rate" in data or "feature_adoption" in data or "gym_growth" in data
 
 
 # === Platform Health ===
