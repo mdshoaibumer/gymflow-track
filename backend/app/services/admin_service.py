@@ -936,7 +936,7 @@ class AdminService:
                 Payment.gym_id == Gym.id,
                 Payment.payment_date >= inactive_threshold,
             ))
-            .where(Payment.id.is_(None), Gym.is_active == True)  # noqa: E712
+            .where(Payment.id.is_(None), Gym.is_active.is_(True))
             .limit(20)
         )).all()
         inactive_gyms = [
@@ -957,7 +957,7 @@ class AdminService:
                 select(func.count()).select_from(GymSubscription)
                 .join(SubscriptionPlan, GymSubscription.plan_id == SubscriptionPlan.id)
                 .where(
-                    col == True,  # noqa: E712
+                    col.is_(True),
                     GymSubscription.status.in_([BillingStatus.ACTIVE, BillingStatus.TRIAL]),
                 )
             )).scalar_one()

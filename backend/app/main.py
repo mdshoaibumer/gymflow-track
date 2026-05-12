@@ -43,7 +43,10 @@ async def lifespan(app: FastAPI):
     _setup_payment_provider()
 
     # Start background scheduler (reminders, notification processing)
-    start_scheduler()
+    # Skip in tests to avoid connection leaks/conflicts
+    import sys
+    if "pytest" not in sys.modules:
+        start_scheduler()
 
     # Seed default subscription plans (idempotent)
     async with async_session_factory() as session:
@@ -53,7 +56,9 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    stop_scheduler()
+    import sys
+    if "pytest" not in sys.modules:
+        stop_scheduler()
     logger.info(f"Shutting down {settings.APP_NAME}")
 
 
