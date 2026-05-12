@@ -82,7 +82,7 @@ jobs:
           cd backend
           ruff check . --output-format=github
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           APP_ENV: development
           DATABASE_URL: postgresql+asyncpg://gymflow:testpassword@localhost:5432/gymflow_test
@@ -92,7 +92,17 @@ jobs:
           RAZORPAY_KEY_SECRET: mock
         run: |
           cd backend
-          pytest tests/ -v --tb=short -x --timeout=60
+          pytest tests/ -v --tb=short -x --timeout=60 \
+            --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml \
+            --cov-fail-under=70
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 30
 
   # ── Frontend Lint & Build ──────────────────────────────────
   frontend-test:

@@ -331,3 +331,33 @@ def staff_headers(staff_user: User, sample_gym: Gym) -> dict[str, str]:
     """Auth headers for the STAFF user."""
     token = create_access_token(staff_user.id, sample_gym.id, staff_user.role.value)
     return {"Authorization": f"Bearer {token}"}
+
+
+# === Super Admin Fixtures ===
+
+
+@pytest.fixture
+async def super_admin_user(db_session: AsyncSession) -> User:
+    """Create a SUPER_ADMIN user (no gym_id — platform-wide access)."""
+    user = User(
+        id=uuid4(),
+        gym_id=None,
+        name="Platform Super Admin",
+        email=f"superadmin-{uuid4().hex[:6]}@gymflow.com",
+        phone="9999999999",
+        password_hash=hash_password("SuperAdmin123"),
+        role=UserRole.SUPER_ADMIN,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    cache = get_cache_backend()
+    cache.set(f"user_active:{user.id}", "1", 99999)
+    cache.set(f"user_revoked_at:{user.id}", "", 99999)
+    return user
+
+
+@pytest.fixture
+def super_admin_headers(super_admin_user: User) -> dict[str, str]:
+    """Auth headers for the SUPER_ADMIN user."""
+    token = create_access_token(super_admin_user.id, None, super_admin_user.role.value)
+    return {"Authorization": f"Bearer {token}"}

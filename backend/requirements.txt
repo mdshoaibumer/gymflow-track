@@ -19,3 +19,4 @@ ruff==0.4.8
 pytest==8.2.2
 pytest-asyncio==0.23.7
 pytest-timeout==2.3.1
+pytest-cov==5.0.0
