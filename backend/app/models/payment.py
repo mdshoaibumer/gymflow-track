@@ -31,13 +31,24 @@ class Payment(BaseModel):
         Index("ix_payments_gym_date", "gym_id", "payment_date"),
         # Member payment history: WHERE gym_id = ? AND member_id = ?
         Index("ix_payments_gym_member", "gym_id", "member_id"),
+        # Idempotency enforcement: partial unique index prevents duplicate payments.
+        # Only enforced when idempotency_key is not NULL (existing rows unaffected).
+        Index(
+            "ix_payments_idempotency", "gym_id", "idempotency_key",
+            unique=True,
+            postgresql_where="idempotency_key IS NOT NULL",
+        ),
     )
 
     gym_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("gyms.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # RESTRICT prevents hard-deleting members that have payment records.
+    # Members use soft-delete (is_deleted flag), so this FK never blocks
+    # normal operations — but it protects the financial audit trail from
+    # accidental direct SQL DELETEs.
     member_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True), ForeignKey("members.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     amount_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     payment_method: Mapped[PaymentMethod] = mapped_column(

@@ -31,7 +31,11 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              // unsafe-inline is required for Next.js hydration scripts and styled-jsx.
+              // unsafe-eval is NOT included — it weakens XSS protection significantly.
+              // If a library requires eval(), it must be replaced or configured
+              // to use CSP-compatible alternatives.
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self'",

@@ -161,7 +161,9 @@ class RazorpayProvider(PaymentProvider):
         if notes:
             payload["notes"] = notes
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0, connect=5.0),
+        ) as client:
             response = await client.post(
                 "https://api.razorpay.com/v1/orders",
                 json=payload,

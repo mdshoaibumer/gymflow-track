@@ -91,6 +91,13 @@ async def setup_database():
                 "WHERE idempotency_key IS NOT NULL"
             )
         )
+        # Indexes matching migration 017 (production hardening)
+        await conn.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_refresh_tokens_user_revoked "
+                "ON refresh_tokens (user_id, revoked)"
+            )
+        )
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
