@@ -19,8 +19,9 @@
 	# Staging CA for testing (uncomment to avoid rate limits during setup):
 	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
 
-	# Restrict admin API to localhost only
-	admin off
+	# Enable admin API on localhost only — required for Prometheus metrics scraping.
+	# Not exposed externally; only reachable from within the Docker network.
+	admin localhost:2019
 
 	# Global request body size limit (10MB max)
 	servers {

@@ -120,7 +120,9 @@ class AiSensyProvider(WhatsAppProvider):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(30.0, connect=5.0),
+            ) as client:
                 response = await client.post(
                     f"{self.base_url}/campaign/t1/api/v2",
                     json=payload,

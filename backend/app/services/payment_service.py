@@ -11,6 +11,7 @@ Core responsibilities:
 from datetime import date
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -69,7 +70,21 @@ class PaymentService:
             idempotency_key=data.idempotency_key,
             created_by=user_id,
         )
-        payment = await self.payment_repo.create(payment)
+        try:
+            payment = await self.payment_repo.create(payment)
+        except IntegrityError:
+            # Race condition: another concurrent request inserted a payment with
+            # the same idempotency key between our SELECT and INSERT. The partial
+            # unique index on (gym_id, idempotency_key) caught it. Return the
+            # existing payment instead of creating a duplicate charge.
+            await self.db.rollback()
+            if data.idempotency_key:
+                existing = await self.payment_repo.get_by_idempotency_key(
+                    gym_id, data.idempotency_key
+                )
+                if existing:
+                    return existing
+            raise
 
         # Atomically update amount_paid on the member using SQL-level addition
         # to prevent lost-update race conditions from concurrent payments.

@@ -5,6 +5,10 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
+# Maximum depth for following refresh token replacement chains.
+# Prevents DoS via adversarial token chains that cause unbounded DB queries.
+_MAX_CHAIN_DEPTH = 5
+
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,6 +53,16 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def _mask_email(email: str) -> str:
+    """Return a truncated SHA-256 hash of an email for safe logging.
+
+    PII (email addresses) must never appear in production logs.
+    A 12-char hash prefix is sufficient for log correlation without
+    revealing the actual email address.
+    """
+    return hashlib.sha256(email.lower().encode()).hexdigest()[:12]
+
+
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -79,7 +93,7 @@ class AuthService:
         # Note: email uniqueness is per-gym (UniqueConstraint gym_id+email).
         # We don't block registration globally — the DB constraint handles
         # same-email-same-gym collisions via IntegrityError below.
-        logger.info(f"Registration attempt for gym '{data.gym_name}' with email {data.email}")
+        logger.info("Registration attempt for gym '%s' (email_hash=%s)", data.gym_name, _mask_email(data.email))
 
         # Generate slug from gym name
         slug = self._generate_slug(data.gym_name)
@@ -129,7 +143,7 @@ class AuthService:
             # Let get_db() handle rollback — just raise the domain error.
             # Inspect constraint name to give an accurate error message.
             constraint = getattr(e.orig, "constraint_name", "") or str(e.orig)
-            logger.warning(f"Registration failed for email {data.email}: IntegrityError ({constraint})")
+            logger.warning("Registration failed (email_hash=%s): IntegrityError (%s)", _mask_email(data.email), constraint)
             if "slug" in constraint:
                 raise AlreadyExistsError("Gym name too similar to existing gym — please choose a different name")
             raise AlreadyExistsError("Email already registered")
@@ -142,7 +156,7 @@ class AuthService:
             # No user found — run a dummy bcrypt check to prevent timing
             # side-channel that reveals whether an email is registered.
             verify_password(data.password, _DUMMY_HASH)
-            logger.warning(f"Login failed: email not found (email={data.email})")
+            logger.warning("Login failed: email not found (email_hash=%s)", _mask_email(data.email))
             raise AuthenticationError("Invalid email or password")
 
         user = None
@@ -152,7 +166,7 @@ class AuthService:
                 break
 
         if not user:
-            logger.warning(f"Login failed: invalid password (email={data.email})")
+            logger.warning("Login failed: invalid password (email_hash=%s)", _mask_email(data.email))
             raise AuthenticationError("Invalid email or password")
 
         if not user.is_active:
@@ -213,8 +227,10 @@ class AuthService:
                 # of replacements. We follow the chain to find an active one.
                 current_replacement_hash = stored_token.replaced_by_hash
                 replacement_token = None
+                chain_depth = 0
                 
-                while current_replacement_hash:
+                while current_replacement_hash and chain_depth < _MAX_CHAIN_DEPTH:
+                    chain_depth += 1
                     replacement = await self.db.execute(
                         select(RefreshToken).where(
                             RefreshToken.token_hash == current_replacement_hash,
@@ -260,7 +276,7 @@ class AuthService:
                     # replaced_by_hash to point to the LATEST one for future efficiency.
                     stored_token.replaced_by_hash = new_hash
                     
-                    await self.db.commit() # Commit changes
+                    await self.db.flush()  # Let get_db() handle the final commit
 
                     logger.info(
                         f"Grace-period refresh for user {user_id} — "
@@ -286,8 +302,12 @@ class AuthService:
                 .where(User.id == user_id)
                 .values(sessions_revoked_at=datetime.now(timezone.utc))
             )
-            # Commit immediately because we are about to raise an exception 
-            # which would normally trigger a rollback in the get_db dependency.
+            # Flush to persist the revocation within the current transaction.
+            # IMPORTANT: This is a security-critical commit. We MUST persist the
+            # revocation before raising the exception, because get_db() will
+            # rollback on exception. Unlike the grace-period path (which uses
+            # flush and returns normally), this path must commit explicitly
+            # to guarantee token revocation survives the exception.
             await self.db.commit()
 
             # Invalidate cache to ensure immediate enforcement

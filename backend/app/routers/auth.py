@@ -32,6 +32,10 @@ _LOGIN_MAX_ATTEMPTS = 10      # allow more attempts for real users behind shared
 _LOGIN_WINDOW_SECONDS = 300   # 5-minute sliding window for failure tracking
 _LOGIN_LOCKOUT_SECONDS = 60   # shorter lockout — balances security vs. user friction
 
+# Reset-password rate limiting: prevent brute-force on intercepted reset tokens.
+_RESET_MAX_ATTEMPTS = 5       # max attempts per IP per window
+_RESET_WINDOW_SECONDS = 300   # 5-minute sliding window
+
 
 def _get_client_ip(request: Request) -> str:
     """Extract client IP (proxy-aware)."""
@@ -211,6 +215,7 @@ async def forgot_password(
 @router.post("/reset-password", response_model=ResetPasswordResponse)
 async def reset_password(
     data: ResetPasswordRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -218,7 +223,20 @@ async def reset_password(
 
     Token is single-use and expires in 1 hour.
     On success, all existing sessions are terminated.
+    Rate-limited to prevent brute-force on intercepted tokens.
     """
+    # Rate limit: prevent brute-force attempts on reset tokens
+    cache = get_cache_backend()
+    client_ip = _get_client_ip(request)
+    reset_key = f"rl:reset_pwd:{client_ip}"
+    count = cache.increment_window(reset_key, _RESET_WINDOW_SECONDS)
+    if count > _RESET_MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many password reset attempts. Please try again later.",
+            headers={"Retry-After": str(_RESET_WINDOW_SECONDS)},
+        )
+
     service = AuthService(db)
     message = await service.reset_password(data.token, data.new_password)
     return ResetPasswordResponse(message=message)

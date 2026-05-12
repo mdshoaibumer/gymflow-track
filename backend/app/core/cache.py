@@ -105,12 +105,21 @@ class RedisCacheBackend(CacheBackend):
     - User active check cache
 
     Falls back to InMemoryCache if Redis connection fails during init.
+    Every operation is wrapped in try/except — Redis failures never crash
+    the application. Cache is best-effort; the source of truth is the DB.
     """
 
     def __init__(self, url: str = "redis://localhost:6379/0"):
         import redis as redis_sync
-        self._redis = redis_sync.from_url(url, decode_responses=True, socket_timeout=2)
-        # Test connection
+        self._redis = redis_sync.from_url(
+            url,
+            decode_responses=True,
+            socket_timeout=2,
+            socket_connect_timeout=2,
+            retry_on_timeout=True,
+            health_check_interval=30,
+        )
+        # Test connection — will raise if Redis is unreachable
         self._redis.ping()
 
     def get(self, key: str) -> str | None:
