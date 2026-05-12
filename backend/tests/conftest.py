@@ -135,6 +135,9 @@ async def client(db_session: AsyncSession) -> AsyncClient:
     """
     HTTPX async client wired to the FastAPI app with test DB session.
     """
+    # Clear rate-limit counters so each test starts with a fresh window
+    cache = get_cache_backend()
+    cache._counters.clear()
 
     async def _override_get_db():
         yield db_session
