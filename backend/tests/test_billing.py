@@ -544,9 +544,9 @@ class TestBillingMetrics:
     """Test internal billing metrics."""
 
     @pytest.mark.asyncio
-    async def test_metrics_empty_state(self, db_session):
+    async def test_metrics_empty_state(self, db_session, billing_gym):
         """Metrics return zeros when no subscriptions exist."""
-        metrics = await get_billing_metrics(db_session)
+        metrics = await get_billing_metrics(db_session, billing_gym.id)
         assert metrics["mrr_in_paise"] == 0
         assert metrics["active_subscriptions"] == 0
 
@@ -561,6 +561,6 @@ class TestBillingMetrics:
             "mock_pay", invoice.razorpay_order_id, "mock_sig",
         )
 
-        metrics = await get_billing_metrics(db_session)
+        metrics = await get_billing_metrics(db_session, billing_gym.id)
         assert metrics["active_subscriptions"] >= 1
         assert metrics["mrr_in_paise"] >= 99900
