@@ -19,6 +19,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.middleware.body_size_limit import BodySizeLimitMiddleware
+from app.middleware.prometheus import PrometheusMiddleware, metrics_endpoint
 from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin
 
 # Configure structured logging BEFORE anything else
@@ -144,6 +145,9 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # [Innermost] 6. Body size limit — protection against oversized requests
 app.add_middleware(BodySizeLimitMiddleware)
 
+# 5.5 Prometheus metrics — collect request duration/count for monitoring
+app.add_middleware(PrometheusMiddleware)
+
 # 5. Subscription enforcement — business logic gating based on billing status
 app.add_middleware(SubscriptionEnforcementMiddleware)
 
@@ -195,6 +199,9 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Super Admin"])
+
+# Prometheus metrics endpoint (scraped by Prometheus, not for public access)
+app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)
 
 
 @app.get("/health")

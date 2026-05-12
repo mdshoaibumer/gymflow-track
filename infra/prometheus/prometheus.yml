@@ -1,0 +1,46 @@
+# ==============================================================
+# Prometheus Configuration — GymFlow Track
+# ==============================================================
+# Scrape targets: Backend API, Node Exporter, PostgreSQL, Redis
+# Alert rules loaded from alerts.yml
+# ==============================================================
+
+global:
+  scrape_interval: 30s          # Balance between resolution and VPS resources
+  evaluation_interval: 30s
+  scrape_timeout: 10s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # ── Backend API metrics ────────────────────────────────────
+  - job_name: "gymflow-backend"
+    metrics_path: "/metrics"
+    scrape_interval: 15s         # More frequent for app metrics
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          service: "backend"
+          env: "production"
+
+  # ── Node Exporter (VPS host metrics) ───────────────────────
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "vps"
+          env: "production"
+
+  # ── Caddy metrics (built-in) ──────────────────────────────
+  - job_name: "caddy"
+    static_configs:
+      - targets: ["caddy:2019"]
+        labels:
+          service: "caddy"
+          env: "production"
+
+  # ── Prometheus self-monitoring ─────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

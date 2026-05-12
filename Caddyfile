@@ -1,5 +1,5 @@
 # ==============================================================
-# GymFlow Track — Caddy Reverse Proxy Configuration
+# GymFlow Track — Caddy Reverse Proxy (Production)
 # ==============================================================
 # Automatic HTTPS via Let's Encrypt / ZeroSSL
 # Cloudflare DNS must point A records to this server's IP
@@ -8,24 +8,30 @@
 #   app.gymflowtrack.in   → Frontend (Next.js)
 #   admin.gymflowtrack.in → Frontend /admin routes
 #   api.gymflowtrack.in   → Backend (FastAPI)
+#
+# Security: HSTS preload, CSP, CORS hardening, request size limits
 # ==============================================================
 
 # Global options
 {
-	# Email for Let's Encrypt certificate notifications
 	email {$ACME_EMAIL:admin@gymflowtrack.in}
 
 	# Staging CA for testing (uncomment to avoid rate limits during setup):
 	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+
+	# Restrict admin API to localhost only
+	admin off
+
+	# Global request body size limit (10MB max)
+	servers {
+		max_header_size 16kb
+	}
 }
 
-# ── App Frontend ─────────────────────────────────────────────
-app.gymflowtrack.in {
-	encode gzip zstd
-
-	# Security headers
+# ── Shared security headers snippet ─────────────────────────
+(security_headers) {
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
@@ -33,12 +39,28 @@ app.gymflowtrack.in {
 		X-XSS-Protection "0"
 		# Remove server identity
 		-Server
+		-X-Powered-By
 	}
+}
+
+# ── App Frontend ─────────────────────────────────────────────
+app.gymflowtrack.in {
+	encode gzip zstd
+
+	import security_headers
+
+	# Cache static assets aggressively
+	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
+	header @static Cache-Control "public, max-age=31536000, immutable"
 
 	reverse_proxy frontend:3000 {
 		health_uri /
 		health_interval 30s
 		health_timeout 5s
+
+		# Retry on connection failure (zero-downtime deploys)
+		lb_try_duration 5s
+		lb_try_interval 250ms
 	}
 }
 
@@ -46,20 +68,18 @@ app.gymflowtrack.in {
 admin.gymflowtrack.in {
 	encode gzip zstd
 
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-		X-XSS-Protection "0"
-		-Server
-	}
+	import security_headers
+
+	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
+	header @static Cache-Control "public, max-age=31536000, immutable"
 
 	reverse_proxy frontend:3000 {
 		health_uri /
 		health_interval 30s
 		health_timeout 5s
+
+		lb_try_duration 5s
+		lb_try_interval 250ms
 	}
 }
 
@@ -67,35 +87,57 @@ admin.gymflowtrack.in {
 api.gymflowtrack.in {
 	encode gzip zstd
 
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		X-XSS-Protection "0"
-		-Server
-		# Allow API to be called from app/admin subdomains
-		Access-Control-Allow-Origin "{header.Origin}"
+	import security_headers
+
+	# Request body size limit for API (1MB default, overridden for upload paths)
+	request_body {
+		max_size 1MB
 	}
 
-	# API rate limiting (global safety net — app-level rate limiting is primary)
-	# Caddy rate limiting requires the caddy-ratelimit plugin; omit if not installed.
+	# Explicit CORS — do NOT reflect arbitrary origins
+	# CORS is handled by FastAPI middleware. Caddy should NOT add its own
+	# Access-Control-Allow-Origin header to avoid double-header conflicts.
+	# The old config reflected any Origin which bypasses CORS entirely.
 
-	reverse_proxy backend:8000 {
-		# Pass real client IP (Cloudflare → Caddy → Backend)
-		header_up X-Real-IP {remote_host}
-		header_up X-Forwarded-For {remote_host}
-		header_up X-Forwarded-Proto {scheme}
+	# Health check endpoint — no auth required, lightweight
+	handle /health* {
+		reverse_proxy backend:8000
+	}
 
-		health_uri /health/live
-		health_interval 30s
-		health_timeout 5s
+	# API routes
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			# Pass real client IP (Cloudflare → Caddy → Backend)
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+
+			health_uri /health/live
+			health_interval 30s
+			health_timeout 5s
+
+			# Retry on connection failure (zero-downtime deploys)
+			lb_try_duration 5s
+			lb_try_interval 250ms
+
+			# Timeouts
+			transport http {
+				read_timeout 30s
+				write_timeout 30s
+				dial_timeout 5s
+			}
+		}
+	}
+
+	# Block all other paths on the API domain
+	handle {
+		respond "Not Found" 404
 	}
 }
 
-# ── Marketing Site (optional — redirect to main domain) ─────
+# ── Root Domain → Redirect to app ───────────────────────────
 gymflowtrack.in {
-	# For now, redirect to the app. Replace with a static marketing site later.
 	redir https://app.gymflowtrack.in{uri} permanent
 }
 

@@ -1,11 +1,13 @@
 # ==============================================================
-# GymFlow Track Frontend — Multi-stage Dockerfile
+# GymFlow Track Frontend — Production Dockerfile
 # ==============================================================
-# Stage 1: Install dependencies
+# Multi-stage build optimized for ARM64 (Hetzner CAX11)
+#
+# Stage 1: Install dependencies (cached layer)
 # Stage 2: Build Next.js (standalone output)
 # Stage 3: Production image (just node + built output)
 #
-# Image size: ~150MB (vs ~1GB single-stage)
+# Target: < 120MB image, non-root, minimal attack surface
 # Uses Next.js standalone mode — no node_modules in production
 # ==============================================================
 
@@ -13,7 +15,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts --no-audit --no-fund
 
 # --- Stage 2: Build ---
 FROM node:20-alpine AS builder
@@ -25,13 +27,18 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
+# Generate standalone output
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # --- Stage 3: Production ---
 FROM node:20-alpine
 
-# Security: Non-root user
-RUN addgroup -S gymflow && adduser -S gymflow -G gymflow
+# Security: Non-root user with specific UID/GID
+RUN addgroup -S -g 1001 gymflow && adduser -S -u 1001 -G gymflow gymflow
+
+# Install tini for proper PID 1 signal handling and curl for healthcheck
+RUN apk add --no-cache tini curl
 
 WORKDIR /app
 
@@ -46,8 +53,16 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Labels for container management
+LABEL maintainer="GymFlow Track <admin@gymflowtrack.in>"
+LABEL org.opencontainers.image.title="gymflow-frontend"
+LABEL org.opencontainers.image.description="GymFlow Track Frontend"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD wget -q --spider http://127.0.0.1:3000/ || exit 1
+    CMD curl -sf http://127.0.0.1:3000/ || exit 1
 
+ENTRYPOINT ["tini", "--"]
 CMD ["node", "server.js"]

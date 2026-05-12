@@ -1,0 +1,55 @@
+# ==============================================================
+# Frontend .dockerignore
+# ==============================================================
+# Reduces build context from ~500MB+ to ~50MB.
+# node_modules is reinstalled in the container via npm ci.
+# ==============================================================
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (reinstalled in container)
+node_modules
+
+# Build output (rebuilt in container)
+.next
+out
+dist
+build
+
+# Tests
+e2e/
+test-results/
+playwright-report/
+playwright.config.ts
+playwright.config.qa.ts
+*.spec.ts
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output

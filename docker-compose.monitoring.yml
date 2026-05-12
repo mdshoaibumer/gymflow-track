@@ -1,0 +1,164 @@
+# ==============================================================
+# GymFlow Track — Monitoring Stack Docker Compose
+# ==============================================================
+# Prometheus + Grafana + Loki for full observability.
+# Designed for CAX11 4GB VPS (uses ~400MB total).
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml up -d
+# ==============================================================
+
+services:
+  # ── Prometheus ─────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"     # 15 days retention (saves disk)
+      - "--storage.tsdb.retention.size=1GB"      # Max 1GB on disk
+      - "--web.enable-lifecycle"                  # Allow config reload via API
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    networks:
+      - internal
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+          cpus: "0.5"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "65534:65534"         # nobody:nobody
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    labels:
+      - "com.gymflow.service=prometheus"
+      - "com.gymflow.tier=monitoring"
+
+  # ── Grafana ────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD}
+      - GF_SERVER_ROOT_URL=https://api.gymflowtrack.in/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=warn
+      # Security
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+      - GF_SECURITY_CONTENT_SECURITY_POLICY=true
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+          cpus: "0.25"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "472:472"             # grafana user
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    labels:
+      - "com.gymflow.service=grafana"
+      - "com.gymflow.tier=monitoring"
+
+  # ── Loki (Log Aggregation) ─────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.4
+    restart: unless-stopped
+    volumes:
+      - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki.yml
+    networks:
+      - monitoring
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+          cpus: "0.25"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    labels:
+      - "com.gymflow.service=loki"
+      - "com.gymflow.tier=monitoring"
+
+  # ── Node Exporter (VPS host metrics) ───────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host/root"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: "0.1"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pid: host
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    labels:
+      - "com.gymflow.service=node-exporter"
+      - "com.gymflow.tier=monitoring"
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:

@@ -1,0 +1,71 @@
+# ==============================================================
+# Backend .dockerignore
+# ==============================================================
+# Prevents copying unnecessary files into Docker build context.
+# Reduces build context from ~100MB+ to ~5MB.
+# ==============================================================
+
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+*.egg
+dist
+build
+.eggs
+
+# Virtual environments
+venv
+.venv
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Tests (not needed in production image)
+tests/
+scratch_tests/
+test_*.py
+pytest.ini
+.pytest_cache
+htmlcov
+.coverage
+coverage.xml
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Development files
+.env
+.env.*
+!.env.example
+docker-compose*.yml
+Makefile
+
+# Alembic migration cache
+alembic/versions/__pycache__
+
+# Debug/scratch scripts
+check_*.py
+list_*.py
+manual_test.py
+raw_*.py
+force_*.py
+run_sqlite_server.py
+
+# OS files
+.DS_Store
+Thumbs.db
