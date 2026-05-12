@@ -162,14 +162,11 @@ class TestWebhookReplay:
         """Processing the same payment.captured webhook twice should not double-activate."""
         from app.services.billing_service import process_webhook_payment
 
-        # Create a plan and subscription
-        plan = SubscriptionPlan(
-            id=uuid4(), name="Test Plan", tier=PlanTier.STARTER,
-            price_in_paise=99900, billing_interval=BillingInterval.MONTHLY,
-            max_members=100, max_staff_users=2,
+        # Use seeded starter plan
+        result = await db_session.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.tier == PlanTier.STARTER)
         )
-        db_session.add(plan)
-        await db_session.flush()
+        plan = result.scalar_one()
 
         subscription = GymSubscription(
             id=uuid4(), gym_id=payment_gym.id, plan_id=plan.id,
@@ -226,13 +223,11 @@ class TestWebhookReplay:
         """A payment.failed webhook should mark invoice as failed, not paid."""
         from app.services.billing_service import process_webhook_payment
 
-        plan = SubscriptionPlan(
-            id=uuid4(), name="Test Plan 2", tier=PlanTier.PRO,
-            price_in_paise=199900, billing_interval=BillingInterval.MONTHLY,
-            max_members=500, max_staff_users=5,
+        # Use seeded pro plan
+        result = await db_session.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.tier == PlanTier.PRO)
         )
-        db_session.add(plan)
-        await db_session.flush()
+        plan = result.scalar_one()
 
         subscription = GymSubscription(
             id=uuid4(), gym_id=payment_gym.id, plan_id=plan.id,
