@@ -18,6 +18,7 @@ and verify that the system handles them correctly without:
 """
 
 import asyncio
+import random
 from datetime import date, timedelta
 from uuid import uuid4
 
@@ -137,7 +138,7 @@ class TestConcurrentMemberCreation:
     ):
         """Two concurrent member creations with the same phone should
         result in exactly one success and one 409."""
-        phone = f"94000{uuid4().hex[:5]}"
+        phone = f"94000{random.randint(10000, 99999)}"
         payload = {
             "name": "Concurrent Member",
             "phone": phone,
