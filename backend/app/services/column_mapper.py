@@ -74,7 +74,7 @@ FIELD_ALIASES: dict[str, list[str]] = {
         # English
         "name", "member_name", "full_name", "member", "student_name",
         "first_name", "customer_name", "client_name", "person_name",
-        "members_name", "member's_name", "participant",
+        "members_name", "member's_name", "participant", "person",
         # Hindi transliteration
         "naam", "member_ka_naam", "naam_pura",
         # Devanagari
