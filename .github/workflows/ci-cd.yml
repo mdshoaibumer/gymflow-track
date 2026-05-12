@@ -191,6 +191,7 @@ jobs:
         with:
           context: ./backend
           push: false
+          load: true
           tags: gymflow-backend:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -200,6 +201,7 @@ jobs:
         with:
           context: ./frontend
           push: false
+          load: true
           tags: gymflow-frontend:test
           build-args: |
             NEXT_PUBLIC_API_URL=https://api.gymflowtrack.in/api/v1
