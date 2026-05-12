@@ -166,7 +166,7 @@ class TestCrossTenantMembers:
         self, client: AsyncClient, headers_a: dict, member_b: Member
     ):
         """Gym A owner should get 404 when trying to update Gym B's member."""
-        resp = await client.put(
+        resp = await client.patch(
             f"/api/v1/members/{member_b.id}",
             json={"name": "Hacked Name"},
             headers=headers_a,
