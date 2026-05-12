@@ -405,7 +405,7 @@ def detect_csv_columns(csv_content: str) -> dict:
         "all_csv_columns": headers,
         "sample_data": result.sample_data[:3],
         "target_fields": [
-            {"field": f, "label": info["label"], "required": info["required"]}
+            {"field": f, "label": info["label"], "required": str(info["required"]).lower()}
             for f, info in TARGET_FIELDS.items()
         ],
     }
