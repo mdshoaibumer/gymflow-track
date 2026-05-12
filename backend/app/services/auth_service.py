@@ -139,6 +139,13 @@ class AuthService:
             # Flush to trigger any remaining constraints before returning
             await self.db.flush()
 
+            # Seed user-active cache so _check_user_active doesn't need
+            # a separate DB roundtrip for freshly registered users.
+            from app.core.cache import get_cache_backend
+            cache = get_cache_backend()
+            cache.set(f"user_active:{user.id}", "1", 300)
+            cache.set(f"user_revoked_at:{user.id}", "", 300)
+
             return TokenResponse(
                 access_token=access_token,
                 refresh_token=raw_refresh,
@@ -180,6 +187,15 @@ class AuthService:
         access_token = create_access_token(user.id, user.gym_id, user.role.value)
         raw_refresh = create_refresh_token(user.id, user.gym_id, user.role.value)
         await self._store_refresh_token(user.id, raw_refresh)
+
+        # Seed user-active cache so _check_user_active skips the DB roundtrip
+        from app.core.cache import get_cache_backend
+        cache = get_cache_backend()
+        cache.set(f"user_active:{user.id}", "1", 300)
+        revoked_at = ""
+        if user.sessions_revoked_at:
+            revoked_at = str(int(user.sessions_revoked_at.timestamp()))
+        cache.set(f"user_revoked_at:{user.id}", revoked_at, 300)
 
         logger.info(f"Login successful (user_id={user.id}, gym_id={user.gym_id})")
         return TokenResponse(
