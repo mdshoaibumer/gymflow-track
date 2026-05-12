@@ -423,7 +423,7 @@ class TestAuditLogs:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert "logs" in data
+        assert "entries" in data
         assert "total" in data
 
     @pytest.mark.asyncio
@@ -447,7 +447,7 @@ class TestAuditLogs:
         assert resp.status_code == 200
         data = resp.json()
         # All returned logs should be for this gym
-        for log in data.get("logs", []):
+        for log in data.get("entries", []):
             if "gym_id" in log:
                 assert log["gym_id"] == str(managed_gym_with_trial.id)
 
