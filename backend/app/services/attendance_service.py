@@ -178,6 +178,7 @@ class AttendanceService:
         if existing:
             # Not an error — just return existing record (idempotent)
             logger.debug(f"Duplicate check-in for member {member_id}, returning existing")
+            existing.member = member
             return existing
 
         # 4. Create attendance record
@@ -195,7 +196,11 @@ class AttendanceService:
             # Use a SAVEPOINT so that an IntegrityError from a concurrent
             # insert only rolls back this INSERT, not the outer transaction.
             async with self.db.begin_nested():
-                return await self.attendance_repo.create(attendance)
+                created = await self.attendance_repo.create(attendance)
+            # Attach the already-fetched member so the router can build
+            # the response without a lazy-load (relationship is lazy="raise").
+            created.member = member
+            return created
         except IntegrityError:
             # Race condition: concurrent request already inserted a row.
             # The SAVEPOINT was rolled back — outer session is still usable.
@@ -204,6 +209,7 @@ class AttendanceService:
             )
             if existing:
                 logger.debug(f"Concurrent check-in race for member {member_id}, returning existing")
+                existing.member = member
                 return existing
             # Should not happen — re-raise if no existing record found
             raise
