@@ -47,7 +47,7 @@ export default function SettingsPage() {
 
   const getValue = <T,>(field: string, fallback: T): T => {
     if (field in formData) return formData[field] as T;
-    if (settings && field in settings) return (settings as Record<string, unknown>)[field] as T;
+    if (settings && field in settings) return (settings as unknown as Record<string, unknown>)[field] as T;
     return fallback;
   };
 

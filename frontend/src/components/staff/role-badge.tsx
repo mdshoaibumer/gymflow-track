@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import type { UserRole } from "@/types";
 
 const ROLE_STYLES: Record<UserRole, string> = {
+  super_admin:
+    "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   owner:
     "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   admin:

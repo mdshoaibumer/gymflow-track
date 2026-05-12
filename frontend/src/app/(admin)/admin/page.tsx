@@ -236,7 +236,8 @@ export default function AdminDashboardPage() {
                       className="fill-muted-foreground"
                     />
                     <Tooltip
-                      formatter={(value: number) => [formatPaise(value), "Revenue"]}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any) => [formatPaise(value), "Revenue"]}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         borderColor: "hsl(var(--border))",
@@ -286,7 +287,8 @@ export default function AdminDashboardPage() {
                       className="fill-muted-foreground"
                     />
                     <Tooltip
-                      formatter={(value: number) => [value, "Gyms"]}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any) => [value, "Gyms"]}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         borderColor: "hsl(var(--border))",
@@ -330,7 +332,8 @@ export default function AdminDashboardPage() {
                       paddingAngle={4}
                       dataKey="count"
                       nameKey="name"
-                      label={({ name, count }) => `${name}: ${count}`}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      label={({ name, value }: any) => `${name}: ${value}`}
                     >
                       {metrics.plan_distribution.map((entry) => (
                         <Cell

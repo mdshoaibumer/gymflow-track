@@ -119,7 +119,8 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="period" fontSize={12} tickLine={false} />
                   <YAxis fontSize={12} tickLine={false} />
                   <Tooltip
-                    formatter={(value: number) => [value, "Members"]}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    formatter={(value: any) => [value, "Members"]}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       borderColor: "hsl(var(--border))",
@@ -162,7 +163,8 @@ export default function AnalyticsPage() {
                     tickFormatter={(v) => `₹${(v / 100).toLocaleString()}`}
                   />
                   <Tooltip
-                    formatter={(value: number) => [formatPaise(value), "Revenue"]}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    formatter={(value: any) => [formatPaise(value), "Revenue"]}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       borderColor: "hsl(var(--border))",
