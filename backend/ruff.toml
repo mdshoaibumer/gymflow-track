@@ -1,0 +1,3 @@
+[lint.per-file-ignores]
+# Utility script requires imports after os.environ setup and monkey-patching
+"run_sqlite_server.py" = ["E402"]

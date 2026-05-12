@@ -43,6 +43,10 @@ _MAX_CHAIN_DEPTH = 5
 
 logger = logging.getLogger("gymflow.auth")
 
+# Maximum depth for following refresh token replacement chains.
+# Prevents DoS via adversarial token chains that cause unbounded DB queries.
+_MAX_CHAIN_DEPTH = 5
+
 # Pre-computed bcrypt hash used for constant-time rejection on invalid emails.
 # Prevents timing side-channels from revealing whether an email is registered.
 _DUMMY_HASH = "$2b$12$LJ3m4ys3Lf2Hbs5MhFclcOvpS2yJqinSPnNlVqFOK0D3IsVHyqEvC"

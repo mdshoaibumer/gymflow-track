@@ -12,7 +12,6 @@ Usage:
 
 import json
 import os
-import sys
 
 # ── Environment setup (BEFORE any app imports) ─────────────────────────
 os.environ["APP_ENV"] = "development"
@@ -25,7 +24,6 @@ os.environ["RATE_LIMIT_API"] = "10000"
 
 # ── Monkey-patch PostgreSQL types for SQLite compatibility ─────────────
 import sqlalchemy
-from sqlalchemy import String, JSON, event
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB as PG_JSONB
 
@@ -119,7 +117,6 @@ sqlalchemy.Enum.__init__ = _patched_enum_init
 
 # ── Patch create_async_engine to strip pool args for SQLite ────────────
 from sqlalchemy.ext.asyncio import create_async_engine as _orig_create_async_engine
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 import sqlalchemy.ext.asyncio as _sa_async
 

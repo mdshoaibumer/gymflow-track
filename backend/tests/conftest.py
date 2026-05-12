@@ -24,6 +24,7 @@ import pytest
 import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -45,7 +46,6 @@ from app.models.user import User, UserRole
 _base_url, _db_name = settings.DATABASE_URL.rsplit("/", 1)
 TEST_DATABASE_URL = f"{_base_url}/gymflow_test"
 
-from sqlalchemy.pool import NullPool
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
