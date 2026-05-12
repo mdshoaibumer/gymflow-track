@@ -52,13 +52,13 @@ async def expiring_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
 
 @pytest.fixture
 async def expired_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
-    """Member whose membership has expired."""
+    """Member whose membership has expired (end date passed, status not yet synced)."""
     member = Member(
         id=uuid4(),
         gym_id=sample_gym.id,
         name="Already Expired",
         phone="9222222222",
-        membership_status=MembershipStatus.EXPIRED,
+        membership_status=MembershipStatus.ACTIVE,
         membership_start=datetime.now(timezone.utc) - timedelta(days=60),
         membership_end=datetime.now(timezone.utc) - timedelta(days=1),
         membership_plan="Monthly",
