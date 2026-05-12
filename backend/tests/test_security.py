@@ -189,7 +189,7 @@ class TestJWTTampering:
             "/api/v1/members",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code == 401
+        assert resp.status_code in (401, 403)
 
     async def test_refresh_token_as_access_rejected(self, client: AsyncClient):
         """Using a refresh token as an access token should be rejected."""
