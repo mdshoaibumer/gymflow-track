@@ -421,9 +421,9 @@ class TestPaymentRBAC:
         assert response.status_code == 201
 
     async def test_no_auth_rejected(self, client: AsyncClient):
-        """No token → 403."""
+        """No token → 401."""
         response = await client.get("/api/v1/payments")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestPaymentTenantIsolation:
