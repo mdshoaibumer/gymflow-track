@@ -67,7 +67,7 @@ interface AuthState {
   saveTokens: (accessToken: string, refreshToken: string) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   user: null,
@@ -151,7 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isAuthenticated: true });
   },
 
-  saveTokens: (_accessToken: string, _refreshToken: string) => {
+  saveTokens: () => {
     // Tokens are now in HttpOnly cookies — browser manages them.
     // This method exists for backward compatibility with login/register pages
     // that call saveTokens after a successful response. We mark as authenticated

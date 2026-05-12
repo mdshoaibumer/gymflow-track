@@ -7,7 +7,6 @@ import {
   Users,
   CreditCard,
   CalendarCheck,
-  FileSpreadsheet,
   TrendingUp,
   IndianRupee,
 } from "lucide-react";
@@ -80,8 +79,8 @@ function ReportsContent() {
       a.remove();
       URL.revokeObjectURL(a.href);
       toast.success(`${filename} downloaded`);
-    } catch (err: any) {
-      toast.error(err.message || "Export failed");
+    } catch (err: unknown) {
+      toast.error((err as Error).message || "Export failed");
     } finally {
       setDownloading(null);
     }

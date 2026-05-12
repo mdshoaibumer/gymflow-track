@@ -53,7 +53,6 @@ export function PaymentForm({
   const [memberSearch, setMemberSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Debounce the search input
@@ -83,7 +82,6 @@ export function PaymentForm({
 
   const handleSelectMember = useCallback(
     (member: Member) => {
-      setSelectedMember(member);
       setValue("member_id", member.id);
       setMemberSearch(`${member.name} — ${member.phone}`);
       setShowDropdown(false);
@@ -111,7 +109,6 @@ export function PaymentForm({
                 setMemberSearch(e.target.value);
                 setShowDropdown(true);
                 if (!e.target.value) {
-                  setSelectedMember(null);
                   setValue("member_id", "");
                 }
               }}

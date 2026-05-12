@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Activity,
   AlertTriangle,
   CheckCircle,
   CreditCard,

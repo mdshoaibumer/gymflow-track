@@ -12,12 +12,6 @@ import {
   FEATURE_DESCRIPTIONS,
 } from "@/services/billing.service";
 
-const PLAN_HIERARCHY: PlanTier[] = ["none", "starter", "pro", "elite"];
-
-function planRank(tier: PlanTier): number {
-  return PLAN_HIERARCHY.indexOf(tier);
-}
-
 export interface FeatureAccess {
   /** Whether the feature is available on the current plan */
   allowed: boolean;

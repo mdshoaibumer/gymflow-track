@@ -20,7 +20,7 @@ type Step = "welcome" | "members" | "explore" | "done";
 const STEPS: Step[] = ["welcome", "members", "explore", "done"];
 
 export default function SetupPage() {
-  const { token, user, isOwner, isAdminOrAbove, isLoading: authLoading } = useAuth();
+  const { token, isAdminOrAbove, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Role-based route protection

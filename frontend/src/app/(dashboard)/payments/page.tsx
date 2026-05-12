@@ -119,8 +119,6 @@ export default function PaymentsPage() {
     pageCount: Math.ceil(total / PAGE_SIZE),
   });
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}

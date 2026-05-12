@@ -2,15 +2,11 @@
 
 import { useState } from "react";
 import {
-  Settings,
   Save,
   AlertTriangle,
   RefreshCw,
   Bell,
   Clock,
-  CreditCard,
-  Shield,
-  Building2,
   Wrench,
 } from "lucide-react";
 import {
@@ -26,7 +22,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -36,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAdminSettings, useUpdatePlatformSettings } from "@/hooks/use-admin";
-import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { data: settings, isLoading, error } = useAdminSettings();

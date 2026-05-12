@@ -5,10 +5,6 @@ import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface BreadcrumbOverride {
-  label: string;
-}
-
 interface BreadcrumbsProps {
   /** Override the last breadcrumb label (useful for dynamic pages like member names) */
   overrideLastLabel?: string;

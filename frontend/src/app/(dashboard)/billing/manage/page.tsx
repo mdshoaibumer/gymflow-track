@@ -12,7 +12,6 @@ import {
   Building2,
   MessageSquare,
   Check,
-  X as XIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPaise } from "@/lib/utils";

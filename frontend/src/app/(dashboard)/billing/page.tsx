@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPaise } from "@/lib/utils";
 import { usePlans, useSubscription, useSubscribe, useVerifyPayment } from "@/hooks/use-billing";
-import { billingService } from "@/services/billing.service";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   CreditCard,
   Search,
-  Building2,
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Clock,

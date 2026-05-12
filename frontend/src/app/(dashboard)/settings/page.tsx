@@ -21,7 +21,6 @@ import {
   getTemplateForGym,
   saveTemplate as saveWaTemplate,
   PLACEHOLDER_KEYS,
-  PLACEHOLDER_LABELS,
 } from "@/lib/whatsapp";
 import { toast } from "sonner";
 

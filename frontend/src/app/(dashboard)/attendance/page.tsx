@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { QrCode, UserCheck, Search, AlertCircle, RefreshCw, CalendarCheck } from "lucide-react";
+import { UserCheck, Search, AlertCircle, RefreshCw, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useAttendanceToday,
   useAttendanceStats,
-  useCheckInQR,
   useCheckInManual,
   useCheckOut,
 } from "@/hooks/use-attendance";
@@ -36,11 +35,9 @@ export default function AttendancePage() {
 }
 
 function AttendanceContent() {
-  const { user } = useAuth();
-  const [qrInput, setQrInput] = useState("");
+  useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const qrInputRef = useRef<HTMLInputElement>(null);
 
   const { data: todayData, isLoading: todayLoading, isError: todayError, refetch: todayRefetch } = useAttendanceToday();
   const { data: stats } = useAttendanceStats();
@@ -49,7 +46,6 @@ function AttendanceContent() {
     limit: 5,
   });
 
-  const checkInQR = useCheckInQR();
   const checkInManual = useCheckInManual();
   const checkOut = useCheckOut();
 
@@ -61,19 +57,6 @@ function AttendanceContent() {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // Auto-focus QR input
-  useEffect(() => {
-    qrInputRef.current?.focus();
-  }, []);
-
-  const handleQRScan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!qrInput.trim()) return;
-    await checkInQR.mutateAsync(qrInput.trim());
-    setQrInput("");
-    qrInputRef.current?.focus();
-  };
 
   const handleManualCheckIn = async (memberId: string) => {
     await checkInManual.mutateAsync(memberId);
@@ -118,39 +101,6 @@ function AttendanceContent() {
 
       {/* Check-In Section */}
       <div className="max-w-2xl">
-        {/* QR Scanner Input - Hidden until QR hardware/portal is ready
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <QrCode className="h-5 w-5 text-primary" />
-              QR Check-In
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Scan a member&apos;s QR code or paste the token below.
-            </p>
-            <form onSubmit={handleQRScan} className="flex gap-2">
-              <Input
-                ref={qrInputRef}
-                value={qrInput}
-                onChange={(e) => setQrInput(e.target.value)}
-                placeholder="Scan QR code here..."
-                disabled={checkInQR.isPending}
-                aria-label="QR code token"
-                autoFocus
-              />
-              <Button
-                type="submit"
-                disabled={checkInQR.isPending || !qrInput.trim()}
-              >
-                {checkInQR.isPending ? "..." : "Check In"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        */}
-
         {/* Manual Check-In */}
         <Card>
           <CardHeader>

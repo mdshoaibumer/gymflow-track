@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck } from "lucide-react";

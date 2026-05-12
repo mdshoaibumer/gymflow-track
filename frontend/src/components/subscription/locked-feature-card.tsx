@@ -7,7 +7,6 @@ import type { FeatureName } from "@/services/billing.service";
 import {
   FEATURE_DISPLAY_NAMES,
   FEATURE_DESCRIPTIONS,
-  FEATURE_REQUIRED_PLAN,
 } from "@/services/billing.service";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 
