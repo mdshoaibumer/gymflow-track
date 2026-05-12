@@ -4,7 +4,7 @@
 # ============================================================
 # Usage:
 #   ./scripts/backup-db.sh                       # Manual backup
-#   0 2 * * * /opt/gymflow/scripts/backup-db.sh   # Cron (daily 2AM)
+#   0 2 * * * /opt/gymflowtrack/scripts/backup-db.sh   # Cron (daily 2AM)
 #
 # Features:
 #   - pg_dump with custom format (compressed, parallel restore)
@@ -15,7 +15,7 @@
 #   - Logging for audit trail
 #
 # Restore:
-#   ./scripts/restore-db.sh backups/gymflow_YYYYMMDD_HHMMSS.dump.enc
+#   ./scripts/restore-db.sh backups/gymflowtrack_YYYYMMDD_HHMMSS.dump.enc
 # ============================================================
 
 set -euo pipefail
@@ -24,7 +24,7 @@ set -euo pipefail
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/gymflow_${TIMESTAMP}.dump"
+BACKUP_FILE="${BACKUP_DIR}/gymflowtrack_${TIMESTAMP}.dump"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
 # Docker mode
@@ -65,12 +65,12 @@ if [ "$USE_DOCKER" = "true" ]; then
     fi
 
     docker compose -f "$COMPOSE_FILE" exec -T "$DOCKER_DB_SERVICE" \
-        pg_dump -U "${POSTGRES_USER:-gymflow}" -d "${POSTGRES_DB:-gymflow}" \
+        pg_dump -U "${POSTGRES_USER:-gymflowtrack}" -d "${POSTGRES_DB:-gymflowtrack}" \
         --format=custom --compress=6 \
         --no-owner --no-privileges \
         > "$BACKUP_FILE"
 else
-    DATABASE_URL="${DATABASE_URL_SYNC:-postgresql://gymflow:gymflow@localhost:5432/gymflow}"
+    DATABASE_URL="${DATABASE_URL_SYNC:-postgresql://gymflowtrack:gymflowtrack@localhost:5432/gymflowtrack}"
     log "Mode: Direct"
     pg_dump "$DATABASE_URL" \
         --format=custom \
@@ -150,9 +150,9 @@ fi
 
 # ── Cleanup old local backups ────────────────────────────────
 log "Cleaning backups older than ${RETENTION_DAYS} days..."
-find "$BACKUP_DIR" -name "gymflow_*.dump*" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+find "$BACKUP_DIR" -name "gymflowtrack_*.dump*" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
 
-REMAINING=$(find "$BACKUP_DIR" -name "gymflow_*.dump*" | wc -l)
+REMAINING=$(find "$BACKUP_DIR" -name "gymflowtrack_*.dump*" | wc -l)
 log "Retention: ${REMAINING} backup(s) on disk."
 
 # ── Trim backup log ─────────────────────────────────────────

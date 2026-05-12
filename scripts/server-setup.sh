@@ -21,10 +21,10 @@
 
 set -euo pipefail
 
-APP_USER="${APP_USER:-gymflow}"
-APP_DIR="/opt/gymflow"
+APP_USER="${APP_USER:-gymflowtrack}"
+APP_DIR="/opt/gymflowtrack"
 SSH_PORT="${SSH_PORT:-22}"
-REPO_URL="${REPO_URL:-https://github.com/YOUR_ORG/gym-management-system.git}"
+REPO_URL="${REPO_URL:-https://github.com/mdshoaibumer/gym-management-system.git}"
 
 echo "============================================="
 echo "GymFlow Track — Enterprise Server Setup"
@@ -91,7 +91,7 @@ AllowAgentForwarding no
 PermitEmptyPasswords no
 
 # Only allow specific user
-AllowUsers gymflow root
+AllowUsers gymflowtrack root
 SSHEOF
 
 # Validate and reload
@@ -135,18 +135,18 @@ bantime = 7200
 findtime = 600
 
 # Ban repeated 4xx/5xx on API (custom filter)
-[gymflow-api]
+[gymflowtrack-api]
 enabled = true
 port = http,https
-filter = gymflow-api
-logpath = /var/log/gymflow-api.log
+filter = gymflowtrack-api
+logpath = /var/log/gymflowtrack-api.log
 maxretry = 20
 findtime = 60
 bantime = 600
 F2BEOF
 
 # Custom filter for API abuse
-cat > /etc/fail2ban/filter.d/gymflow-api.conf <<'FILTEREOF'
+cat > /etc/fail2ban/filter.d/gymflowtrack-api.conf <<'FILTEREOF'
 [Definition]
 failregex = ^.*"client_ip":\s*"<HOST>".*"status_code":\s*(401|403|429).*$
 ignoreregex =
@@ -201,7 +201,7 @@ echo "  Docker daemon hardened"
 
 # ── 7. Sysctl Tuning ────────────────────────────────────────
 echo "[7/12] Tuning kernel parameters..."
-cat > /etc/sysctl.d/99-gymflow.conf <<'SYSCTLEOF'
+cat > /etc/sysctl.d/99-gymflowtrack.conf <<'SYSCTLEOF'
 # === GymFlow TCP/Network Tuning ===
 # Increase connection tracking for high-concurrency
 net.core.somaxconn = 65535
@@ -265,8 +265,8 @@ echo "  Automatic security updates enabled"
 
 # ── 10. Log Rotation ────────────────────────────────────────
 echo "[10/12] Configuring log rotation..."
-cat > /etc/logrotate.d/gymflow <<'LOGEOF'
-/var/log/gymflow-*.log {
+cat > /etc/logrotate.d/gymflowtrack <<'LOGEOF'
+/var/log/gymflowtrack-*.log {
     daily
     rotate 14
     compress
@@ -292,15 +292,15 @@ fi
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 # Backup cron (daily at 2 AM, weekly full backup at Sunday 3 AM)
-DAILY_CRON="0 2 * * * cd $APP_DIR && /bin/bash scripts/backup-db.sh >> /var/log/gymflow-backup.log 2>&1"
-PRUNE_CRON="0 4 * * 0 docker system prune -af --filter 'until=168h' >> /var/log/gymflow-prune.log 2>&1"
+DAILY_CRON="0 2 * * * cd $APP_DIR && /bin/bash scripts/backup-db.sh >> /var/log/gymflowtrack-backup.log 2>&1"
+PRUNE_CRON="0 4 * * 0 docker system prune -af --filter 'until=168h' >> /var/log/gymflowtrack-prune.log 2>&1"
 
 (crontab -u "$APP_USER" -l 2>/dev/null; echo "$DAILY_CRON"; echo "$PRUNE_CRON") | sort -u | crontab -u "$APP_USER" -
 echo "  Cron jobs configured"
 
 # ── 12. Health Check Script ─────────────────────────────────
 echo "[12/12] Creating health check helper..."
-cat > /usr/local/bin/gymflow-status <<'STATUSEOF'
+cat > /usr/local/bin/gymflowtrack-status <<'STATUSEOF'
 #!/bin/bash
 echo "=== GymFlow Track Status ==="
 echo ""
@@ -311,18 +311,18 @@ echo "Disk:   $(df -h / | awk 'NR==2 {printf "%s used / %s total (%s)", $3, $2, 
 echo "Swap:   $(free -h | awk '/Swap:/ {printf "%s used / %s total", $3, $2}')"
 echo ""
 echo "── Docker ──"
-cd /opt/gymflow 2>/dev/null && docker compose -f docker-compose.prod.yml ps 2>/dev/null || echo "Not running"
+cd /opt/gymflowtrack 2>/dev/null && docker compose -f docker-compose.prod.yml ps 2>/dev/null || echo "Not running"
 echo ""
 echo "── API Health ──"
 curl -sf --max-time 5 http://localhost:8000/health 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "Backend unreachable"
 echo ""
 echo "── Recent Backups ──"
-ls -lh /opt/gymflow/backups/ 2>/dev/null | tail -5
+ls -lh /opt/gymflowtrack/backups/ 2>/dev/null | tail -5
 echo ""
 echo "── fail2ban ──"
 fail2ban-client status sshd 2>/dev/null | grep -E "Currently|Total" || echo "Not running"
 STATUSEOF
-chmod +x /usr/local/bin/gymflow-status
+chmod +x /usr/local/bin/gymflowtrack-status
 
 echo ""
 echo "============================================="

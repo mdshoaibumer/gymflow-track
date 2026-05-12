@@ -35,7 +35,7 @@ RUN npm run build
 FROM node:22-alpine
 
 # Security: Non-root user with specific UID/GID
-RUN addgroup -S -g 1001 gymflow && adduser -S -u 1001 -G gymflow gymflow
+RUN addgroup -S -g 1001 gymflowtrack && adduser -S -u 1001 -G gymflowtrack gymflowtrack
 
 # Install tini for proper PID 1 signal handling and curl for healthcheck
 RUN apk add --no-cache tini curl
@@ -43,11 +43,11 @@ RUN apk add --no-cache tini curl
 WORKDIR /app
 
 # Copy standalone output (includes server + minimal node_modules)
-COPY --from=builder --chown=gymflow:gymflow /app/.next/standalone ./
-COPY --from=builder --chown=gymflow:gymflow /app/.next/static ./.next/static
-COPY --from=builder --chown=gymflow:gymflow /app/public ./public
+COPY --from=builder --chown=gymflowtrack:gymflowtrack /app/.next/standalone ./
+COPY --from=builder --chown=gymflowtrack:gymflowtrack /app/.next/static ./.next/static
+COPY --from=builder --chown=gymflowtrack:gymflowtrack /app/public ./public
 
-USER gymflow
+USER gymflowtrack
 
 EXPOSE 3000
 

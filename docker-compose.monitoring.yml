@@ -44,8 +44,8 @@ services:
         max-size: "5m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=prometheus"
-      - "com.gymflow.tier=monitoring"
+      - "com.gymflowtrack.service=prometheus"
+      - "com.gymflowtrack.tier=monitoring"
 
   # ── Grafana ────────────────────────────────────────────────
   grafana:
@@ -88,8 +88,8 @@ services:
         max-size: "5m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=grafana"
-      - "com.gymflow.tier=monitoring"
+      - "com.gymflowtrack.service=grafana"
+      - "com.gymflowtrack.tier=monitoring"
 
   # ── Loki (Log Aggregation) ─────────────────────────────────
   loki:
@@ -117,8 +117,8 @@ services:
         max-size: "5m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=loki"
-      - "com.gymflow.tier=monitoring"
+      - "com.gymflowtrack.service=loki"
+      - "com.gymflowtrack.tier=monitoring"
 
   # ── Node Exporter (VPS host metrics) ───────────────────────
   node-exporter:
@@ -151,8 +151,8 @@ services:
         max-size: "5m"
         max-file: "2"
     labels:
-      - "com.gymflow.service=node-exporter"
-      - "com.gymflow.tier=monitoring"
+      - "com.gymflowtrack.service=node-exporter"
+      - "com.gymflowtrack.tier=monitoring"
 
 networks:
   monitoring:

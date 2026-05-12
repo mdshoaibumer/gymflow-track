@@ -2,13 +2,16 @@
 Seed a super admin user for the platform.
 
 Usage:
-    python -m app.scripts.seed_super_admin
+    SUPER_ADMIN_PASSWORD=YourSecurePass python -m app.scripts.seed_super_admin
 
 Creates a super admin user with no gym association.
 Idempotent — skips if a super admin already exists.
 """
 
 import asyncio
+import os
+import secrets
+import string
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -20,12 +23,29 @@ from app.models.user import User, UserRole
 import app.main  # noqa
 
 
+def _generate_secure_password(length: int = 20) -> str:
+    """Generate a cryptographically secure random password."""
+    alphabet = string.ascii_letters + string.digits + "!@#$%&*"
+    while True:
+        pwd = ''.join(secrets.choice(alphabet) for _ in range(length))
+        # Ensure it meets complexity requirements
+        if (any(c.isupper() for c in pwd) and any(c.islower() for c in pwd)
+                and any(c.isdigit() for c in pwd) and any(c in "!@#$%&*" for c in pwd)):
+            return pwd
+
+
 async def seed_super_admin(
-    email: str = "admin@gymflow.dev",
-    password: str = "SuperAdmin@2026!",
-    name: str = "GymFlow Track Admin",
+    email: str = "admin@gymflowtrack.in",
+    name: str = "GymFlowTrack Admin",
     phone: str = "9999999999",
 ) -> None:
+    # Read password from env var or generate a secure random one
+    password = os.environ.get("SUPER_ADMIN_PASSWORD")
+    generated = False
+    if not password:
+        password = _generate_secure_password()
+        generated = True
+
     async with async_session_factory() as session:
         async with session.begin():
             # Check if super admin already exists
@@ -52,8 +72,11 @@ async def seed_super_admin(
             )
             session.add(user)
             print(f"Super admin created: {email} (id={user.id})")
-            print(f"Password: {password}")
-            print("IMPORTANT: Change this password immediately in production!")
+            if generated:
+                print(f"Generated password: {password}")
+                print("IMPORTANT: Save this password now — it will NOT be shown again!")
+            else:
+                print("Password set from SUPER_ADMIN_PASSWORD env var.")
 
 
 if __name__ == "__main__":

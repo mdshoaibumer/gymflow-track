@@ -18,13 +18,13 @@
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────
-APP_DIR="${APP_DIR:-/opt/gymflow}"
+APP_DIR="${APP_DIR:-/opt/gymflowtrack}"
 COMPOSE_FILE="docker-compose.prod.yml"
 COMPOSE_MONITORING="docker-compose.monitoring.yml"
 BRANCH="${BRANCH:-main}"
 QUICK_MODE=false
 ROLLBACK_MODE=false
-DEPLOY_LOG="/var/log/gymflow-deploy.log"
+DEPLOY_LOG="/var/log/gymflowtrack-deploy.log"
 MAX_HEALTH_RETRIES=20
 HEALTH_CHECK_INTERVAL=5
 
@@ -202,7 +202,7 @@ log "  Waiting for DB and Redis..."
 # Wait for DB health check
 RETRY=0
 while [ $RETRY -lt 30 ]; do
-    if docker compose -f "$COMPOSE_FILE" exec -T db pg_isready -U "${POSTGRES_USER:-gymflow}" > /dev/null 2>&1; then
+    if docker compose -f "$COMPOSE_FILE" exec -T db pg_isready -U "${POSTGRES_USER:-gymflowtrack}" > /dev/null 2>&1; then
         break
     fi
     RETRY=$((RETRY + 1))

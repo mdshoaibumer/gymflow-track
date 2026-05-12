@@ -34,7 +34,7 @@ RUN apt-get update && \
     apt-get clean
 
 # Security: Run as non-root user with specific UID/GID
-RUN groupadd -r -g 1001 gymflow && useradd -r -u 1001 -g gymflow -s /usr/sbin/nologin gymflow
+RUN groupadd -r -g 1001 gymflowtrack && useradd -r -u 1001 -g gymflowtrack -s /usr/sbin/nologin gymflowtrack
 
 WORKDIR /app
 
@@ -42,19 +42,19 @@ WORKDIR /app
 COPY --from=deps /install /usr/local
 
 # Copy application code (respects .dockerignore)
-COPY --chown=gymflow:gymflow . .
+COPY --chown=gymflowtrack:gymflowtrack . .
 
 # Create necessary directories with correct ownership
-RUN mkdir -p /app/logs /tmp/gymflow && \
-    chown -R gymflow:gymflow /app /tmp/gymflow
+RUN mkdir -p /app/logs /tmp/gymflowtrack && \
+    chown -R gymflowtrack:gymflowtrack /app /tmp/gymflowtrack
 
-USER gymflow
+USER gymflowtrack
 
 EXPOSE 8000
 
 # Labels for container management and monitoring
 LABEL maintainer="GymFlow Track <admin@gymflowtrack.in>"
-LABEL org.opencontainers.image.title="gymflow-backend"
+LABEL org.opencontainers.image.title="gymflowtrack-backend"
 LABEL org.opencontainers.image.description="GymFlow Track API Server"
 LABEL org.opencontainers.image.vendor="GymFlow Track"
 

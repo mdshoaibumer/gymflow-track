@@ -27,7 +27,7 @@ BACKUP_FILE="$1"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 USE_DOCKER="${USE_DOCKER:-true}"
 DOCKER_DB_SERVICE="${DOCKER_DB_SERVICE:-db}"
-DATABASE_URL="${DATABASE_URL_SYNC:-postgresql://gymflow:gymflow@localhost:5432/gymflow}"
+DATABASE_URL="${DATABASE_URL_SYNC:?Set DATABASE_URL_SYNC}"
 BACKUP_ENCRYPTION_KEY="${BACKUP_ENCRYPTION_KEY:-}"
 
 if [ ! -f "$BACKUP_FILE" ]; then
@@ -123,7 +123,7 @@ if [ "$USE_DOCKER" = "true" ]; then
     # Restore via Docker
     docker compose -f "$COMPOSE_FILE" exec -T "$DOCKER_DB_SERVICE" \
         pg_restore \
-        --dbname="postgresql://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD:-gymflow}@localhost:5432/${POSTGRES_DB:-gymflow}" \
+        --dbname="postgresql://${POSTGRES_USER:?Set POSTGRES_USER}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB:?Set POSTGRES_DB}" \
         --clean \
         --if-exists \
         --no-owner \

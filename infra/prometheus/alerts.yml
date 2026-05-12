@@ -6,7 +6,7 @@
 # ==============================================================
 
 groups:
-  - name: gymflow_infrastructure
+  - name: gymflowtrack_infrastructure
     rules:
       # ── VPS Resources ────────────────────────────────────────
       - alert: HighCPUUsage
@@ -45,11 +45,11 @@ groups:
           summary: "Disk usage above 95% — CRITICAL"
           description: "Immediate action needed. System may become read-only."
 
-  - name: gymflow_application
+  - name: gymflowtrack_application
     rules:
       # ── API Health ───────────────────────────────────────────
       - alert: BackendDown
-        expr: up{job="gymflow-backend"} == 0
+        expr: up{job="gymflowtrack-backend"} == 0
         for: 1m
         labels:
           severity: critical
@@ -84,7 +84,7 @@ groups:
           summary: "Sustained high request rate"
           description: "{{ $value | printf \"%.0f\" }} req/s for 5 minutes. Monitor for capacity."
 
-  - name: gymflow_database
+  - name: gymflowtrack_database
     rules:
       - alert: PostgreSQLDown
         expr: pg_up == 0

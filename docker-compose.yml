@@ -9,15 +9,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: gymflow
-      POSTGRES_PASSWORD: gymflow
-      POSTGRES_DB: gymflow
+      POSTGRES_USER: gymflowtrack
+      POSTGRES_PASSWORD: gymflowtrack
+      POSTGRES_DB: gymflowtrack
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gymflow"]
+      test: ["CMD-SHELL", "pg_isready -U gymflowtrack"]
       interval: 5s
       timeout: 5s
       retries: 5

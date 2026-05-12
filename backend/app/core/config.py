@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # === Database ===
-    DATABASE_URL: str = "postgresql+asyncpg://gymflow:gymflow@localhost:5432/gymflow"
-    DATABASE_URL_SYNC: str = "postgresql://gymflow:gymflow@localhost:5432/gymflow"
+    DATABASE_URL: str = "postgresql+asyncpg://gymflowtrack:gymflowtrack@localhost:5432/gymflowtrack"
+    DATABASE_URL_SYNC: str = "postgresql://gymflowtrack:gymflowtrack@localhost:5432/gymflowtrack"
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30

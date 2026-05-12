@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/opt/gymflow}"
+APP_DIR="${APP_DIR:-/opt/gymflowtrack}"
 COMPOSE_FILE="docker-compose.prod.yml"
 QUICK_MODE=false
 FAILURES=0

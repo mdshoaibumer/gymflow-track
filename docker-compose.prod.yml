@@ -64,22 +64,22 @@ services:
         max-size: "10m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=caddy"
-      - "com.gymflow.tier=proxy"
+      - "com.gymflowtrack.service=caddy"
+      - "com.gymflowtrack.tier=proxy"
 
   # ── PostgreSQL ─────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-gymflow}
+      POSTGRES_USER: ${POSTGRES_USER:-gymflowtrack}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-gymflow}
+      POSTGRES_DB: ${POSTGRES_DB:-gymflowtrack}
       LANG: en_US.utf8
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gymflow} -d ${POSTGRES_DB:-gymflow}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gymflowtrack} -d ${POSTGRES_DB:-gymflowtrack}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -136,8 +136,8 @@ services:
         max-size: "10m"
         max-file: "5"
     labels:
-      - "com.gymflow.service=postgres"
-      - "com.gymflow.tier=data"
+      - "com.gymflowtrack.service=postgres"
+      - "com.gymflowtrack.tier=data"
 
   # ── Redis ──────────────────────────────────────────────────
   redis:
@@ -193,21 +193,21 @@ services:
         max-size: "5m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=redis"
-      - "com.gymflow.tier=cache"
+      - "com.gymflowtrack.service=redis"
+      - "com.gymflowtrack.tier=cache"
 
   # ── Backend API ────────────────────────────────────────────
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: gymflow-backend:latest
+    image: gymflowtrack-backend:latest
     restart: unless-stopped
     environment:
       - APP_ENV=production
       - DEBUG=false
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflow}
-      - DATABASE_URL_SYNC=postgresql://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflow}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-gymflowtrack}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflowtrack}
+      - DATABASE_URL_SYNC=postgresql://${POSTGRES_USER:-gymflowtrack}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gymflowtrack}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY}
       - CORS_ORIGINS=${CORS_ORIGINS:-https://app.gymflowtrack.in,https://admin.gymflowtrack.in}
@@ -244,7 +244,7 @@ services:
       - no-new-privileges:true
     read_only: true
     tmpfs:
-      - /tmp/gymflow:size=50M     # Temp files for CSV processing
+      - /tmp/gymflowtrack:size=50M     # Temp files for CSV processing
     stop_grace_period: 35s         # > uvicorn's 30s graceful shutdown
     logging:
       driver: json-file
@@ -252,8 +252,8 @@ services:
         max-size: "25m"
         max-file: "5"
     labels:
-      - "com.gymflow.service=backend"
-      - "com.gymflow.tier=app"
+      - "com.gymflowtrack.service=backend"
+      - "com.gymflowtrack.tier=app"
 
   # ── Frontend ───────────────────────────────────────────────
   frontend:
@@ -262,7 +262,7 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.gymflowtrack.in/api/v1}
-    image: gymflow-frontend:latest
+    image: gymflowtrack-frontend:latest
     restart: unless-stopped
     networks:
       - internal
@@ -290,8 +290,8 @@ services:
         max-size: "10m"
         max-file: "3"
     labels:
-      - "com.gymflow.service=frontend"
-      - "com.gymflow.tier=app"
+      - "com.gymflowtrack.service=frontend"
+      - "com.gymflowtrack.tier=app"
 
 # ── Networks ───────────────────────────────────────────────
 networks:

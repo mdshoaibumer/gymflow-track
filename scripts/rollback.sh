@@ -15,9 +15,9 @@
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/opt/gymflow}"
+APP_DIR="${APP_DIR:-/opt/gymflowtrack}"
 COMPOSE_FILE="docker-compose.prod.yml"
-ROLLBACK_LOG="/var/log/gymflow-rollback.log"
+ROLLBACK_LOG="/var/log/gymflowtrack-rollback.log"
 TARGET_COMMIT=""
 DB_RESTORE_FILE=""
 
@@ -114,7 +114,7 @@ if [ -n "$DB_RESTORE_FILE" ]; then
     docker compose -f "$COMPOSE_FILE" stop backend
     docker compose -f "$COMPOSE_FILE" exec -T db \
         pg_restore \
-        --dbname="postgresql://${POSTGRES_USER:-gymflow}:${POSTGRES_PASSWORD:-gymflow}@localhost:5432/${POSTGRES_DB:-gymflow}" \
+        --dbname="postgresql://${POSTGRES_USER:?Set POSTGRES_USER}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB:?Set POSTGRES_DB}" \
         --clean --if-exists --no-owner --no-privileges \
         < "$DB_RESTORE_FILE" 2>&1 || log "WARNING: Some restore warnings (may be normal)"
 
