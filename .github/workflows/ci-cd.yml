@@ -42,7 +42,6 @@ env:
   NODE_VERSION: '22'
   DOCKER_BUILDKIT: 1
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── Backend Lint & Tests ───────────────────────────────────
