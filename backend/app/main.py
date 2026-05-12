@@ -49,10 +49,12 @@ async def lifespan(app: FastAPI):
         start_scheduler()
 
     # Seed default subscription plans (idempotent)
-    async with async_session_factory() as session:
-        async with session.begin():
-            from app.services.billing_service import seed_default_plans
-            await seed_default_plans(session)
+    import sys
+    if "pytest" not in sys.modules:
+        async with async_session_factory() as session:
+            async with session.begin():
+                from app.services.billing_service import seed_default_plans
+                await seed_default_plans(session)
 
     yield
 

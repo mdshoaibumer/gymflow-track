@@ -45,7 +45,8 @@ from app.models.user import User, UserRole
 _base_url, _db_name = settings.DATABASE_URL.rsplit("/", 1)
 TEST_DATABASE_URL = f"{_base_url}/gymflow_test"
 
-engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+from sqlalchemy.pool import NullPool
+engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -111,10 +112,12 @@ async def db_session() -> AsyncSession:
     Rolls back after the test — ensures test isolation.
     """
     async with TestSessionFactory() as session:
-        async with session.begin():
+        await session.begin()
+        try:
             yield session
-            # Rollback after test completes — no data persists between tests
+        finally:
             await session.rollback()
+            await session.close()
 
 
 @pytest.fixture
