@@ -24,24 +24,31 @@ from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.attendance import Attendance, AttendanceStatus, CheckInSource
 from app.models.asset import Asset, AssetStatus, AssetCategory
+from app.models.subscription import SubscriptionPlan, GymSubscription, BillingStatus
 from app.models.user import User, UserRole
 
 
 # ── Fixtures ─────────────────────────────────────────────────
 
 @pytest.fixture
-async def gym_a(db_session: AsyncSession) -> Gym:
+async def gym_a(db_session: AsyncSession, test_plan: SubscriptionPlan) -> Gym:
     gym = Gym(id=uuid4(), name="Gym Alpha", slug=f"gym-alpha-{uuid4().hex[:6]}", phone="9111111111")
     db_session.add(gym)
+    await db_session.flush()
+    sub = GymSubscription(id=uuid4(), gym_id=gym.id, plan_id=test_plan.id, status=BillingStatus.ACTIVE)
+    db_session.add(sub)
     await db_session.flush()
     get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 
 @pytest.fixture
-async def gym_b(db_session: AsyncSession) -> Gym:
+async def gym_b(db_session: AsyncSession, test_plan: SubscriptionPlan) -> Gym:
     gym = Gym(id=uuid4(), name="Gym Beta", slug=f"gym-beta-{uuid4().hex[:6]}", phone="9222222222")
     db_session.add(gym)
+    await db_session.flush()
+    sub = GymSubscription(id=uuid4(), gym_id=gym.id, plan_id=test_plan.id, status=BillingStatus.ACTIVE)
+    db_session.add(sub)
     await db_session.flush()
     get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
@@ -322,6 +329,9 @@ class TestRoleEscalation:
         )
         db_session.add(staff)
         await db_session.flush()
+        cache = get_cache_backend()
+        cache.set(f"user_active:{staff.id}", "1", 99999)
+        cache.set(f"user_revoked_at:{staff.id}", "", 99999)
 
         token = create_access_token(staff.id, gym_a.id, staff.role.value)
         headers = {"Authorization": f"Bearer {token}"}

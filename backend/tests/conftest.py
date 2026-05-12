@@ -39,7 +39,9 @@ from app.models.notification import Notification  # noqa: F401 — ensure model 
 from app.models.attendance import Attendance  # noqa: F401 — ensure model is registered
 from app.models.asset import Asset, MaintenanceRecord  # noqa: F401 — ensure model is registered
 from app.models.feedback import Feedback  # noqa: F401 — ensure model is registered
-from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  # noqa: F401
+from app.models.subscription import (  # noqa: F401
+    BillingStatus, GymSubscription, Invoice, PlanTier, SubscriptionPlan,
+)
 from app.models.user import User, UserRole
 
 # Test database URL — uses a separate database to avoid polluting dev data
@@ -100,6 +102,13 @@ async def setup_database():
                 "ON refresh_tokens (user_id, revoked)"
             )
         )
+
+    # Seed default subscription plans so registration and feature-gating work
+    async with TestSessionFactory() as session:
+        async with session.begin():
+            from app.services.billing_service import seed_default_plans
+            await seed_default_plans(session)
+
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -145,8 +154,18 @@ async def client(db_session: AsyncSession) -> AsyncClient:
 
 
 @pytest.fixture
-async def sample_gym(db_session: AsyncSession) -> Gym:
-    """Create a test gym."""
+async def test_plan(db_session: AsyncSession) -> SubscriptionPlan:
+    """Return the seeded Elite plan (all features enabled)."""
+    result = await db_session.execute(
+        sa.select(SubscriptionPlan).where(SubscriptionPlan.tier == PlanTier.ELITE)
+    )
+    plan = result.scalar_one()
+    return plan
+
+
+@pytest.fixture
+async def sample_gym(db_session: AsyncSession, test_plan: SubscriptionPlan) -> Gym:
+    """Create a test gym with an active subscription."""
     gym = Gym(
         id=uuid4(),
         name="Test Gym",
@@ -156,6 +175,17 @@ async def sample_gym(db_session: AsyncSession) -> Gym:
     )
     db_session.add(gym)
     await db_session.flush()
+
+    # Create active subscription so feature-gating dependencies pass
+    sub = GymSubscription(
+        id=uuid4(),
+        gym_id=gym.id,
+        plan_id=test_plan.id,
+        status=BillingStatus.ACTIVE,
+    )
+    db_session.add(sub)
+    await db_session.flush()
+
     # Seed subscription cache so the enforcement middleware allows requests
     get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
@@ -190,7 +220,7 @@ def auth_headers(sample_user: User, sample_gym: Gym) -> dict[str, str]:
 
 
 @pytest.fixture
-async def other_gym(db_session: AsyncSession) -> Gym:
+async def other_gym(db_session: AsyncSession, test_plan: SubscriptionPlan) -> Gym:
     """Create a SECOND gym for tenant isolation tests."""
     gym = Gym(
         id=uuid4(),
@@ -201,6 +231,16 @@ async def other_gym(db_session: AsyncSession) -> Gym:
     )
     db_session.add(gym)
     await db_session.flush()
+
+    sub = GymSubscription(
+        id=uuid4(),
+        gym_id=gym.id,
+        plan_id=test_plan.id,
+        status=BillingStatus.ACTIVE,
+    )
+    db_session.add(sub)
+    await db_session.flush()
+
     # Seed subscription cache so the enforcement middleware allows requests
     get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym

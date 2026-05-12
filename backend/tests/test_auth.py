@@ -275,6 +275,12 @@ class TestGetMe:
         db_session.add(user)
         await db_session.flush()
 
+        # Seed cache so _check_user_active sees user as disabled
+        from app.core.cache import get_cache_backend
+        cache = get_cache_backend()
+        cache.set(f"user_active:{user.id}", "0", 99999)
+        cache.set(f"user_revoked_at:{user.id}", "", 99999)
+
         # Generate a valid token for this disabled user
         token = create_access_token(user.id, gym.id, user.role.value)
 
@@ -282,8 +288,8 @@ class TestGetMe:
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {token}"},
         )
-        # Disabled user — should be rejected
-        assert response.status_code == 403
+        # Disabled user — _check_user_active rejects with 401
+        assert response.status_code == 401
 
     async def test_get_me_returns_correct_role_after_login(
         self, client: AsyncClient
@@ -346,6 +352,12 @@ class TestGetMe:
         )
         db_session.add(user)
         await db_session.flush()
+
+        # Seed cache so _check_user_active passes
+        from app.core.cache import get_cache_backend
+        cache = get_cache_backend()
+        cache.set(f"user_active:{user.id}", "1", 99999)
+        cache.set(f"user_revoked_at:{user.id}", "", 99999)
 
         # Create token with WRONG gym_id (simulates a tampered/stale token)
         fake_gym_id = uuid4()
