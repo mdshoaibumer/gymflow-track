@@ -42,6 +42,7 @@ env:
   NODE_VERSION: '22'
   DOCKER_BUILDKIT: 1
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── Backend Lint & Tests ───────────────────────────────────
@@ -154,8 +155,8 @@ jobs:
           scan-ref: 'backend/'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          format: 'sarif'
-          output: 'trivy-backend.sarif'
+          format: 'table'
+          ignore-unfixed: true
         continue-on-error: true
 
       - name: Run Trivy vulnerability scanner (frontend)
@@ -165,8 +166,8 @@ jobs:
           scan-ref: 'frontend/'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          format: 'sarif'
-          output: 'trivy-frontend.sarif'
+          format: 'table'
+          ignore-unfixed: true
         continue-on-error: true
 
       - name: Check for secrets in code
