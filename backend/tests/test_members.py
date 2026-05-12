@@ -191,7 +191,7 @@ class TestUpdateMember:
 
         response = await client.put(
             f"/api/v1/members/{member_id}",
-            json={"name": "After Put", "phone": "9876500041", "amount_paid": 150000},
+            json={"name": "After Put", "phone": "9876500041", "membership_plan": "Monthly", "amount_paid": 150000},
             headers=auth_headers,
         )
         assert response.status_code == 200
