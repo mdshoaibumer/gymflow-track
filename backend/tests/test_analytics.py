@@ -152,8 +152,8 @@ class TestMembershipDistribution:
         )
         assert response.status_code == 200
         data = response.json()
-        assert "plans" in data
-        assert isinstance(data["plans"], list)
+        assert "distributions" in data
+        assert isinstance(data["distributions"], list)
 
     async def test_empty_gym(self, client: AsyncClient, auth_headers: dict):
         response = await client.get(
