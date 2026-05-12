@@ -194,3 +194,11 @@ class ImpersonationService:
             "IMPERSONATION_END: admin=%s gym=%s",
             admin_id, gym_id,
         )
+
+        from app.schemas.admin import AdminActionResponse
+        return AdminActionResponse(
+            success=True,
+            message=f"Impersonation ended for gym: {gym or 'Unknown'}",
+            gym_id=str(gym_id),
+            action="impersonation_ended",
+        )
