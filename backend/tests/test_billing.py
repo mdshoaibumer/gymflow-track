@@ -534,7 +534,7 @@ class TestBillingAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["plan_tier"] == "starter"
-        assert data["max_members"] == 50
+        assert data["max_members"] == 100
 
 
 # === Part 10: Billing Metrics ===
