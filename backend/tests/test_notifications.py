@@ -290,7 +290,7 @@ async def test_cancel_non_pending_fails(
         f"/api/v1/notifications/{str(sample_notification.id)}/cancel",
         headers=auth_headers,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio
