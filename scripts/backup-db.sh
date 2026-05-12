@@ -70,7 +70,7 @@ if [ "$USE_DOCKER" = "true" ]; then
         --no-owner --no-privileges \
         > "$BACKUP_FILE"
 else
-    DATABASE_URL="${DATABASE_URL_SYNC:-postgresql://gymflowtrack:gymflowtrack@localhost:5432/gymflowtrack}"
+    DATABASE_URL="${DATABASE_URL_SYNC:?Set DATABASE_URL_SYNC for direct mode}"
     log "Mode: Direct"
     pg_dump "$DATABASE_URL" \
         --format=custom \

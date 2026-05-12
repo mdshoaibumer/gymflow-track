@@ -13,8 +13,8 @@
 # Set variables
 BACKUP_DIR="./backups"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-FILENAME="gymflow_db_$TIMESTAMP.sql.gz"
-CONTAINER_NAME="gymflow-db-1" # Check your docker compose project name
+FILENAME="gymflowtrack_db_$TIMESTAMP.sql.gz"
+CONTAINER_NAME="gymflowtrack-db-1" # Check your docker compose project name
 
 # Create backup directory if it doesn't exist
 mkdir -p $BACKUP_DIR
@@ -22,7 +22,7 @@ mkdir -p $BACKUP_DIR
 echo "Starting backup of $CONTAINER_NAME..."
 
 # Run pg_dump inside the container and compress it
-docker exec $CONTAINER_NAME pg_dump -U gymflow gymflow | gzip > "$BACKUP_DIR/$FILENAME"
+docker exec $CONTAINER_NAME pg_dump -U gymflowtrack gymflowtrack | gzip > "$BACKUP_DIR/$FILENAME"
 
 if [ $? -eq 0 ]; then
     echo "Backup successful: $BACKUP_DIR/$FILENAME"
