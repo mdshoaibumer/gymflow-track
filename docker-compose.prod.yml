@@ -252,6 +252,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp/gymflowtrack:size=50M     # Temp files for CSV processing
+      - /tmp:size=10M                  # Required for curl healthcheck
     stop_grace_period: 35s         # > uvicorn's 30s graceful shutdown
     logging:
       driver: json-file
