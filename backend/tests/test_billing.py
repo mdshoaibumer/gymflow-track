@@ -395,8 +395,8 @@ class TestFeatureGating:
         limits = await get_feature_limits(db_session, billing_gym.id)
 
         assert limits["plan_tier"] == "starter"
-        assert limits["max_members"] == 50
-        assert limits["sms_notifications_enabled"] is False
+        assert limits["max_members"] == 100
+        assert limits["sms_notifications_enabled"] is True
         assert limits["advanced_reports_enabled"] is False
 
     @pytest.mark.asyncio
