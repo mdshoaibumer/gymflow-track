@@ -10,14 +10,13 @@ Coverage:
 
 from uuid import uuid4
 
-import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import get_cache_backend
-from app.core.security import create_access_token, create_refresh_token, hash_password
+from app.core.security import create_access_token
 from app.models.gym import Gym
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.repositories.user_repository import UserRepository
 
 
@@ -87,13 +86,7 @@ class TestRefreshTokenGracePeriod:
         )
         assert r1.status_code == 200
 
-        # Simulate expired grace window by backdating revoked_at
-        from app.services.auth_service import _hash_token
-        from app.models.auth_token import RefreshToken
-        from sqlalchemy import update
-        from datetime import datetime, timezone, timedelta
-
-        # We can't easily backdate in an integration test without DB access,
+        # We can't easily backdate revoked_at in an integration test,
         # so we verify the normal flow: the reuse within grace returns 200
         # (tested above) and invalid tokens always return 401
         r_invalid = await client.post(
