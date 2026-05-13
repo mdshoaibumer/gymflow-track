@@ -16,6 +16,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import today_ist
+
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 from app.models.notification import (
@@ -34,14 +36,15 @@ from app.services.reminder_service import ReminderEngine
 @pytest.fixture
 async def expiring_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
     """Member whose membership expires in 7 days."""
+    today = today_ist()
     member = Member(
         id=uuid4(),
         gym_id=sample_gym.id,
         name="Expiring Soon",
         phone="9111111111",
         membership_status=MembershipStatus.ACTIVE,
-        membership_start=datetime.now(timezone.utc) - timedelta(days=23),
-        membership_end=datetime.now(timezone.utc) + timedelta(days=7),
+        membership_start=today - timedelta(days=23),
+        membership_end=today + timedelta(days=7),
         membership_plan="Monthly",
         amount_paid=0,
     )
@@ -53,14 +56,15 @@ async def expiring_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
 @pytest.fixture
 async def expired_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
     """Member whose membership has expired (end date passed, status not yet synced)."""
+    today = today_ist()
     member = Member(
         id=uuid4(),
         gym_id=sample_gym.id,
         name="Already Expired",
         phone="9222222222",
         membership_status=MembershipStatus.ACTIVE,
-        membership_start=datetime.now(timezone.utc) - timedelta(days=60),
-        membership_end=datetime.now(timezone.utc) - timedelta(days=1),
+        membership_start=today - timedelta(days=60),
+        membership_end=today - timedelta(days=1),
         membership_plan="Monthly",
         amount_paid=0,
     )
