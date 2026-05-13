@@ -14,6 +14,8 @@ Run with: pytest tests/test_performance.py -v
 import time
 from uuid import uuid4
 
+import random
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -86,7 +88,7 @@ class TestMemberPerformance:
         start = time.perf_counter()
         resp = await client.post("/api/v1/members", json={
             "name": "Perf Member",
-            "phone": f"98765{uuid4().hex[:5][:5]}",
+            "phone": f"98765{random.randint(10000, 99999)}",
         }, headers=auth_headers)
         elapsed = _timed_request(start)
         assert resp.status_code == 201
@@ -114,7 +116,7 @@ class TestPaymentPerformance:
             id=uuid4(),
             gym_id=sample_gym.id,
             name="Perf Payment Member",
-            phone=f"98765{uuid4().hex[:5][:5]}",
+            phone=f"98765{random.randint(10000, 99999)}",
             membership_status=MembershipStatus.ACTIVE,
         )
         db_session.add(member)

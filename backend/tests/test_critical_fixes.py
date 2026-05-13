@@ -8,6 +8,7 @@ Coverage:
 4. Payment idempotency — unique index prevents duplicate payments
 """
 
+import random
 from uuid import uuid4
 
 from httpx import AsyncClient
@@ -259,7 +260,7 @@ class TestPaymentIdempotency:
             id=uuid4(),
             gym_id=sample_gym.id,
             name="Idemp Member",
-            phone=f"98765{uuid4().hex[:5]}",
+            phone=f"98765{random.randint(10000, 99999)}",
             membership_status=MembershipStatus.ACTIVE,
         )
         db_session.add(member)

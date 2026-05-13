@@ -8,6 +8,7 @@ BEFORE users encounter runtime errors.
 Contract definitions are derived from frontend/src/services/*.service.ts interfaces.
 """
 
+import random
 from uuid import uuid4
 
 from httpx import AsyncClient
@@ -98,7 +99,7 @@ class TestMemberContract:
     ):
         payload = {
             "name": "Contract Member",
-            "phone": f"98765{uuid4().hex[:5][:5]}",
+            "phone": f"98765{random.randint(10000, 99999)}",
         }
         resp = await client.post("/api/v1/members", json=payload, headers=auth_headers)
         assert resp.status_code == 201
@@ -124,7 +125,7 @@ class TestMemberContract:
         # Create a member first
         await client.post("/api/v1/members", json={
             "name": "Shape Test Member",
-            "phone": f"98765{uuid4().hex[:5][:5]}",
+            "phone": f"98765{random.randint(10000, 99999)}",
         }, headers=auth_headers)
 
         resp = await client.get("/api/v1/members", headers=auth_headers)
@@ -141,7 +142,7 @@ class TestMemberContract:
         valid_statuses = {"active", "expired", "frozen", "pending", "cancelled"}
         await client.post("/api/v1/members", json={
             "name": "Enum Test",
-            "phone": f"98765{uuid4().hex[:5][:5]}",
+            "phone": f"98765{random.randint(10000, 99999)}",
         }, headers=auth_headers)
 
         resp = await client.get("/api/v1/members", headers=auth_headers)
@@ -162,7 +163,7 @@ class TestPaymentContract:
             id=uuid4(),
             gym_id=sample_gym.id,
             name="Payment Contract Member",
-            phone=f"98765{uuid4().hex[:5][:5]}",
+            phone=f"98765{random.randint(10000, 99999)}",
             membership_status=MembershipStatus.ACTIVE,
         )
         db_session.add(member)
@@ -202,7 +203,7 @@ class TestPaymentContract:
             id=uuid4(),
             gym_id=sample_gym.id,
             name="Enum Payment Member",
-            phone=f"98765{uuid4().hex[:5][:5]}",
+            phone=f"98765{random.randint(10000, 99999)}",
             membership_status=MembershipStatus.ACTIVE,
         )
         db_session.add(member)
@@ -228,7 +229,7 @@ class TestPaymentContract:
             id=uuid4(),
             gym_id=sample_gym.id,
             name="Status Payment Member",
-            phone=f"98765{uuid4().hex[:5][:5]}",
+            phone=f"98765{random.randint(10000, 99999)}",
             membership_status=MembershipStatus.ACTIVE,
         )
         db_session.add(member)
