@@ -43,6 +43,12 @@ R2_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY:-}"
 # Backup log
 BACKUP_LOG="${BACKUP_DIR}/backup.log"
 
+# ── Load environment variables ──────────────────────────────
+if [ -f .env ]; then
+    # shellcheck disable=SC1091
+    set -a; source .env; set +a
+fi
+
 # ── Ensure directories exist ────────────────────────────────
 mkdir -p "$BACKUP_DIR"
 
