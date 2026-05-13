@@ -10,15 +10,11 @@ Contract definitions are derived from frontend/src/services/*.service.ts interfa
 
 from uuid import uuid4
 
-import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
-from app.models.payment import Payment, PaymentMethod, PaymentStatus
-from app.models.user import User, UserRole
 
 
 # === Frontend interface field contracts ===

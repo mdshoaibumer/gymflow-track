@@ -20,7 +20,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
-from app.models.payment import Payment, PaymentMethod, PaymentStatus
 
 # SLA thresholds in seconds (generous for CI cold-start)
 _AUTH_SLA = 2.0       # auth endpoints
