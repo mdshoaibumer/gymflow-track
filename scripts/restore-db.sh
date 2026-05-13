@@ -17,6 +17,12 @@
 
 set -euo pipefail
 
+# ── Load environment variables ──────────────────────────────
+if [ -f .env ]; then
+    # shellcheck disable=SC1091
+    set -a; source .env; set +a
+fi
+
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <backup_file.dump[.enc]>"
     echo "Example: $0 backups/gymflow_20260509_020000.dump"
@@ -24,6 +30,7 @@ if [ $# -ne 1 ]; then
 fi
 
 BACKUP_FILE="$1"
+RESTORE_FILE="$BACKUP_FILE"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 USE_DOCKER="${USE_DOCKER:-true}"
 DOCKER_DB_SERVICE="${DOCKER_DB_SERVICE:-db}"
@@ -34,13 +41,6 @@ if [ ! -f "$BACKUP_FILE" ]; then
     echo "ERROR: Backup file not found: $BACKUP_FILE"
     exit 1
 fi
-
-# Source environment for passwords
-if [ -f .env ]; then
-    set -a; source .env; set +a
-fi
-
-RESTORE_FILE="$BACKUP_FILE"
 
 # ── Handle encrypted backups ─────────────────────────────────
 if [[ "$BACKUP_FILE" == *.enc ]]; then
