@@ -19,6 +19,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import today_ist
 from app.models.attendance import AttendanceStatus, CheckInSource
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
@@ -140,7 +141,7 @@ async def test_qr_check_in_success(
     assert attendance.gym_id == sample_gym.id
     assert attendance.status == AttendanceStatus.CHECKED_IN
     assert attendance.source == CheckInSource.QR
-    assert attendance.check_in_date == date.today()
+    assert attendance.check_in_date == today_ist()
 
 
 @pytest.mark.asyncio
