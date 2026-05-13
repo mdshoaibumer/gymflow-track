@@ -36,6 +36,12 @@ _LOGIN_LOCKOUT_SECONDS = 60   # shorter lockout — balances security vs. user f
 _RESET_MAX_ATTEMPTS = 5       # max attempts per IP per window
 _RESET_WINDOW_SECONDS = 300   # 5-minute sliding window
 
+# Forgot-password rate limiting: prevent email bombing via repeated reset requests.
+_FORGOT_MAX_PER_EMAIL = 3     # max requests per email per window
+_FORGOT_WINDOW_SECONDS = 3600 # 1-hour sliding window
+_FORGOT_MAX_PER_IP = 10       # max requests per IP per window (covers enumeration)
+_FORGOT_IP_WINDOW_SECONDS = 3600
+
 
 def _get_client_ip(request: Request) -> str:
     """Extract client IP (proxy-aware)."""
@@ -198,15 +204,40 @@ async def logout(
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
 async def forgot_password(
     data: ForgotPasswordRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Initiate password reset. Sends a reset token via email/SMS.
 
     Always returns 200 with a generic message to prevent email enumeration.
+    Rate-limited per email (3/hour) and per IP (10/hour) to prevent email bombing.
     In development, the reset token is logged. In production, integrate
     with your email/notification provider.
     """
+    cache = get_cache_backend()
+
+    # Per-IP rate limit (prevents enumeration via many different emails)
+    client_ip = _get_client_ip(request)
+    ip_key = f"rl:forgot_ip:{client_ip}"
+    ip_count = cache.increment_window(ip_key, _FORGOT_IP_WINDOW_SECONDS)
+    if ip_count > _FORGOT_MAX_PER_IP:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many password reset requests. Please try again later.",
+            headers={"Retry-After": str(_FORGOT_IP_WINDOW_SECONDS)},
+        )
+
+    # Per-email rate limit (prevents bombing a single user)
+    email_norm = data.email.strip().lower()
+    email_key = f"rl:forgot_email:{email_norm}"
+    email_count = cache.increment_window(email_key, _FORGOT_WINDOW_SECONDS)
+    if email_count > _FORGOT_MAX_PER_EMAIL:
+        # Return generic success to avoid revealing whether email exists
+        return ForgotPasswordResponse(
+            message="If an account exists with that email, a reset link has been sent."
+        )
+
     service = AuthService(db)
     message = await service.forgot_password(data.email)
     return ForgotPasswordResponse(message=message)

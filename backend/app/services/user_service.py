@@ -88,7 +88,7 @@ class UserService:
         return user
 
     async def _get_gym_user(self, user_id: UUID, gym_id: UUID) -> User:
-        user = await self.user_repo.get_by_id(user_id)
-        if not user or user.gym_id != gym_id:
+        user = await self.user_repo.get_by_id(user_id, gym_id=gym_id)
+        if not user:
             raise NotFoundError("User not found")
         return user

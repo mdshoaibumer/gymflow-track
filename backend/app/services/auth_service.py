@@ -83,13 +83,11 @@ class AuthService:
         - Returns fresh data (name/email could have changed)
         - gym_id cross-check prevents cross-tenant session hijacking
         """
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id, gym_id=gym_id)
         if not user:
             raise AuthenticationError("User not found")
         if not user.is_active:
             raise AccountDisabledError("Account is disabled")
-        if gym_id is not None and user.gym_id != gym_id:
-            raise AuthenticationError("Invalid session")
 
         return CurrentUserResponse.model_validate(user)
 
@@ -277,25 +275,30 @@ class AuthService:
 
                 if replacement_token:
                     # Validate user is still active before returning tokens
-                    user = await self.user_repo.get_by_id(user_id)
+                    user = await self.user_repo.get_by_id(user_id, gym_id=gym_id)
                     if not user or not user.is_active:
                         raise AuthenticationError("Invalid session")
                     if gym_id is not None and user.gym_id != gym_id:
                         raise AuthenticationError("Invalid session")
 
-                    # Re-mint access token (cheap) but keep the same refresh token
+                    # Re-mint access token (cheap)
                     new_access = create_access_token(user_id, user.gym_id, user.role.value)
-                    # Use the FOUND replacement token to mint the response
-                    # Since we don't have the plaintext of replacement_token, 
-                    # we must re-mint a new JWT and update the replacement's hash.
+                    # Create a NEW refresh token record instead of mutating the
+                    # replacement's hash. Mutating token_hash would break
+                    # concurrent requests that are still resolving the chain
+                    # by the original hash.
                     new_refresh = create_refresh_token(user_id, user.gym_id, user.role.value)
+                    await self._store_refresh_token(user_id, new_refresh)
                     new_hash = _hash_token(new_refresh)
-                    
-                    replacement_token.token_hash = new_hash
-                    # If we followed a chain, update the ORIGINAL stored_token's 
-                    # replaced_by_hash to point to the LATEST one for future efficiency.
+
+                    # Point both the original and the found replacement to the
+                    # new token for future chain resolution efficiency.
                     stored_token.replaced_by_hash = new_hash
-                    
+                    if replacement_token.token_hash != new_hash:
+                        replacement_token.replaced_by_hash = new_hash
+                        replacement_token.revoked = True
+                        replacement_token.revoked_at = datetime.now(timezone.utc)
+
                     await self.db.flush()  # Let get_db() handle the final commit
 
                     logger.info(
@@ -348,13 +351,11 @@ class AuthService:
             raise AuthenticationError("Refresh token expired")
 
         # Validate user still exists and is active
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id, gym_id=gym_id)
         if not user:
             raise AuthenticationError("User no longer exists")
         if not user.is_active:
             raise AccountDisabledError("Account is disabled")
-        if gym_id is not None and user.gym_id != gym_id:
-            raise AuthenticationError("Invalid session — gym mismatch")
 
         # Rotate refresh token: revoke old, issue new
         new_access = create_access_token(user_id, user.gym_id, user.role.value)
