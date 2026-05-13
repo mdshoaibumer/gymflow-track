@@ -100,10 +100,11 @@ if command -v pg_restore &>/dev/null; then
     fi
 else
     # Verify inside Docker container
-    docker compose -f "$COMPOSE_FILE" exec -T "$DOCKER_DB_SERVICE" \
-        pg_restore --list /dev/stdin < "$BACKUP_FILE" > /dev/null 2>&1 && \
-        log "Verification passed" || \
+    if cat "$BACKUP_FILE" | docker compose -f "$COMPOSE_FILE" exec -T "$DOCKER_DB_SERVICE" pg_restore --list > /dev/null 2>&1; then
+        log "Verification passed"
+    else
         log "WARNING: Backup verification failed"
+    fi
 fi
 
 # ── Encrypt backup ───────────────────────────────────────────
