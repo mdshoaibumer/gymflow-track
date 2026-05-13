@@ -147,7 +147,7 @@ services:
       redis-server
         --maxmemory 64mb
         --maxmemory-policy allkeys-lru
-        --appendonly yes
+        --appendonly no
         --appendfsync everysec
         --save 900 1
         --save 300 10
