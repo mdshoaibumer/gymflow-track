@@ -62,8 +62,7 @@ class Settings(BaseSettings):
     # Comma-separated origins. Include both localhost and 127.0.0.1 for local dev.
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
-    # === Rate Limiting ===
-    RATE_LIMIT_AUTH: int = 10  # login/register attempts per minute per IP
+    RATE_LIMIT_AUTH: int = 20  # login/register attempts per minute per IP
     RATE_LIMIT_API: int = 100  # general API requests per minute per IP
 
     # === Proxy / Host ===

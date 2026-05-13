@@ -35,6 +35,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 // Response interceptor — auto-refresh on 401, normalize errors
 let _refreshPromise: Promise<boolean> | null = null;
+let _hasFailedRefresh = false;
 
 async function _attemptTokenRefresh(): Promise<boolean> {
   try {
@@ -45,22 +46,44 @@ async function _attemptTokenRefresh(): Promise<boolean> {
       {},
       { withCredentials: true },
     );
+    _hasFailedRefresh = false; // Reset on success
     return true;
-  } catch {
+  } catch (err) {
+    // If we get a 429 during refresh, don't mark as permanently failed
+    // but don't retry immediately either.
+    if (axios.isAxiosError(err) && err.response?.status !== 429) {
+      _hasFailedRefresh = true;
+    }
     return false;
   }
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // On any successful response, if it wasn't a refresh, we know the session is valid
+    if (!response.config.url?.includes("/auth/refresh")) {
+      _hasFailedRefresh = false;
+    }
+    return response;
+  },
   async (error: AxiosError<{ detail?: string | Array<{ msg?: string }> }>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     const isAuthRoute = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/auth/register");
     const isAuthMeRoute = originalRequest.url?.includes("/auth/me");
+    const isRefreshRoute = originalRequest.url?.includes("/auth/refresh");
     
     // 401 — attempt transparent token refresh (unless it's an auth route where 401 means invalid credentials)
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute && !isRefreshRoute) {
+      // If we already know the refresh failed recently, don't even try.
+      // This prevents the "refresh loop" that triggers 429s.
+      if (_hasFailedRefresh) {
+        if (!isAuthMeRoute && typeof window !== "undefined") {
+          window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+        }
+        return Promise.reject(new Error("Session expired."));
+      }
+
       originalRequest._retry = true;
 
       if (!_refreshPromise) {
