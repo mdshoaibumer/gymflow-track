@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 // === Types ===
 
@@ -195,38 +195,29 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureName, string[]> = {
 
 export const billingService = {
   // Public — no auth needed
-  getPlans: () => apiClient<Plan[]>("/billing/plans"),
+  getPlans: () => request.get<Plan[]>("/billing/plans"),
 
   // Authenticated
   getSubscription: () =>
-    apiClient<Subscription | null>("/billing/subscription"),
+    request.get<Subscription | null>("/billing/subscription"),
 
   subscribe: (planTier: string) =>
-    apiClient<SubscribeResult>("/billing/subscribe", {
-      method: "POST",
-      body: { plan_tier: planTier },
-    }),
+    request.post<SubscribeResult>("/billing/subscribe", { plan_tier: planTier }),
 
   verifyPayment: (
     data: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }
   ) =>
-    apiClient<PaymentVerifyResult>("/billing/verify", {
-      method: "POST",
-      body: data,
-    }),
+    request.post<PaymentVerifyResult>("/billing/verify", data),
 
   cancel: (reason?: string) =>
-    apiClient<CancelResult>("/billing/cancel", {
-      method: "POST",
-      body: { reason },
-    }),
+    request.post<CancelResult>("/billing/cancel", { reason }),
 
   getHistory: () =>
-    apiClient<BillingHistory>("/billing/history"),
+    request.get<BillingHistory>("/billing/history"),
 
   getFeatureLimits: () =>
-    apiClient<FeatureLimits>("/billing/features"),
+    request.get<FeatureLimits>("/billing/features"),
 
   getMetrics: () =>
-    apiClient<BillingMetrics>("/billing/metrics"),
+    request.get<BillingMetrics>("/billing/metrics"),
 };

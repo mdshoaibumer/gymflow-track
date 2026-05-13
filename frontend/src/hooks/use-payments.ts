@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth-store";
 import {
   dashboardService,
@@ -51,6 +51,7 @@ export function usePayments(params: ListPaymentsParams = {}) {
     queryFn: () => paymentService.list(params),
     enabled: !!token,
     staleTime: 15_000,
+    placeholderData: keepPreviousData,
   });
 }
 

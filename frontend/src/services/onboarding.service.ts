@@ -1,4 +1,4 @@
-import { apiClient, api } from "@/lib/api";
+import { request, api } from "@/lib/api";
 
 // === Onboarding ===
 
@@ -78,17 +78,14 @@ export interface PilotMetrics {
 
 export const onboardingService = {
   getStatus: () =>
-    apiClient<OnboardingStatus>("/onboarding/status"),
+    request.get<OnboardingStatus>("/onboarding/status"),
 
   seedDemoData: (options?: { member_count?: number }) =>
-    apiClient<DemoDataResult>("/onboarding/demo-data", {
-      method: "POST",
-      body: {
-        include_members: true,
-        include_payments: true,
-        include_equipment: true,
-        member_count: options?.member_count ?? 15,
-      },
+    request.post<DemoDataResult>("/onboarding/demo-data", {
+      include_members: true,
+      include_payments: true,
+      include_equipment: true,
+      member_count: options?.member_count ?? 15,
     }),
 
   previewImport: async (file: File): Promise<ImportPreview> => {
@@ -132,11 +129,8 @@ export const onboardingService = {
   },
 
   submitFeedback: (data: FeedbackPayload) =>
-    apiClient<{ id: string }>("/feedback", {
-      method: "POST",
-      body: data,
-    }),
+    request.post<{ id: string }>("/feedback", data),
 
   getMetrics: () =>
-    apiClient<PilotMetrics>("/admin/metrics"),
+    request.get<PilotMetrics>("/admin/metrics"),
 };

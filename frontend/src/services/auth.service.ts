@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export interface LoginPayload {
   email: string;
@@ -38,21 +38,21 @@ export const authService = {
    * Server sets HttpOnly cookies in the response — no manual token handling needed.
    */
   login: (data: LoginPayload) =>
-    apiClient<TokenResponse>("/auth/login", { method: "POST", body: data }),
+    request.post<TokenResponse>("/auth/login", data),
 
   /**
    * Registers a new gym and its owner.
    * Server sets HttpOnly cookies in the response.
    */
   register: (data: RegisterPayload) =>
-    apiClient<TokenResponse>("/auth/register", { method: "POST", body: data }),
+    request.post<TokenResponse>("/auth/register", data),
 
   /**
    * Refreshes the access token using the HttpOnly refresh cookie.
    * No body payload needed — the cookie is sent automatically by the browser.
    */
   refresh: () =>
-    apiClient<TokenResponse>("/auth/refresh", { method: "POST" }),
+    request.post<TokenResponse>("/auth/refresh"),
 
   /** 
    * Validates the current session via HttpOnly cookie and retrieves the user profile.
@@ -60,7 +60,7 @@ export const authService = {
    */
   getMe: () => {
     if (!getMePromise) {
-      getMePromise = apiClient<CurrentUserResponse>("/auth/me").finally(() => {
+      getMePromise = request.get<CurrentUserResponse>("/auth/me").finally(() => {
         getMePromise = null;
       });
     }
@@ -71,23 +71,17 @@ export const authService = {
    * Logs out the current session. Server clears HttpOnly cookies.
    */
   logout: () =>
-    apiClient<{ message: string }>("/auth/logout", { method: "POST" }),
+    request.post<{ message: string }>("/auth/logout"),
 
   /**
    * Initiates the forgot password flow by sending a reset link to the provided email.
    */
   forgotPassword: (email: string) =>
-    apiClient<{ message: string }>("/auth/forgot-password", {
-      method: "POST",
-      body: { email },
-    }),
+    request.post<{ message: string }>("/auth/forgot-password", { email }),
 
   /**
    * Resets the user's password using a reset token.
    */
   resetPassword: (token: string, new_password: string) =>
-    apiClient<{ message: string }>("/auth/reset-password", {
-      method: "POST",
-      body: { token, new_password },
-    }),
+    request.post<{ message: string }>("/auth/reset-password", { token, new_password }),
 };

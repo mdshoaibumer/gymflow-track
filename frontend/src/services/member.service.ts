@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export interface Member {
   id: string;
@@ -47,21 +47,21 @@ export const memberService = {
       limit: String(limit),
     });
     if (search) query.set("search", search);
-    return apiClient<MemberListResponse>(`/members?${query}`);
+    return request.get<MemberListResponse>(`/members?${query}`);
   },
 
   get: (id: string) =>
-    apiClient<Member>(`/members/${id}`),
+    request.get<Member>(`/members/${id}`),
 
   create: (data: CreateMemberPayload) =>
-    apiClient<Member>("/members", { method: "POST", body: data }),
+    request.post<Member>("/members", data),
 
   update: (id: string, data: Partial<CreateMemberPayload>) =>
-    apiClient<Member>(`/members/${id}`, { method: "PATCH", body: data }),
+    request.patch<Member>(`/members/${id}`, data),
 
   replace: (id: string, data: CreateMemberPayload) =>
-    apiClient<Member>(`/members/${id}`, { method: "PUT", body: data }),
+    request.put<Member>(`/members/${id}`, data),
 
   delete: (id: string) =>
-    apiClient<void>(`/members/${id}`, { method: "DELETE" }),
+    request.delete<void>(`/members/${id}`),
 };

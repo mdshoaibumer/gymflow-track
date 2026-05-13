@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export interface AttendanceRecord {
   id: string;
@@ -49,37 +49,27 @@ export interface ListAttendanceParams {
 
 export const attendanceService = {
   checkInByQR: (qr_token: string) =>
-    apiClient<AttendanceRecord>("/attendance/check-in", {
-      method: "POST",
-      body: { qr_token },
-    }),
+    request.post<AttendanceRecord>("/attendance/check-in", { qr_token }),
 
   checkInManual: (member_id: string) =>
-    apiClient<AttendanceRecord>("/attendance/check-in/manual", {
-      method: "POST",
-      body: { member_id },
-    }),
+    request.post<AttendanceRecord>("/attendance/check-in/manual", { member_id }),
 
   checkOut: (attendance_id: string) =>
-    apiClient<AttendanceRecord>(`/attendance/${attendance_id}/check-out`, {
-      method: "POST",
-    }),
+    request.post<AttendanceRecord>(`/attendance/${attendance_id}/check-out`),
 
   cancel: (attendance_id: string) =>
-    apiClient<AttendanceRecord>(`/attendance/${attendance_id}/cancel`, {
-      method: "POST",
-    }),
+    request.post<AttendanceRecord>(`/attendance/${attendance_id}/cancel`),
 
   getToday: (skip = 0, limit = 100) =>
-    apiClient<AttendanceListResponse>(
+    request.get<AttendanceListResponse>(
       `/attendance/today?skip=${skip}&limit=${limit}`
     ),
 
   getStats: () =>
-    apiClient<AttendanceStats>("/attendance/stats"),
+    request.get<AttendanceStats>("/attendance/stats"),
 
   getTrend: (days = 14) =>
-    apiClient<AttendanceTrendResponse>(`/attendance/trend?days=${days}`),
+    request.get<AttendanceTrendResponse>(`/attendance/trend?days=${days}`),
 
   getHistory: (params: ListAttendanceParams = {}) => {
     const { skip = 0, limit = 50, start_date, end_date } = params;
@@ -89,14 +79,14 @@ export const attendanceService = {
     });
     if (start_date) query.set("start_date", start_date);
     if (end_date) query.set("end_date", end_date);
-    return apiClient<AttendanceListResponse>(`/attendance/history?${query}`);
+    return request.get<AttendanceListResponse>(`/attendance/history?${query}`);
   },
 
   getMemberAttendance: (member_id: string, skip = 0, limit = 30) =>
-    apiClient<AttendanceListResponse>(
+    request.get<AttendanceListResponse>(
       `/attendance/member/${member_id}?skip=${skip}&limit=${limit}`
     ),
 
   getMemberQR: (member_id: string) =>
-    apiClient<QRTokenResponse>(`/attendance/member/${member_id}/qr`),
+    request.get<QRTokenResponse>(`/attendance/member/${member_id}/qr`),
 };

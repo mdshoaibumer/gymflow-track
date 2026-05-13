@@ -139,14 +139,34 @@ api.interceptors.response.use(
   }
 );
 
-// ---------- Legacy apiClient (kept for backward compat during migration) ----------
+// ---------- Typed Request Helpers ----------
 
+/**
+ * Convenience wrappers around the `api` axios instance that unwrap `response.data`.
+ * Use these in service files for clean, type-safe API calls.
+ * For multipart/form-data or custom headers, use `api` directly.
+ */
+export const request = {
+  get: <T>(url: string, params?: Record<string, unknown>) =>
+    api.get<T>(url, { params }).then((r) => r.data),
+  post: <T>(url: string, body?: unknown) =>
+    api.post<T>(url, body).then((r) => r.data),
+  put: <T>(url: string, body?: unknown) =>
+    api.put<T>(url, body).then((r) => r.data),
+  patch: <T>(url: string, body?: unknown) =>
+    api.patch<T>(url, body).then((r) => r.data),
+  delete: <T>(url: string, body?: unknown) =>
+    api.delete<T>(url, body ? { data: body } : undefined).then((r) => r.data),
+};
+
+/** @deprecated Use `request.get/post/put/patch/delete` instead. Kept for backward compat. */
 type RequestOptions = {
   method?: string;
   body?: unknown;
   _skipRefresh?: boolean;
 };
 
+/** @deprecated Use `request.get/post/put/patch/delete` instead. Kept for backward compat. */
 export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}

@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 // --- Types ---
 
@@ -78,20 +78,20 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 export const analyticsService = {
   async getRevenueTrend(params: RevenueTrendParams = {}): Promise<RevenueTrendResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<RevenueTrendResponse>(`/analytics/revenue-trend${query}`);
+    return request.get<RevenueTrendResponse>(`/analytics/revenue-trend${query}`);
   },
 
   async getRevenueSummary(params: { date_from?: string; date_to?: string } = {}): Promise<RevenueSummary> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<RevenueSummary>(`/analytics/revenue-summary${query}`);
+    return request.get<RevenueSummary>(`/analytics/revenue-summary${query}`);
   },
 
   async getMembershipDistribution(): Promise<MembershipDistributionResponse> {
-    return apiClient<MembershipDistributionResponse>("/analytics/membership-distribution");
+    return request.get<MembershipDistributionResponse>("/analytics/membership-distribution");
   },
 
   async getDashboardKPIs(params: DashboardKPIsParams = {}): Promise<DashboardKPIsResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<DashboardKPIsResponse>(`/analytics/dashboard-kpis${query}`);
+    return request.get<DashboardKPIsResponse>(`/analytics/dashboard-kpis${query}`);
   },
 };

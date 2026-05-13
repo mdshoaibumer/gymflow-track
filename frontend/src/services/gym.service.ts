@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export interface Gym {
   id: string;
@@ -25,7 +25,7 @@ export const gymService = {
    * @returns A promise resolving to the gym details.
    */
   getMyGym: () =>
-    apiClient<Gym>("/gyms/me"),
+    request.get<Gym>("/gyms/me"),
 
   /**
    * Updates the current user's gym profile.
@@ -33,5 +33,5 @@ export const gymService = {
    * @returns A promise resolving to the updated gym details.
    */
   updateMyGym: (data: GymUpdatePayload) =>
-    apiClient<Gym>("/gyms/me", { method: "PATCH", body: data }),
+    request.patch<Gym>("/gyms/me", data),
 };

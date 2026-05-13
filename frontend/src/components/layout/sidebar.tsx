@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 
-function SidebarContent() {
+function SidebarContent({ showClose = false }: { showClose?: boolean }) {
   const pathname = usePathname();
   const { setSidebarOpen } = useUIStore();
   const role = useAuthStore((s) => s.role);
@@ -76,15 +76,16 @@ function SidebarContent() {
         <Link href="/dashboard" className="text-xl font-bold text-primary">
           GymFlow Track
         </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-label="Close menu"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        {showClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </div>
       <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
         {visibleItems.map((item) => {
@@ -161,7 +162,7 @@ export function Sidebar() {
               transition={{ type: "spring", bounce: 0.1, duration: 0.3 }}
               className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-card shadow-xl md:hidden"
             >
-              <SidebarContent />
+              <SidebarContent showClose />
             </motion.aside>
           </>
         )}

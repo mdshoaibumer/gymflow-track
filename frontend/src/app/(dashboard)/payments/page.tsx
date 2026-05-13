@@ -36,7 +36,7 @@ export default function PaymentsPage() {
   const [dateTo, setDateTo] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const { data: paymentsData, isLoading, isError, refetch } = usePayments({
+  const { data: paymentsData, isLoading, isError, refetch, isFetching } = usePayments({
     skip: page * PAGE_SIZE,
     limit: PAGE_SIZE,
     date_from: dateFrom || undefined,
@@ -189,6 +189,9 @@ export default function PaymentsPage() {
             >
               Clear
             </Button>
+          )}
+          {isFetching && !isLoading && (
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           )}
         </div>
         {payments.length > 0 && (

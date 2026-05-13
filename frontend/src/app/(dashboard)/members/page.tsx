@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   useReactTable,
@@ -48,6 +48,14 @@ export default function MembersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  const editFormRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to edit form when it opens
+  useEffect(() => {
+    if (editingMember && editFormRef.current) {
+      editFormRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [editingMember]);
 
   // Debounce
   useEffect(() => {
@@ -156,7 +164,7 @@ export default function MembersPage() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setEditingMember(row.original)}
+                    onClick={() => { setShowCreateForm(false); setEditingMember(row.original); }}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -271,15 +279,17 @@ export default function MembersPage() {
 
       {/* Edit Form */}
       {editingMember && (
-        <MemberForm
-          key={editingMember.id}
-          title={`Edit: ${editingMember.name}`}
-          submitLabel="Save Changes"
-          defaultValues={memberToFormValues(editingMember)}
-          onSubmit={handleEdit}
-          onCancel={() => setEditingMember(null)}
-          isPending={updateMutation.isPending}
-        />
+        <div ref={editFormRef}>
+          <MemberForm
+            key={editingMember.id}
+            title={`Edit: ${editingMember.name}`}
+            submitLabel="Save Changes"
+            defaultValues={memberToFormValues(editingMember)}
+            onSubmit={handleEdit}
+            onCancel={() => setEditingMember(null)}
+            isPending={updateMutation.isPending}
+          />
+        </div>
       )}
 
       {/* Table */}
@@ -399,7 +409,7 @@ export default function MembersPage() {
                         variant="ghost"
                         size="sm"
                         className="h-8"
-                        onClick={() => setEditingMember(member)}
+                        onClick={() => { setShowCreateForm(false); setEditingMember(member); }}
                       >
                         <Pencil className="mr-1.5 h-3.5 w-3.5" />
                         Edit

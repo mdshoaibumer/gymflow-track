@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 // === Types ===
 
@@ -203,7 +203,7 @@ export interface ListGymsParams {
 export const adminService = {
   // Dashboard
   getMetrics: () =>
-    apiClient<SaaSMetrics>("/admin/metrics"),
+    request.get<SaaSMetrics>("/admin/metrics"),
 
   // Gym Directory
   listGyms: (params: ListGymsParams = {}) => {
@@ -213,88 +213,58 @@ export const adminService = {
     if (params.search) query.set("search", params.search);
     if (params.status) query.set("status", params.status);
     const qs = query.toString();
-    return apiClient<GymDirectoryResponse>(`/admin/gyms${qs ? `?${qs}` : ""}`);
+    return request.get<GymDirectoryResponse>(`/admin/gyms${qs ? `?${qs}` : ""}`);
   },
 
   getGymDetail: (gymId: string) =>
-    apiClient<GymDetail>(`/admin/gyms/${gymId}`),
+    request.get<GymDetail>(`/admin/gyms/${gymId}`),
 
   // Gym Actions
   extendTrial: (gymId: string, days: number, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/extend-trial`, {
-      method: "POST",
-      body: { days, reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/extend-trial`, { days, reason }),
 
   suspendGym: (gymId: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/suspend`, {
-      method: "POST",
-      body: { reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/suspend`, { reason }),
 
   unsuspendGym: (gymId: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/unsuspend`, {
-      method: "POST",
-      body: { reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/unsuspend`, { reason }),
 
   lockGym: (gymId: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/lock`, {
-      method: "POST",
-      body: { reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/lock`, { reason }),
 
   unlockGym: (gymId: string, newStatus: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/unlock`, {
-      method: "POST",
-      body: { new_status: newStatus, reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/unlock`, { new_status: newStatus, reason }),
 
   changePlan: (gymId: string, planTier: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/change-plan`, {
-      method: "POST",
-      body: { plan_tier: planTier, reason },
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/change-plan`, { plan_tier: planTier, reason }),
 
   activateSubscription: (gymId: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/activate`, {
-      method: "POST",
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/activate`),
 
   deleteGym: (gymId: string, confirmName: string, reason: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}`, {
-      method: "DELETE",
-      body: { confirm_name: confirmName, reason },
-    }),
+    request.delete<AdminActionResponse>(`/admin/gyms/${gymId}`, { confirm_name: confirmName, reason }),
 
   // Impersonation
   impersonateGymOwner: (gymId: string) =>
-    apiClient<ImpersonationResponse>(`/admin/gyms/${gymId}/impersonate`, {
-      method: "POST",
-    }),
+    request.post<ImpersonationResponse>(`/admin/gyms/${gymId}/impersonate`),
 
   endImpersonation: (gymId: string) =>
-    apiClient<AdminActionResponse>(`/admin/gyms/${gymId}/end-impersonation`, {
-      method: "POST",
-    }),
+    request.post<AdminActionResponse>(`/admin/gyms/${gymId}/end-impersonation`),
 
   // Analytics
   getAnalytics: () =>
-    apiClient<PlatformAnalytics>("/admin/analytics"),
+    request.get<PlatformAnalytics>("/admin/analytics"),
 
   // Health
   getHealth: () =>
-    apiClient<PlatformHealth>("/admin/health"),
+    request.get<PlatformHealth>("/admin/health"),
 
   // Settings
   getSettings: () =>
-    apiClient<PlatformSettings>("/admin/settings"),
+    request.get<PlatformSettings>("/admin/settings"),
 
   updateSettings: (data: Partial<PlatformSettings>) =>
-    apiClient<PlatformSettings>("/admin/settings", {
-      method: "PUT",
-      body: data,
-    }),
+    request.put<PlatformSettings>("/admin/settings", data),
 
   // Audit Logs
   getAuditLogs: (params: { skip?: number; limit?: number; gym_id?: string; action?: string } = {}) => {
@@ -304,6 +274,6 @@ export const adminService = {
     if (params.gym_id) query.set("gym_id", params.gym_id);
     if (params.action) query.set("action", params.action);
     const qs = query.toString();
-    return apiClient<AuditLogResponse>(`/admin/audit-logs${qs ? `?${qs}` : ""}`);
+    return request.get<AuditLogResponse>(`/admin/audit-logs${qs ? `?${qs}` : ""}`);
   },
 };

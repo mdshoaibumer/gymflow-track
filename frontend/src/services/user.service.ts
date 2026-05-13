@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 import type { UserRole } from "@/types";
 
 // --- Types ---
@@ -42,15 +42,15 @@ export const userService = {
       skip: String(skip),
       limit: String(limit),
     });
-    return apiClient<StaffUser[]>(`/users?${query}`);
+    return request.get<StaffUser[]>(`/users?${query}`);
   },
 
   create: (data: CreateUserPayload) =>
-    apiClient<StaffUser>("/users", { method: "POST", body: data }),
+    request.post<StaffUser>("/users", data),
 
   update: (id: string, data: UpdateUserPayload) =>
-    apiClient<StaffUser>(`/users/${id}`, { method: "PUT", body: data }),
+    request.put<StaffUser>(`/users/${id}`, data),
 
   deactivate: (id: string) =>
-    apiClient<StaffUser>(`/users/${id}/deactivate`, { method: "POST" }),
+    request.post<StaffUser>(`/users/${id}/deactivate`),
 };

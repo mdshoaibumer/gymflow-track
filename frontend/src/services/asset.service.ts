@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export type AssetStatus = "active" | "under_maintenance" | "out_of_service" | "retired";
 export type AssetCategory =
@@ -99,52 +99,44 @@ export const assetService = {
     if (status) query.set("status", status);
     if (category) query.set("category", category);
     if (search) query.set("search", search);
-    return apiClient<AssetListResponse>(`/assets?${query}`);
+    return request.get<AssetListResponse>(`/assets?${query}`);
   },
 
   get: (id: string) =>
-    apiClient<Asset>(`/assets/${id}`),
+    request.get<Asset>(`/assets/${id}`),
 
   create: (data: CreateAssetPayload) =>
-    apiClient<Asset>("/assets", { method: "POST", body: data }),
+    request.post<Asset>("/assets", data),
 
   update: (id: string, data: Partial<CreateAssetPayload>) =>
-    apiClient<Asset>(`/assets/${id}`, { method: "PUT", body: data }),
+    request.put<Asset>(`/assets/${id}`, data),
 
   updateStatus: (id: string, status: AssetStatus) =>
-    apiClient<Asset>(`/assets/${id}/status`, {
-      method: "PUT",
-      body: { status },
-    }),
+    request.put<Asset>(`/assets/${id}/status`, { status }),
 
   completeMaintenance: (id: string) =>
-    apiClient<Asset>(`/assets/${id}/complete-maintenance`, {
-      method: "POST",
-    }),
+    request.post<Asset>(`/assets/${id}/complete-maintenance`),
 
   delete: (id: string) =>
-    apiClient<void>(`/assets/${id}`, { method: "DELETE" }),
+    request.delete<void>(`/assets/${id}`),
 
   stats: () =>
-    apiClient<AssetDashboardStats>("/assets/stats"),
+    request.get<AssetDashboardStats>("/assets/stats"),
 
   // Maintenance
   recordMaintenance: (assetId: string, data: CreateMaintenancePayload) =>
-    apiClient<MaintenanceRecord>(`/assets/${assetId}/maintenance`, {
-      method: "POST",
-      body: data,
-    }),
+    request.post<MaintenanceRecord>(`/assets/${assetId}/maintenance`, data),
 
   getMaintenanceHistory: (assetId: string, skip = 0, limit = 20) =>
-    apiClient<MaintenanceListResponse>(
+    request.get<MaintenanceListResponse>(
       `/assets/${assetId}/maintenance?skip=${skip}&limit=${limit}`
     ),
 
   getUpcomingMaintenance: (days = 30) =>
-    apiClient<MaintenanceListResponse>(
+    request.get<MaintenanceListResponse>(
       `/assets/maintenance/upcoming?days=${days}`
     ),
 
   getOverdueMaintenance: () =>
-    apiClient<MaintenanceListResponse>("/assets/maintenance/overdue"),
+    request.get<MaintenanceListResponse>("/assets/maintenance/overdue"),
 };

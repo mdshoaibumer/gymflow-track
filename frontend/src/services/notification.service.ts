@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 export type NotificationType =
   | "expiry_7_days"
@@ -56,27 +56,21 @@ export const notificationService = {
     });
     if (status) query.set("status", status);
     if (notification_type) query.set("notification_type", notification_type);
-    return apiClient<NotificationListResponse>(`/notifications?${query}`);
+    return request.get<NotificationListResponse>(`/notifications?${query}`);
   },
 
   stats: () =>
-    apiClient<NotificationStats>("/notifications/stats"),
+    request.get<NotificationStats>("/notifications/stats"),
 
   upcoming: (limit = 20) =>
-    apiClient<Notification[]>(`/notifications/upcoming?limit=${limit}`),
+    request.get<Notification[]>(`/notifications/upcoming?limit=${limit}`),
 
   triggerScan: () =>
-    apiClient<TriggerScanResponse>("/notifications/scan", {
-      method: "POST",
-    }),
+    request.post<TriggerScanResponse>("/notifications/scan"),
 
   cancel: (id: string) =>
-    apiClient<Notification>(`/notifications/${id}/cancel`, {
-      method: "POST",
-    }),
+    request.post<Notification>(`/notifications/${id}/cancel`),
 
   retryFailed: () =>
-    apiClient<TriggerScanResponse>("/notifications/retry-failed", {
-      method: "POST",
-    }),
+    request.post<TriggerScanResponse>("/notifications/retry-failed"),
 };

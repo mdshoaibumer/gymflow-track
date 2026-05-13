@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { request } from "@/lib/api";
 
 // --- Types ---
 
@@ -85,19 +85,16 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 
 export const paymentService = {
   async create(payload: CreatePaymentPayload): Promise<Payment> {
-    return apiClient<Payment>("/payments", {
-      method: "POST",
-      body: payload,
-    });
+    return request.post<Payment>("/payments", payload);
   },
 
   async list(params: ListPaymentsParams = {}): Promise<PaymentListResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<PaymentListResponse>(`/payments${query}`);
+    return request.get<PaymentListResponse>(`/payments${query}`);
   },
 
   async get(paymentId: string): Promise<Payment> {
-    return apiClient<Payment>(`/payments/${paymentId}`);
+    return request.get<Payment>(`/payments/${paymentId}`);
   },
 
   async listByMember(
@@ -105,20 +102,20 @@ export const paymentService = {
     params: { skip?: number; limit?: number } = {}
   ): Promise<PaymentListResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
-    return apiClient<PaymentListResponse>(`/members/${memberId}/payments${query}`);
+    return request.get<PaymentListResponse>(`/members/${memberId}/payments${query}`);
   },
 };
 
 export const dashboardService = {
   async getMetrics(): Promise<DashboardMetrics> {
-    return apiClient<DashboardMetrics>("/dashboard/metrics");
+    return request.get<DashboardMetrics>("/dashboard/metrics");
   },
 
   async getExpiring(days: number = 7): Promise<ExpiringMember[]> {
-    return apiClient<ExpiringMember[]>(`/dashboard/expiring?days=${days}`);
+    return request.get<ExpiringMember[]>(`/dashboard/expiring?days=${days}`);
   },
 
   async getRecentPayments(limit: number = 10): Promise<RecentPayment[]> {
-    return apiClient<RecentPayment[]>(`/dashboard/recent-payments?limit=${limit}`);
+    return request.get<RecentPayment[]>(`/dashboard/recent-payments?limit=${limit}`);
   },
 };
