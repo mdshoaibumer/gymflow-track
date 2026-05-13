@@ -18,6 +18,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import today_ist
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 
@@ -77,7 +78,7 @@ class TestRecordPayment:
         assert data["amount_in_paise"] == 200000
         assert data["payment_method"] == "upi"
         assert data["payment_status"] == "completed"
-        assert data["payment_date"] == str(date.today())
+        assert data["payment_date"] == str(today_ist())
         assert data["member_id"] == str(sample_member.id)
 
     async def test_record_payment_with_renewal(
