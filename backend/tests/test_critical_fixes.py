@@ -67,33 +67,15 @@ class TestRefreshTokenGracePeriod:
         )
         assert r3.status_code == 200
 
-    async def test_refresh_after_grace_window_revokes_all(self, client: AsyncClient):
-        """Refresh token reuse OUTSIDE grace window triggers full revocation."""
-        # Register
-        reg_payload = {
-            "gym_name": f"Revoke Gym {uuid4().hex[:6]}",
-            "owner_name": "Revoke User",
-            "phone": "9876500102",
-            "email": f"revoke-{uuid4().hex[:6]}@test.com",
-            "password": "SecurePass123",
-        }
-        reg_resp = await client.post("/api/v1/auth/register", json=reg_payload)
-        assert reg_resp.status_code == 201
-        original_refresh = reg_resp.json()["refresh_token"]
-
-        # First refresh
-        r1 = await client.post(
-            "/api/v1/auth/refresh", json={"refresh_token": original_refresh}
+    async def test_invalid_refresh_token_returns_401(self, client: AsyncClient):
+        """A completely invalid refresh token is rejected with 401."""
+        # Use a fresh client context with no cookies set
+        resp = await client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": "totally.invalid.token"},
+            cookies={"refresh_token": ""},  # override any cookie
         )
-        assert r1.status_code == 200
-
-        # We can't easily backdate revoked_at in an integration test,
-        # so we verify the normal flow: the reuse within grace returns 200
-        # (tested above) and invalid tokens always return 401
-        r_invalid = await client.post(
-            "/api/v1/auth/refresh", json={"refresh_token": "totally.invalid.token"}
-        )
-        assert r_invalid.status_code == 401
+        assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
