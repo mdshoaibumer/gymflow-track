@@ -18,6 +18,8 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+
+from app.core.timezone import today_ist
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
@@ -129,8 +131,8 @@ class TestSubscriptionCreation:
         sub = await create_trial_subscription(db_session, billing_gym.id, "starter")
 
         assert sub.status == BillingStatus.TRIAL
-        assert sub.trial_start == date.today()
-        assert sub.trial_end == date.today() + timedelta(days=3)
+        assert sub.trial_start == today_ist()
+        assert sub.trial_end == today_ist() + timedelta(days=3)
         assert sub.gym_id == billing_gym.id
 
     @pytest.mark.asyncio
