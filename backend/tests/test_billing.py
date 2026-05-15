@@ -403,12 +403,12 @@ class TestFeatureGating:
 
     @pytest.mark.asyncio
     async def test_feature_limits_no_subscription(self, db_session, billing_gym):
-        """No subscription = all limits at zero."""
+        """No subscription = early access mode (all features unlocked)."""
         limits = await get_feature_limits(db_session, billing_gym.id)
 
-        assert limits["plan_tier"] == "none"
-        assert limits["max_members"] == 0
-        assert limits["is_at_member_limit"] is True
+        assert limits["plan_tier"] == "starter"
+        assert limits["max_members"] == 999999
+        assert limits["is_at_member_limit"] is False
 
 
 # === Part 7: Tenant Isolation ===
