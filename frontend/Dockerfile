@@ -15,7 +15,7 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN npm install --ignore-scripts --no-audit --no-fund
 
 # --- Stage 2: Build ---
 FROM node:22-alpine AS builder
