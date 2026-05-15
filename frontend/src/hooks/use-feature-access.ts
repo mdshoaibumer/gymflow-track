@@ -77,12 +77,31 @@ export interface UsageInfo {
 /**
  * Check if a specific feature is available on the current plan.
  *
+ * EARLY ACCESS MODE: All features return allowed=true during product launch.
+ * Set ENABLE_FEATURE_GATING to true to re-enable plan-based restrictions.
+ *
  * Usage:
  *   const { allowed, requiredPlan } = useFeatureAccess("qr_attendance");
  *   if (!allowed) return <LockedFeatureCard feature="qr_attendance" />;
  */
+
+// Set to true to re-enable feature gating once product is mature
+const ENABLE_FEATURE_GATING = false;
+
 export function useFeatureAccess(feature: FeatureName): FeatureAccess {
   const { data: limits, isLoading } = useFeatureLimits();
+
+  // Early access: all features unlocked
+  if (!ENABLE_FEATURE_GATING) {
+    return {
+      allowed: true,
+      currentPlan: (limits?.plan_tier as PlanTier) ?? "starter",
+      requiredPlan: FEATURE_REQUIRED_PLAN[feature],
+      featureName: FEATURE_DISPLAY_NAMES[feature],
+      benefits: FEATURE_DESCRIPTIONS[feature],
+      isLoading: false,
+    };
+  }
 
   if (isLoading || !limits) {
     return {

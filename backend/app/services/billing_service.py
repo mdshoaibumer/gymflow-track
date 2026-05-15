@@ -51,7 +51,7 @@ logger = logging.getLogger("gymflow.billing")
 
 # === Constants ===
 
-TRIAL_DAYS = 3
+TRIAL_DAYS = 30
 GRACE_PERIOD_DAYS = 7
 MAX_PAYMENT_RETRIES = 3
 RETRY_INTERVAL_DAYS = 2  # Retry every 2 days (3 retries = 6 days within 7-day grace)
@@ -714,10 +714,13 @@ async def check_feature_access(db: AsyncSession, gym_id: UUID, feature: str) -> 
               multi_branch, automated_whatsapp, advanced_reports
 
     Returns dict with 'allowed' boolean and plan info for upgrade prompts.
+
+    NOTE: During early access, all features return allowed=True.
     """
     subscription = await get_subscription(db, gym_id)
     if not subscription:
-        return {"allowed": False, "plan_tier": "none", "required_plan": "starter"}
+        # Early access: all features available even without subscription
+        return {"allowed": True, "plan_tier": "starter", "required_plan": "starter"}
 
     plan_result = await db.execute(
         select(SubscriptionPlan).where(SubscriptionPlan.id == subscription.plan_id)
@@ -753,29 +756,30 @@ async def get_feature_limits(db: AsyncSession, gym_id: UUID) -> dict:
     subscription = await get_subscription(db, gym_id)
 
     if not subscription:
+        # Early access: all features unlocked even without a subscription
         return {
-            "plan_tier": "none",
-            "plan_name": "No Plan",
-            "max_members": 0,
+            "plan_tier": "starter",
+            "plan_name": "Early Access (All Features)",
+            "max_members": 999999,
             "current_members": 0,
-            "members_remaining": 0,
-            "max_staff_users": 0,
+            "members_remaining": 999999,
+            "max_staff_users": 999999,
             "current_staff_users": 0,
-            "sms_notifications_enabled": False,
-            "advanced_reports_enabled": False,
-            "qr_attendance_enabled": False,
-            "advanced_analytics_enabled": False,
-            "export_reports_enabled": False,
-            "multi_branch_enabled": False,
-            "automated_whatsapp_enabled": False,
-            "is_at_member_limit": True,
-            "is_at_staff_limit": True,
-            "member_usage_percent": 100,
-            "staff_usage_percent": 100,
-            "is_unlimited_members": False,
-            "is_unlimited_staff": False,
-            "subscription_status": "none",
-            "days_remaining": 0,
+            "sms_notifications_enabled": True,
+            "advanced_reports_enabled": True,
+            "qr_attendance_enabled": True,
+            "advanced_analytics_enabled": True,
+            "export_reports_enabled": True,
+            "multi_branch_enabled": True,
+            "automated_whatsapp_enabled": True,
+            "is_at_member_limit": False,
+            "is_at_staff_limit": False,
+            "member_usage_percent": 0,
+            "staff_usage_percent": 0,
+            "is_unlimited_members": True,
+            "is_unlimited_staff": True,
+            "subscription_status": "trial",
+            "days_remaining": 30,
             "current_period_end": None,
             "yearly_price_in_paise": 0,
         }

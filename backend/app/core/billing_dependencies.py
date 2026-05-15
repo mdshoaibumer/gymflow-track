@@ -4,6 +4,10 @@ Subscription-aware dependencies for billing enforcement.
 These complement the existing auth dependencies in core/dependencies.py.
 They check the gym's subscription status and enforce access control.
 
+NOTE: Feature gating and capacity limits are DISABLED for early access.
+All features are unlocked during the product launch phase.
+Set ENABLE_BILLING_ENFORCEMENT=true in config to re-enable.
+
 Usage in routers:
     from app.core.billing_dependencies import require_active_subscription
 
@@ -25,6 +29,10 @@ from app.services.billing_service import (
     check_feature_access,
 )
 
+# === EARLY ACCESS MODE ===
+# Set to True to re-enable subscription enforcement once product is mature
+ENABLE_BILLING_ENFORCEMENT = False
+
 
 async def require_active_subscription(
     current_user: CurrentUser = Depends(get_current_user),
@@ -36,6 +44,10 @@ async def require_active_subscription(
     Blocks write operations for expired/locked gyms.
     Read-only check is handled separately (middleware or per-route).
     """
+    # Early access: all features unlocked for all gyms
+    if not ENABLE_BILLING_ENFORCEMENT:
+        return current_user
+
     if current_user.is_super_admin:
         return current_user
 
@@ -67,6 +79,10 @@ async def require_member_capacity(
     Used on member creation endpoints to enforce plan limits.
     Only active members count toward the limit.
     """
+    # Early access: unlimited members for all gyms
+    if not ENABLE_BILLING_ENFORCEMENT:
+        return current_user
+
     if current_user.is_super_admin:
         return current_user
 
@@ -92,6 +108,10 @@ async def require_staff_capacity(
 
     Used on user creation endpoints to enforce plan limits.
     """
+    # Early access: unlimited staff for all gyms
+    if not ENABLE_BILLING_ENFORCEMENT:
+        return current_user
+
     if current_user.is_super_admin:
         return current_user
 
@@ -115,6 +135,10 @@ def _feature_dependency(feature_name: str, display_name: str, required_plan: str
         current_user: CurrentUser = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ) -> CurrentUser:
+        # Early access: all features unlocked for all gyms
+        if not ENABLE_BILLING_ENFORCEMENT:
+            return current_user
+
         if current_user.is_super_admin:
             return current_user
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Plus, Wrench, History, Pencil, CheckCircle, XCircle, Archive } from "lucide-react";
+import { Plus, Wrench, History, Pencil, CheckCircle, XCircle, Archive, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useAssets,
@@ -28,6 +28,7 @@ import { DashboardCard } from "@/components/layout/dashboard-card";
 import { formatPaise } from "@/lib/utils";
 import { RoleGate } from "@/components/role-gate";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -89,6 +100,73 @@ type ModalState =
   | { type: "maintenance"; asset: Asset }
   | { type: "history"; asset: Asset };
 
+type ConfirmAction =
+  | { type: "none" }
+  | { type: "out_of_service"; asset: Asset }
+  | { type: "retire"; asset: Asset };
+
+type SortField = "name" | "category" | "status" | "warranty_expiry" | "purchase_cost_in_paise";
+type SortDirection = "asc" | "desc";
+
+// ── Helpers ─────────────────────────────────────────────────
+
+function isWarrantyExpiringSoon(warranty_expiry: string | null): boolean {
+  if (!warranty_expiry) return false;
+  const expiry = new Date(warranty_expiry);
+  const now = new Date();
+  const diffDays = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  return diffDays >= 0 && diffDays <= 30;
+}
+
+function isWarrantyExpired(warranty_expiry: string | null): boolean {
+  if (!warranty_expiry) return false;
+  return new Date(warranty_expiry) < new Date();
+}
+
+function exportToCSV(assets: Asset[]) {
+  const headers = [
+    "Name",
+    "Code",
+    "Category",
+    "Status",
+    "Manufacturer",
+    "Serial Number",
+    "Purchase Date",
+    "Purchase Cost (₹)",
+    "Warranty Expiry",
+    "Notes",
+  ];
+
+  const rows = assets.map((a) => [
+    a.name,
+    a.asset_code,
+    CATEGORY_LABELS[a.category] || a.category,
+    STATUS_LABELS[a.status] || a.status,
+    a.manufacturer || "",
+    a.serial_number || "",
+    a.purchase_date || "",
+    a.purchase_cost_in_paise != null ? (a.purchase_cost_in_paise / 100).toFixed(2) : "",
+    a.warranty_expiry || "",
+    a.notes || "",
+  ]);
+
+  const csvContent = [headers, ...rows]
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    )
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `equipment_${new Date().toISOString().split("T")[0]}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Main Page Component ─────────────────────────────────────
+
 export default function EquipmentPage() {
   const { isAdminOrAbove } = useAuth();
   const [filterStatus, setFilterStatus] = useState<AssetStatus | "">("");
@@ -96,14 +174,33 @@ export default function EquipmentPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [modal, setModal] = useState<ModalState>({ type: "none" });
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>({ type: "none" });
 
-  // Debounce search input to avoid excessive API calls
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Debounce search input
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0); // Reset to first page on search
+    }, 300);
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Reset page on filter changes
+  useEffect(() => {
+    setPage(0);
+  }, [filterStatus, filterCategory]);
+
   const { data: assetsData, isLoading } = useAssets({
+    skip: page * pageSize,
+    limit: pageSize,
     status: filterStatus || undefined,
     category: filterCategory || undefined,
     search: debouncedSearch || undefined,
@@ -113,11 +210,73 @@ export default function EquipmentPage() {
   const assets = assetsData?.assets ?? [];
   const total = assetsData?.total ?? 0;
 
+  // Client-side sorting (server already did filtering/pagination)
+  const sortedAssets = useMemo(() => {
+    return [...assets].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "category":
+          comparison = (CATEGORY_LABELS[a.category] || "").localeCompare(
+            CATEGORY_LABELS[b.category] || ""
+          );
+          break;
+        case "status":
+          comparison = (STATUS_LABELS[a.status] || "").localeCompare(
+            STATUS_LABELS[b.status] || ""
+          );
+          break;
+        case "warranty_expiry": {
+          const aDate = a.warranty_expiry ? new Date(a.warranty_expiry).getTime() : 0;
+          const bDate = b.warranty_expiry ? new Date(b.warranty_expiry).getTime() : 0;
+          comparison = aDate - bDate;
+          break;
+        }
+        case "purchase_cost_in_paise":
+          comparison = (a.purchase_cost_in_paise ?? 0) - (b.purchase_cost_in_paise ?? 0);
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [assets, sortField, sortDirection]);
+
   const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const statusMutation = useUpdateAssetStatus();
   const completeMutation = useCompleteMaintenance();
   const maintenanceMutation = useRecordMaintenance();
+
+  // Handle column sort toggle
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Render sort icon for column headers
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-3 w-3" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3" />
+    );
+  };
+
+  // Execute confirmed destructive action
+  const executeConfirmAction = () => {
+    if (confirmAction.type === "out_of_service") {
+      statusMutation.mutate({ id: confirmAction.asset.id, status: "out_of_service" });
+    } else if (confirmAction.type === "retire") {
+      statusMutation.mutate({ id: confirmAction.asset.id, status: "retired" });
+    }
+    setConfirmAction({ type: "none" });
+  };
 
   return (
     <motion.div
@@ -134,12 +293,20 @@ export default function EquipmentPage() {
             Track gym assets, maintenance, and service history.
           </p>
         </div>
-        <RoleGate allowed={["owner", "admin"]}>
-          <Button onClick={() => setModal({ type: "add" })}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Equipment
-          </Button>
-        </RoleGate>
+        <div className="flex gap-2">
+          {assets.length > 0 && (
+            <Button variant="outline" onClick={() => exportToCSV(assets)}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          )}
+          <RoleGate allowed={["owner", "admin"]}>
+            <Button onClick={() => setModal({ type: "add" })}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Equipment
+            </Button>
+          </RoleGate>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -252,20 +419,57 @@ export default function EquipmentPage() {
       ) : (
         <Card>
           <CardContent className="p-0">
+            {/* Desktop table */}
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm" role="table">
                 <caption className="sr-only">Gym equipment inventory</caption>
                 <thead className="border-b bg-muted/50">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Equipment</th>
-                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
-                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                    <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Warranty</th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span className="inline-flex items-center">
+                        Equipment
+                        <SortIcon field="name" />
+                      </span>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+                      onClick={() => handleSort("category")}
+                    >
+                      <span className="inline-flex items-center">
+                        Category
+                        <SortIcon field="category" />
+                      </span>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+                      onClick={() => handleSort("status")}
+                    >
+                      <span className="inline-flex items-center">
+                        Status
+                        <SortIcon field="status" />
+                      </span>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+                      onClick={() => handleSort("warranty_expiry")}
+                    >
+                      <span className="inline-flex items-center">
+                        Warranty
+                        <SortIcon field="warranty_expiry" />
+                      </span>
+                    </th>
                     <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {assets.map((a) => (
+                  {sortedAssets.map((a) => (
                     <tr key={a.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <p className="font-medium">{a.name}</p>
@@ -282,10 +486,8 @@ export default function EquipmentPage() {
                           {STATUS_LABELS[a.status]}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {a.warranty_expiry
-                          ? new Date(a.warranty_expiry).toLocaleDateString("en-IN")
-                          : "—"}
+                      <td className="px-4 py-3">
+                        <WarrantyBadge warranty_expiry={a.warranty_expiry} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
@@ -336,7 +538,7 @@ export default function EquipmentPage() {
                                   className="h-8 w-8 text-destructive"
                                   title="Mark Out of Service"
                                   onClick={() =>
-                                    statusMutation.mutate({ id: a.id, status: "out_of_service" })
+                                    setConfirmAction({ type: "out_of_service", asset: a })
                                   }
                                 >
                                   <XCircle className="h-4 w-4" />
@@ -349,7 +551,7 @@ export default function EquipmentPage() {
                                   className="h-8 w-8"
                                   title="Retire"
                                   onClick={() =>
-                                    statusMutation.mutate({ id: a.id, status: "retired" })
+                                    setConfirmAction({ type: "retire", asset: a })
                                   }
                                 >
                                   <Archive className="h-4 w-4" />
@@ -367,7 +569,7 @@ export default function EquipmentPage() {
 
             {/* Mobile cards */}
             <div className="space-y-3 p-4 md:hidden">
-              {assets.map((a) => (
+              {sortedAssets.map((a) => (
                 <div key={a.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -382,13 +584,9 @@ export default function EquipmentPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{CATEGORY_LABELS[a.category] || a.category}</span>
-                    <span>
-                      {a.warranty_expiry
-                        ? `Warranty: ${new Date(a.warranty_expiry).toLocaleDateString("en-IN")}`
-                        : "No warranty"}
-                    </span>
+                    <WarrantyBadge warranty_expiry={a.warranty_expiry} />
                   </div>
-                  <div className="flex gap-1 pt-1">
+                  <div className="flex gap-1 pt-1 flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -418,6 +616,32 @@ export default function EquipmentPage() {
                           <Pencil className="mr-1 h-3 w-3" />
                           Edit
                         </Button>
+                        {a.status === "active" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 text-xs text-destructive"
+                            onClick={() =>
+                              setConfirmAction({ type: "out_of_service", asset: a })
+                            }
+                          >
+                            <XCircle className="mr-1 h-3 w-3" />
+                            Out of Service
+                          </Button>
+                        )}
+                        {a.status === "out_of_service" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 text-xs"
+                            onClick={() =>
+                              setConfirmAction({ type: "retire", asset: a })
+                            }
+                          >
+                            <Archive className="mr-1 h-3 w-3" />
+                            Retire
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>
@@ -425,8 +649,68 @@ export default function EquipmentPage() {
               ))}
             </div>
           </CardContent>
+
+          {/* Pagination */}
+          {total > pageSize && (
+            <div className="border-t px-4 py-3">
+              <PaginationControls
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(0);
+                }}
+              />
+            </div>
+          )}
         </Card>
       )}
+
+      {/* Confirmation Dialog for Destructive Actions */}
+      <AlertDialog
+        open={confirmAction.type !== "none"}
+        onOpenChange={(open) => !open && setConfirmAction({ type: "none" })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction.type === "retire"
+                ? "Retire Equipment?"
+                : "Mark Out of Service?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction.type === "retire" ? (
+                <>
+                  This will permanently retire{" "}
+                  <strong>{confirmAction.asset.name}</strong>.
+                  Retired equipment cannot be reactivated.
+                </>
+              ) : confirmAction.type === "out_of_service" ? (
+                <>
+                  This will mark{" "}
+                  <strong>{confirmAction.asset.name}</strong>{" "}
+                  as out of service. It must be repaired before it can be used again.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeConfirmAction}
+              className={
+                confirmAction.type === "retire"
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              {confirmAction.type === "retire" ? "Retire" : "Mark Out of Service"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add/Edit Asset Dialog */}
       {(modal.type === "add" || modal.type === "edit") && (
@@ -469,6 +753,34 @@ export default function EquipmentPage() {
       )}
     </motion.div>
   );
+}
+
+// === Warranty Badge Component ===
+
+function WarrantyBadge({ warranty_expiry }: { warranty_expiry: string | null }) {
+  if (!warranty_expiry) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  const dateStr = new Date(warranty_expiry).toLocaleDateString("en-IN");
+
+  if (isWarrantyExpired(warranty_expiry)) {
+    return (
+      <Badge variant="destructive" className="text-xs">
+        Expired {dateStr}
+      </Badge>
+    );
+  }
+
+  if (isWarrantyExpiringSoon(warranty_expiry)) {
+    return (
+      <Badge variant="warning" className="text-xs animate-pulse">
+        Expires {dateStr}
+      </Badge>
+    );
+  }
+
+  return <span className="text-xs text-muted-foreground">{dateStr}</span>;
 }
 
 // === Dialog Components ===
@@ -585,19 +897,21 @@ function AssetFormDialog({
                   <Input
                     type="number"
                     value={
-                      field.value != null
-                        ? field.value / 100
+                      field.value !== undefined && field.value !== null
+                        ? String(field.value / 100)
                         : ""
                     }
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value
-                          ? Math.round(Number(e.target.value) * 100)
-                          : undefined
-                      )
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        field.onChange(undefined);
+                      } else {
+                        field.onChange(Math.round(Number(val) * 100));
+                      }
+                    }}
                     min="0"
-                    step="1"
+                    step="0.01"
+                    placeholder="0.00"
                   />
                 )}
               />
@@ -654,7 +968,7 @@ function MaintenanceFormDialog({
   const [form, setForm] = useState<CreateMaintenancePayload>({
     maintenance_type: "preventive",
     service_date: new Date().toISOString().split("T")[0],
-    cost_in_paise: 0,
+    cost_in_paise: undefined,
   });
 
   return (
@@ -703,12 +1017,22 @@ function MaintenanceFormDialog({
               <Label>Cost (₹)</Label>
               <Input
                 type="number"
-                value={(form.cost_in_paise ?? 0) / 100}
-                onChange={(e) =>
-                  setForm({ ...form, cost_in_paise: Math.round(Number(e.target.value) * 100) })
+                value={
+                  form.cost_in_paise !== undefined && form.cost_in_paise !== null
+                    ? String(form.cost_in_paise / 100)
+                    : ""
                 }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setForm({ ...form, cost_in_paise: undefined });
+                  } else {
+                    setForm({ ...form, cost_in_paise: Math.round(Number(val) * 100) });
+                  }
+                }}
                 min="0"
-                step="1"
+                step="0.01"
+                placeholder="0.00"
               />
             </div>
             <div className="space-y-1.5">

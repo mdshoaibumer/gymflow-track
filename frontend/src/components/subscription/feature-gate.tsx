@@ -16,6 +16,9 @@ interface FeatureGateProps {
 /**
  * Conditionally renders children based on the current plan's feature access.
  *
+ * EARLY ACCESS MODE: All features are unlocked for all gyms during product launch.
+ * Set ENABLE_FEATURE_GATING to true to re-enable plan-based restrictions.
+ *
  * IMPORTANT: This is UI-only gating. The server enforces real access control.
  * This prevents showing functionality that would 403 on the backend.
  *
@@ -24,8 +27,17 @@ interface FeatureGateProps {
  *     <QRAttendancePage />
  *   </FeatureGate>
  */
+
+// Set to true to re-enable feature gating once product is mature
+const ENABLE_FEATURE_GATING = false;
+
 export function FeatureGate({ feature, children, fallback }: FeatureGateProps) {
   const { allowed, isLoading } = useFeatureAccess(feature);
+
+  // Early access: all features unlocked (useFeatureAccess already returns allowed=true)
+  if (!ENABLE_FEATURE_GATING) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (

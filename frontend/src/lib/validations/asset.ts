@@ -20,7 +20,7 @@ export const assetFormSchema = z.object({
   manufacturer: z.string().max(200).optional().or(z.literal("")),
   serial_number: z.string().max(100).optional().or(z.literal("")),
   purchase_date: z.string().optional().or(z.literal("")),
-  purchase_cost_in_paise: z.number().min(0, "Cost cannot be negative").optional(),
+  purchase_cost_in_paise: z.number().min(0, "Cost cannot be negative").nullish(),
   warranty_expiry: z.string().optional().or(z.literal("")),
   notes: z.string().max(1000).optional().or(z.literal("")),
 });

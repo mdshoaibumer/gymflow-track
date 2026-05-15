@@ -1070,7 +1070,7 @@ class AdminService:
 
         if not settings_row:
             return PlatformSettingsResponse(
-                default_trial_days=3,
+                default_trial_days=30,
                 grace_period_days=7,
                 max_payment_retries=3,
                 maintenance_mode=False,
