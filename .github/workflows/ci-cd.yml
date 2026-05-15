@@ -130,6 +130,11 @@ jobs:
           cd frontend
           npm run lint
 
+      - name: Unit Tests
+        run: |
+          cd frontend
+          npm test
+
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: https://api.gymflowtrack.in/api/v1
