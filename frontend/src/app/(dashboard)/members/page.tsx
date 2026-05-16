@@ -143,6 +143,15 @@ export default function MembersPage() {
         ),
       },
       {
+        accessorKey: "batch",
+        header: "Batch",
+        cell: ({ row }) => (
+          <span className="capitalize text-muted-foreground">
+            {row.original.batch || "—"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "membership_status",
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.membership_status} />,

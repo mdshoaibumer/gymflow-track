@@ -4,7 +4,7 @@ import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models.member import Gender, MembershipStatus
+from app.models.member import Batch, Gender, MembershipStatus
 from app.schemas.sanitize import strip_html_tags
 
 
@@ -34,6 +34,7 @@ class MemberCreateRequest(BaseModel):
     gender: Gender | None = None
     date_of_birth: date | None = None
     father_name: str | None = Field(None, max_length=200)
+    batch: Batch | None = None
     emergency_contact: str | None = None
     membership_plan: str | None = None
     membership_start: date | None = None
@@ -60,6 +61,7 @@ class MemberUpdateRequest(BaseModel):
     email: EmailStr | None = None
     gender: Gender | None = None
     father_name: str | None = Field(None, max_length=200)
+    batch: Batch | None = None
     # membership_status is NOT updatable directly — use membership lifecycle APIs
     membership_plan: str | None = None
     membership_start: date | None = None
@@ -93,6 +95,7 @@ class MemberResponse(BaseModel):
     email: str | None
     gender: Gender | None
     father_name: str | None = None
+    batch: Batch | None = None
     membership_status: MembershipStatus
     membership_plan: str | None
     membership_start: date | None

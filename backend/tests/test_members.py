@@ -431,3 +431,76 @@ class TestTenantIsolation:
             headers=other_auth_headers,
         )
         assert resp2.status_code == 201
+
+
+class TestBatchField:
+    """Test batch (morning/evening/afternoon) selection on members."""
+
+    async def test_create_member_with_batch(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Members can be created with a batch selection."""
+        payload = {
+            "name": "Morning Member",
+            "phone": "9876500090",
+            "batch": "morning",
+        }
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["batch"] == "morning"
+
+    async def test_create_member_without_batch(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Batch is optional — defaults to null."""
+        payload = {"name": "No Batch", "phone": "9876500091"}
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+        assert response.json()["batch"] is None
+
+    async def test_update_member_batch(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Batch can be updated via PATCH."""
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={"name": "Batch Update", "phone": "9876500092", "batch": "morning"},
+            headers=auth_headers,
+        )
+        member_id = create_resp.json()["id"]
+
+        response = await client.patch(
+            f"/api/v1/members/{member_id}",
+            json={"batch": "evening"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["batch"] == "evening"
+
+    async def test_create_member_with_all_batch_values(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """All batch enum values are accepted."""
+        for i, batch in enumerate(["morning", "afternoon", "evening"]):
+            response = await client.post(
+                "/api/v1/members",
+                json={"name": f"Batch {batch}", "phone": f"987650009{3 + i}", "batch": batch},
+                headers=auth_headers,
+            )
+            assert response.status_code == 201
+            assert response.json()["batch"] == batch
+
+    async def test_create_member_invalid_batch_returns_422(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Invalid batch value is rejected."""
+        payload = {"name": "Invalid Batch", "phone": "9876500096", "batch": "midnight"}
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 422

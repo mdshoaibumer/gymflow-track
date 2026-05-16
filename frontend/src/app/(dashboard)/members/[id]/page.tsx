@@ -101,6 +101,10 @@ export default function MemberDetailPage() {
               {member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : "—"}
             </div>
             <div>
+              <span className="text-muted-foreground">Batch: </span>
+              {member.batch ? member.batch.charAt(0).toUpperCase() + member.batch.slice(1) : "—"}
+            </div>
+            <div>
               <span className="text-muted-foreground">Amount Paid: </span>
               {formatPaise(member.amount_paid)}
             </div>

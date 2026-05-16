@@ -23,6 +23,12 @@ class Gender(str, PyEnum):
     OTHER = "other"
 
 
+class Batch(str, PyEnum):
+    MORNING = "morning"
+    EVENING = "evening"
+    AFTERNOON = "afternoon"
+
+
 class Member(BaseModel):
     __tablename__ = "members"
     __table_args__ = (
@@ -45,6 +51,9 @@ class Member(BaseModel):
     )
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     father_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    batch: Mapped[Batch | None] = mapped_column(
+        PgEnum(Batch, name="batch"), nullable=True
+    )
     emergency_contact: Mapped[str | None] = mapped_column(String(15), nullable=True)
 
     # Membership

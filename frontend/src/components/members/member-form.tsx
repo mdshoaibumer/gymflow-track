@@ -40,6 +40,7 @@ export function MemberForm({
       email: "",
       gender: "" as const,
       father_name: "",
+      batch: "" as const,
       membership_plan: "",
       membership_start: "",
       membership_end: "",
@@ -135,6 +136,20 @@ export function MemberForm({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="batch">Batch</Label>
+          <select
+            id="batch"
+            {...register("batch")}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="">Select Batch</option>
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="membership_plan">Plan</Label>
           <Input
             id="membership_plan"
@@ -207,6 +222,7 @@ export function memberToFormValues(member: Member): Partial<MemberFormValues> {
     email: member.email || "",
     gender: member.gender || "",
     father_name: member.father_name || "",
+    batch: member.batch || "",
     membership_plan: member.membership_plan || "",
     membership_start: member.membership_start || "",
     membership_end: member.membership_end || "",

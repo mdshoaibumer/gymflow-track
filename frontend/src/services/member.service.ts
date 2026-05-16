@@ -7,6 +7,7 @@ export interface Member {
   email: string | null;
   gender: "male" | "female" | "other" | null;
   father_name: string | null;
+  batch: "morning" | "evening" | "afternoon" | null;
   membership_status: "active" | "expired" | "frozen" | "pending" | "cancelled";
   membership_plan: string | null;
   membership_start: string | null;
@@ -29,6 +30,7 @@ export interface CreateMemberPayload {
   email?: string;
   gender?: "male" | "female" | "other";
   father_name?: string;
+  batch?: "morning" | "evening" | "afternoon";
   membership_plan?: string;
   membership_start?: string;
   membership_end?: string;
