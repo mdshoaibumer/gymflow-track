@@ -28,11 +28,20 @@ _EXEMPT_PATHS = frozenset({
     "/api/v1/onboarding/import/preview",
 })
 
+# Paths checked by prefix (for dynamic segments like member photo upload)
+_EXEMPT_PREFIXES = (
+    "/api/v1/members/",  # photo upload: /api/v1/members/{id}/photo
+)
+
 
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.method in ("POST", "PUT", "PATCH"):
-            if request.url.path not in _EXEMPT_PATHS:
+            path = request.url.path
+            is_exempt = path in _EXEMPT_PATHS or (
+                path.endswith("/photo") and any(path.startswith(p) for p in _EXEMPT_PREFIXES)
+            )
+            if not is_exempt:
                 content_length = request.headers.get("content-length")
                 if content_length:
                     try:

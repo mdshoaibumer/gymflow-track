@@ -1,10 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -206,6 +208,13 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Super Admin"])
+
+# Serve uploaded files (member photos, etc.)
+# The uploads directory is created on first photo upload; ensure mount doesn't
+# fail if it doesn't exist yet.
+_uploads_dir = Path(settings.UPLOAD_DIR)
+_uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 
 # Prometheus metrics endpoint (scraped by Prometheus, not for public access)
 app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)

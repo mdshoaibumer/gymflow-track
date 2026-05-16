@@ -132,3 +132,36 @@ export function useDeleteMember() {
     },
   });
 }
+
+export function useUploadMemberPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      memberService.uploadPhoto(id, file),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["members", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      broadcastMemberMutation();
+      toast.success("Photo uploaded successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useDeleteMemberPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => memberService.deletePhoto(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["members", id] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      broadcastMemberMutation();
+      toast.success("Photo removed");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}

@@ -253,6 +253,8 @@ services:
     tmpfs:
       - /tmp/gymflowtrack:size=50M     # Temp files for CSV processing
       - /tmp:size=10M                  # Required for curl healthcheck
+    volumes:
+      - uploads:/app/uploads            # Persistent storage for member photos
     stop_grace_period: 35s         # > uvicorn's 30s graceful shutdown
     logging:
       driver: json-file
@@ -314,6 +316,8 @@ volumes:
   pgdata:
     driver: local
   redisdata:
+    driver: local
+  uploads:
     driver: local
   caddy_data:
     driver: local

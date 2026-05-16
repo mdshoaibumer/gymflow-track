@@ -57,6 +57,9 @@ class Member(BaseModel):
     membership_plan: Mapped[str | None] = mapped_column(String(100), nullable=True)
     amount_paid: Mapped[int] = mapped_column(Integer, default=0)  # in paise (INR * 100)
 
+    # Member photo — relative path under uploads/ (e.g. "members/{gym_id}/{member_id}.jpg")
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # Optimistic locking: version counter incremented on every update.
     # Prevents silent data loss when two users edit the same member concurrently.
     version: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)

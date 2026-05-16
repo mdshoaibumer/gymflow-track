@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
+import { MemberPhotoUpload } from "@/components/members/member-photo-upload";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
   active: "success",
@@ -62,6 +63,7 @@ export default function MemberDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
+        <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{member.name}</h1>
           <p className="text-sm text-muted-foreground">{member.phone}</p>

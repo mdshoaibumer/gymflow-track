@@ -9,7 +9,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Search, Pencil, Trash2, Plus, UserPlus, Download } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, UserPlus, Download, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import type { Member, CreateMemberPayload } from "@/services/member.service";
@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { formatPaise } from "@/lib/utils";
+import { API_URL } from "@/lib/api";
 import { downloadCsv } from "@/lib/export-csv";
 import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
@@ -107,11 +108,23 @@ export default function MembersPage() {
       {
         accessorKey: "name",
         header: "Name",
-        cell: ({ row }) => (
-          <Link href={`/members/${row.original.id}`} className="font-medium text-primary hover:underline">
-            {row.original.name}
-          </Link>
-        ),
+        cell: ({ row }) => {
+          const photoUrl = row.original.photo_url
+            ? `${API_URL.replace("/api/v1", "")}${row.original.photo_url}`
+            : null;
+          return (
+            <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">
+              <span className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                {photoUrl ? (
+                  <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </span>
+              {row.original.name}
+            </Link>
+          );
+        },
       },
       {
         accessorKey: "phone",

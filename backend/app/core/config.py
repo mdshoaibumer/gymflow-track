@@ -89,6 +89,10 @@ class Settings(BaseSettings):
     # === Billing ===
     TRIAL_DAYS: int = 30
 
+    # === File Uploads ===
+    UPLOAD_DIR: str = "uploads"  # Relative to backend/ root
+    MAX_PHOTO_SIZE_MB: int = 5  # Max member photo size in megabytes
+
     @field_validator("APP_ENV", mode="before")
     @classmethod
     def _normalize_env(cls, v: str) -> str:

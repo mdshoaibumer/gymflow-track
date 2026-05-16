@@ -1,7 +1,7 @@
 from uuid import UUID
 import logging
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -134,3 +134,32 @@ async def list_member_payments(
         skip=skip,
         limit=limit,
     )
+
+
+@router.post("/{member_id}/photo", response_model=MemberResponse)
+async def upload_member_photo(
+    member_id: UUID,
+    file: UploadFile = File(..., description="Member photo (JPEG, PNG, or WebP, max 5MB)"),
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload or replace a member's photo. OWNER and ADMIN only.
+
+    Accepts JPEG, PNG, or WebP images up to 5MB.
+    The photo is stored on the server and the URL is returned in the member response.
+    Re-uploading replaces the previous photo.
+    """
+    service = MemberService(db)
+    return await service.upload_photo(member_id, current_user.gym_id, file)
+
+
+@router.delete("/{member_id}/photo", response_model=MemberResponse)
+async def delete_member_photo(
+    member_id: UUID,
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a member's photo. OWNER and ADMIN only."""
+    service = MemberService(db)
+    return await service.delete_photo(member_id, current_user.gym_id)

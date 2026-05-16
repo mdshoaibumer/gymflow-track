@@ -1,4 +1,4 @@
-import { request } from "@/lib/api";
+import { api, request } from "@/lib/api";
 
 export interface Member {
   id: string;
@@ -11,6 +11,7 @@ export interface Member {
   membership_start: string | null;
   membership_end: string | null;
   amount_paid: number;
+  photo_url: string | null;
   version: number;
   created_at: string | null;
   updated_at: string | null;
@@ -64,4 +65,17 @@ export const memberService = {
 
   delete: (id: string) =>
     request.delete<void>(`/members/${id}`),
+
+  uploadPhoto: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api
+      .post<Member>(`/members/${id}/photo`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+
+  deletePhoto: (id: string) =>
+    request.delete<Member>(`/members/${id}/photo`),
 };

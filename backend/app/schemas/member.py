@@ -95,6 +95,7 @@ class MemberResponse(BaseModel):
     membership_start: date | None
     membership_end: date | None
     amount_paid: int
+    photo_url: str | None = None
     version: int = 0
     created_at: datetime | None = None  # Included for audit trail visibility in UI
     updated_at: datetime | None = None  # Included for audit trail visibility in UI

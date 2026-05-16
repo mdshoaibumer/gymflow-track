@@ -1,11 +1,15 @@
 """Member management service — CRUD and lifecycle operations for gym members."""
 
 import logging
+import os
+from pathlib import Path
 from uuid import UUID
 
+from fastapi import UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, ConflictError, NotFoundError, ValidationError
 from app.models.member import Member
 from app.repositories.member_repository import MemberRepository
@@ -16,6 +20,21 @@ logger = logging.getLogger("gymflow.members")
 # Fields that must NOT be set via generic update — they have dedicated lifecycle APIs.
 # membership_start/end/plan drive status computation and must go through renewal flow.
 _PROTECTED_FIELDS = frozenset({"membership_status", "membership_start", "membership_end", "membership_plan"})
+
+# Allowed photo MIME types and their magic byte signatures.
+# Validated against actual file bytes (not the user-supplied Content-Type header).
+_ALLOWED_PHOTO_TYPES: dict[str, list[bytes]] = {
+    ".jpg": [b"\xff\xd8\xff"],
+    ".png": [b"\x89PNG\r\n\x1a\n"],
+    ".webp": [b"RIFF"],  # WebP starts with RIFF....WEBP (verified at offset 8)
+}
+
+_ALLOWED_EXTENSIONS = set(_ALLOWED_PHOTO_TYPES.keys())
+
+
+def _is_valid_webp(content: bytes) -> bool:
+    """Validate WebP file by checking both RIFF header and WEBP signature at offset 8."""
+    return len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP"
 
 
 class MemberService:
@@ -113,3 +132,95 @@ class MemberService:
         member = await self.get_member(member_id, gym_id)
         member.is_deleted = True
         await self.member_repo.update(member)
+
+    async def upload_photo(self, member_id: UUID, gym_id: UUID, file: UploadFile) -> Member:
+        """Upload or replace a member's photo.
+
+        Security:
+        - File type validated by magic bytes (not Content-Type header)
+        - File size enforced before writing to disk
+        - Filename is UUID-based (no user input in path)
+        - Stored under gym_id subdirectory for tenant isolation
+        """
+        member = await self.get_member(member_id, gym_id)
+
+        # Validate file extension
+        _, ext = os.path.splitext(file.filename or "")
+        ext = ext.lower()
+        if ext not in _ALLOWED_EXTENSIONS:
+            raise ValidationError(
+                f"Invalid file type. Allowed: {', '.join(sorted(_ALLOWED_EXTENSIONS))}"
+            )
+
+        # Read file content with size limit
+        max_bytes = settings.MAX_PHOTO_SIZE_MB * 1024 * 1024
+        content = await file.read()
+        if len(content) > max_bytes:
+            raise ValidationError(f"Photo must be under {settings.MAX_PHOTO_SIZE_MB}MB")
+
+        # Validate magic bytes (prevents disguised files)
+        valid_magic = False
+        detected_ext = ext
+        for check_ext, magic_bytes_list in _ALLOWED_PHOTO_TYPES.items():
+            if check_ext == ".webp":
+                # WebP requires RIFF header + "WEBP" at offset 8
+                if _is_valid_webp(content):
+                    valid_magic = True
+                    detected_ext = ".webp"
+                    break
+            else:
+                for magic in magic_bytes_list:
+                    if content[:len(magic)] == magic:
+                        valid_magic = True
+                        detected_ext = check_ext
+                        break
+            if valid_magic:
+                break
+
+        if not valid_magic:
+            raise ValidationError("File content does not match a supported image format")
+
+        # Build path: uploads/members/{gym_id}/{member_id}.jpg
+        upload_dir = Path(settings.UPLOAD_DIR) / "members" / str(gym_id)
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        # Remove any existing photo with different extension
+        for old_ext in _ALLOWED_EXTENSIONS:
+            old_file = upload_dir / f"{member_id}{old_ext}"
+            if old_file.exists():
+                old_file.unlink()
+
+        # Write file
+        file_path = upload_dir / f"{member_id}{detected_ext}"
+        file_path.write_bytes(content)
+
+        # Update DB with relative URL
+        relative_url = f"/uploads/members/{gym_id}/{member_id}{detected_ext}"
+        member.photo_url = relative_url
+        member.version = (member.version or 0) + 1
+        await self.member_repo.update(member)
+
+        logger.info("photo_uploaded member_id=%s gym_id=%s size=%d", member_id, gym_id, len(content))
+        return member
+
+    async def delete_photo(self, member_id: UUID, gym_id: UUID) -> Member:
+        """Remove a member's photo from disk and DB."""
+        member = await self.get_member(member_id, gym_id)
+
+        if not member.photo_url:
+            raise NotFoundError("Member has no photo")
+
+        # Delete file from disk
+        # photo_url is like "/uploads/members/{gym_id}/{member_id}.jpg"
+        # Strip leading "/uploads/" to get relative path under UPLOAD_DIR
+        relative_path = member.photo_url.removeprefix("/uploads/")
+        file_path = Path(settings.UPLOAD_DIR) / relative_path
+        if file_path.exists():
+            file_path.unlink()
+
+        member.photo_url = None
+        member.version = (member.version or 0) + 1
+        await self.member_repo.update(member)
+
+        logger.info("photo_deleted member_id=%s gym_id=%s", member_id, gym_id)
+        return member
