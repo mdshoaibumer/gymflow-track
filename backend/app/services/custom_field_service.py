@@ -3,7 +3,7 @@ import re
 import uuid
 import logging
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.custom_field import GymCustomField
