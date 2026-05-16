@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -28,3 +28,24 @@ async def update_my_gym(
     """Update the current user's gym details. OWNER only."""
     service = GymService(db)
     return await service.update_gym(current_user.gym_id, data)
+
+
+@router.post("/me/logo", response_model=GymResponse)
+async def upload_gym_logo(
+    file: UploadFile = File(..., description="Gym logo (JPEG, PNG, or WebP, max 2MB)"),
+    current_user: CurrentUser = Depends(require_owner),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload or replace the gym logo. OWNER only."""
+    service = GymService(db)
+    return await service.upload_logo(current_user.gym_id, file)
+
+
+@router.delete("/me/logo", response_model=GymResponse)
+async def delete_gym_logo(
+    current_user: CurrentUser = Depends(require_owner),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove the gym logo. OWNER only."""
+    service = GymService(db)
+    return await service.delete_logo(current_user.gym_id)

@@ -8,6 +8,7 @@ export interface Gym {
   email: string | null;
   address: string | null;
   city: string | null;
+  logo_url: string | null;
   is_active: boolean;
 }
 
@@ -34,4 +35,22 @@ export const gymService = {
    */
   updateMyGym: (data: GymUpdatePayload) =>
     request.patch<Gym>("/gyms/me", data),
+
+  uploadLogo: async (file: File): Promise<Gym> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/v1/gyms/me/logo", {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Upload failed" }));
+      throw new Error(err.detail || "Upload failed");
+    }
+    return res.json();
+  },
+
+  deleteLogo: () =>
+    request.delete<Gym>("/gyms/me/logo"),
 };

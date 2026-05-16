@@ -13,6 +13,7 @@ class GymResponse(BaseModel):
     email: str | None
     address: str | None
     city: str | None
+    logo_url: str | None = None
     is_active: bool
 
     model_config = {"from_attributes": True}
