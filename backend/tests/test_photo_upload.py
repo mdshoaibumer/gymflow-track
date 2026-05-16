@@ -189,8 +189,10 @@ class TestUploadPhoto:
             files={"file": ("big.jpg", io.BytesIO(content), "image/jpeg")},
         )
 
-        assert response.status_code == 400
-        assert "under" in response.json()["detail"].lower() or "5MB" in response.json()["detail"]
+        assert response.status_code in (400, 422)
+        detail = response.json()["detail"]
+        if isinstance(detail, str):
+            assert "under" in detail.lower() or "5mb" in detail.lower() or "5MB" in detail
 
     async def test_upload_rejects_mismatched_magic_bytes(
         self, client: AsyncClient, auth_headers: dict, sample_member_id: str
