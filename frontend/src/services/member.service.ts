@@ -14,6 +14,7 @@ export interface Member {
   membership_end: string | null;
   amount_paid: number;
   photo_url: string | null;
+  custom_fields: Record<string, string | number | null> | null;
   version: number;
   created_at: string | null;
   updated_at: string | null;
@@ -35,6 +36,7 @@ export interface CreateMemberPayload {
   membership_start?: string;
   membership_end?: string;
   amount_paid?: number;
+  custom_fields?: Record<string, string | number | null>;
   version?: number;
 }
 

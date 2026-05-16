@@ -5,14 +5,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useCustomFields } from "@/hooks/use-custom-fields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { Member } from "@/services/member.service";
+import type { CustomField } from "@/services/custom-field.service";
+import { useState } from "react";
 
 interface MemberFormProps {
   defaultValues?: Partial<MemberFormValues>;
-  onSubmit: (data: MemberFormValues) => Promise<void>;
+  defaultCustomFields?: Record<string, string | number | null>;
+  onSubmit: (data: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
   title: string;
@@ -21,12 +25,20 @@ interface MemberFormProps {
 
 export function MemberForm({
   defaultValues,
+  defaultCustomFields,
   onSubmit,
   onCancel,
   submitLabel,
   title,
   isPending = false,
 }: MemberFormProps) {
+  const { data: customFieldsData } = useCustomFields();
+  const customFields: CustomField[] = customFieldsData?.fields ?? [];
+
+  const [cfValues, setCfValues] = useState<Record<string, string | number | null>>(
+    defaultCustomFields ?? {}
+  );
+
   const {
     register,
     handleSubmit,
@@ -53,7 +65,11 @@ export function MemberForm({
 
   const handleFormSubmit = async (data: Record<string, unknown>) => {
     try {
-      await onSubmit(data as MemberFormValues);
+      const payload = {
+        ...(data as MemberFormValues),
+        custom_fields: Object.keys(cfValues).length > 0 ? cfValues : undefined,
+      };
+      await onSubmit(payload);
     } catch (err) {
       setError("root", {
         message: err instanceof Error ? err.message : "An error occurred",
@@ -190,6 +206,48 @@ export function MemberForm({
           />
         </div>
 
+        {/* Dynamic Custom Fields */}
+        {customFields.map((cf) => (
+          <div key={cf.id} className="space-y-1.5">
+            <Label htmlFor={`cf_${cf.field_key}`}>
+              {cf.label}
+              {cf.is_required && <span className="text-destructive ml-0.5">*</span>}
+            </Label>
+            {cf.field_type === "dropdown" ? (
+              <select
+                id={`cf_${cf.field_key}`}
+                value={(cfValues[cf.field_key] as string) ?? ""}
+                onChange={(e) =>
+                  setCfValues({ ...cfValues, [cf.field_key]: e.target.value || null })
+                }
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Select</option>
+                {cf.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                id={`cf_${cf.field_key}`}
+                type={cf.field_type === "number" ? "number" : cf.field_type === "date" ? "date" : "text"}
+                value={(cfValues[cf.field_key] as string) ?? ""}
+                onChange={(e) =>
+                  setCfValues({
+                    ...cfValues,
+                    [cf.field_key]: cf.field_type === "number"
+                      ? (e.target.value ? Number(e.target.value) : null)
+                      : (e.target.value || null),
+                  })
+                }
+                placeholder={cf.label}
+              />
+            )}
+          </div>
+        ))}
+
         <div className="sm:col-span-2 flex gap-3 pt-2">
           <Button
             type="submit"
@@ -215,17 +273,23 @@ export function MemberForm({
 }
 
 /** Convert a Member to form default values (handles paise→rupees conversion). */
-export function memberToFormValues(member: Member): Partial<MemberFormValues> {
+export function memberToFormValues(member: Member): {
+  formValues: Partial<MemberFormValues>;
+  customFieldValues: Record<string, string | number | null>;
+} {
   return {
-    name: member.name,
-    phone: member.phone,
-    email: member.email || "",
-    gender: member.gender || "",
-    father_name: member.father_name || "",
-    batch: member.batch || "",
-    membership_plan: member.membership_plan || "",
-    membership_start: member.membership_start || "",
-    membership_end: member.membership_end || "",
-    amount_paid: member.amount_paid / 100,
+    formValues: {
+      name: member.name,
+      phone: member.phone,
+      email: member.email || "",
+      gender: member.gender || "",
+      father_name: member.father_name || "",
+      batch: member.batch || "",
+      membership_plan: member.membership_plan || "",
+      membership_start: member.membership_start || "",
+      membership_end: member.membership_end || "",
+      amount_paid: member.amount_paid / 100,
+    },
+    customFieldValues: member.custom_fields ?? {},
   };
 }

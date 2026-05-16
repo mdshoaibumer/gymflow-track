@@ -40,6 +40,7 @@ class MemberCreateRequest(BaseModel):
     membership_start: date | None = None
     membership_end: date | None = None
     amount_paid: int = 0  # in paise
+    custom_fields: dict | None = None  # Owner-defined dynamic fields
 
     @field_validator("phone")
     @classmethod
@@ -67,6 +68,7 @@ class MemberUpdateRequest(BaseModel):
     membership_start: date | None = None
     membership_end: date | None = None
     amount_paid: int | None = None
+    custom_fields: dict | None = None  # Owner-defined dynamic fields
     # Optimistic locking: client sends the version it last read.
     # Server rejects the update with 409 Conflict if another edit landed first.
     # Optional (None) for backward compatibility with older clients.
@@ -102,6 +104,7 @@ class MemberResponse(BaseModel):
     membership_end: date | None
     amount_paid: int
     photo_url: str | None = None
+    custom_fields: dict | None = None
     version: int = 0
     created_at: datetime | None = None  # Included for audit trail visibility in UI
     updated_at: datetime | None = None  # Included for audit trail visibility in UI

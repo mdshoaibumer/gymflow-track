@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGym, useUpdateGym } from "@/hooks/use-gym";
 import type { GymUpdatePayload } from "@/services/gym.service";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { CustomFieldsManager } from "@/components/settings/custom-fields-manager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -300,6 +301,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Custom Member Fields */}
+      {isOwner && <CustomFieldsManager />}
     </motion.div>
   );
 }

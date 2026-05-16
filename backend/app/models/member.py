@@ -3,7 +3,7 @@ from datetime import date
 from enum import Enum as PyEnum
 
 from sqlalchemy import String, ForeignKey, Date, Integer, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import BaseModel, PgEnum
@@ -69,6 +69,10 @@ class Member(BaseModel):
 
     # Member photo — relative path under uploads/ (e.g. "members/{gym_id}/{member_id}.jpg")
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Custom fields — owner-defined dynamic fields stored as JSON
+    # e.g. {"blood_group": "A+", "address": "123 Main St", "height_cm": 175}
+    custom_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
     # Optimistic locking: version counter incremented on every update.
     # Prevents silent data loss when two users edit the same member concurrently.

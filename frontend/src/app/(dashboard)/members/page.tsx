@@ -81,14 +81,14 @@ export default function MembersPage() {
   const updateMutation = useUpdateMember();
   const deleteMutation = useDeleteMember();
 
-  const handleCreate = async (values: MemberFormValues) => {
+  const handleCreate = async (values: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => {
     if (createMutation.isPending) return;
     const payload = formValuesToPayload(values);
     await createMutation.mutateAsync(payload);
     setShowCreateForm(false);
   };
 
-  const handleEdit = async (values: MemberFormValues) => {
+  const handleEdit = async (values: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => {
     if (!editingMember || updateMutation.isPending) return;
     const payload = formValuesToPayload(values);
     // Include version for optimistic locking — server returns 409 if stale
@@ -306,7 +306,8 @@ export default function MembersPage() {
             key={editingMember.id}
             title={`Edit: ${editingMember.name}`}
             submitLabel="Save Changes"
-            defaultValues={memberToFormValues(editingMember)}
+            defaultValues={memberToFormValues(editingMember).formValues}
+            defaultCustomFields={memberToFormValues(editingMember).customFieldValues}
             onSubmit={handleEdit}
             onCancel={() => setEditingMember(null)}
             isPending={updateMutation.isPending}
@@ -475,7 +476,7 @@ export default function MembersPage() {
   );
 }
 
-function formValuesToPayload(values: MemberFormValues): CreateMemberPayload {
+function formValuesToPayload(values: MemberFormValues & { custom_fields?: Record<string, string | number | null> }): CreateMemberPayload {
   const payload: CreateMemberPayload = {
     name: values.name,
     phone: values.phone,
@@ -489,5 +490,13 @@ function formValuesToPayload(values: MemberFormValues): CreateMemberPayload {
   if (values.membership_start) payload.membership_start = values.membership_start;
   if (values.membership_end) payload.membership_end = values.membership_end;
   if (values.amount_paid != null) payload.amount_paid = Math.round(values.amount_paid * 100);
+  if (values.father_name) payload.father_name = values.father_name;
+  const batch = values.batch;
+  if (batch === "morning" || batch === "afternoon" || batch === "evening") {
+    payload.batch = batch;
+  }
+  if (values.custom_fields && Object.keys(values.custom_fields).length > 0) {
+    payload.custom_fields = values.custom_fields;
+  }
   return payload;
 }

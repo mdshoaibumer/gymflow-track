@@ -108,6 +108,12 @@ export default function MemberDetailPage() {
               <span className="text-muted-foreground">Amount Paid: </span>
               {formatPaise(member.amount_paid)}
             </div>
+            {member.custom_fields && Object.entries(member.custom_fields).map(([key, value]) => (
+              <div key={key}>
+                <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}: </span>
+                {value ?? "—"}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
