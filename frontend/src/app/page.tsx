@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   Users,
@@ -69,18 +68,8 @@ const faqs = [
   { q: "Is my data secure?", a: "Absolutely. We use industry-standard encryption, HttpOnly cookies for auth, and your data is never shared with third parties." },
   { q: "Do you support UPI/cash/card payments?", a: "Yes — GymFlow Track records all payment methods including cash, UPI, card, and bank transfers. It’s a recording system, not a payment gateway." },
   { q: "Can I export my data?", a: "Yes. Export members, payments, and attendance as CSV files anytime. Your data is always yours." },
-  { q: "Is there a free trial?", a: "Yes! Every new account gets a 3-day free trial on the Starter plan with up to 100 members. No credit card required." },
+  { q: "Is there a free trial?", a: "Yes! Every new account gets a 30-day free trial with all features unlocked. No credit card required." },
 ];
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
 
 export default function HomePage() {
   return (
@@ -112,13 +101,9 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_50%_at_50%_40%,hsl(var(--primary)/0.12),transparent)]" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-24 sm:py-32 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div>
             <Badge variant="secondary" className="mb-6 text-xs">
-              <Zap className="mr-1 h-3 w-3" /> 3-day free trial — no credit card required
+              <Zap className="mr-1 h-3 w-3" /> 30-day free trial — no credit card required
             </Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Gym Management
@@ -140,44 +125,62 @@ export default function HomePage() {
                 <Link href="/login">Login to Dashboard</Link>
               </Button>
             </div>
-          </motion.div>
+          </div>
 
           {/* Product screenshot placeholder */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mx-auto mt-16 max-w-4xl"
-          >
-            <div className="rounded-xl border bg-card shadow-2xl overflow-hidden">
-              <div className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2.5">
+          <div className="mx-auto mt-16 max-w-4xl">
+            <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-b from-muted to-background shadow-2xl overflow-hidden">
+              <div className="flex items-center gap-2 border-b bg-muted px-4 py-3">
                 <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-400" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                  <div className="h-3 w-3 rounded-full bg-green-400" />
+                  <div className="h-3 w-3 rounded-full bg-red-500" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                  <div className="h-3 w-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-xs text-muted-foreground ml-2">app.gymflowtrack.in/dashboard</span>
+                <div className="ml-3 flex-1 rounded-md bg-background/80 px-3 py-1">
+                  <span className="text-xs text-muted-foreground">app.gymflowtrack.in/dashboard</span>
+                </div>
               </div>
-              <div className="p-6 sm:p-10">
+              <div className="p-6 sm:p-8 bg-background/50">
                 <div className="grid gap-4 sm:grid-cols-3 mb-6">
                   {[
                     { label: "Active Members", value: "248", trend: "+12%" },
                     { label: "Revenue (May)", value: "₹3,45,600", trend: "+8%" },
                     { label: "Check-ins Today", value: "67", trend: "+5%" },
                   ].map((stat) => (
-                    <div key={stat.label} className="rounded-lg border bg-card p-4">
+                    <div key={stat.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
                       <p className="mt-1 text-2xl font-bold">{stat.value}</p>
                       <p className="text-xs text-green-600 dark:text-green-400">{stat.trend} vs last month</p>
                     </div>
                   ))}
                 </div>
-                <div className="h-32 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <BarChart3 className="h-8 w-8 text-muted-foreground/40" />
+                <div className="h-44 rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-muted-foreground">Revenue (Last 6 Months)</span>
+                    <span className="text-xs text-green-600 dark:text-green-400">↑ 23% overall</span>
+                  </div>
+                  <div className="flex items-end gap-3 h-28 px-2 pt-2">
+                    {[
+                      { month: "Dec", h: 40 },
+                      { month: "Jan", h: 55 },
+                      { month: "Feb", h: 48 },
+                      { month: "Mar", h: 70 },
+                      { month: "Apr", h: 82 },
+                      { month: "May", h: 100 },
+                    ].map((bar) => (
+                      <div key={bar.month} className="flex-1 flex flex-col items-center justify-end h-full">
+                        <div
+                          className="w-full rounded-t-sm bg-primary"
+                          style={{ height: `${bar.h}%` }}
+                        />
+                        <span className="text-[10px] text-muted-foreground mt-1">{bar.month}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -208,13 +211,7 @@ export default function HomePage() {
       {/* Features */}
       <section id="features" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
+          <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Everything your gym needs
             </h2>
@@ -222,17 +219,11 @@ export default function HomePage() {
               Stop juggling spreadsheets, WhatsApp groups, and paper registers.
               GymFlow Track brings it all together.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-          >
+          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
-              <motion.div key={f.title} variants={item}>
+              <div key={f.title}>
                 <Card className="h-full transition-shadow hover:shadow-md">
                   <CardContent className="p-6">
                     <div className="rounded-lg bg-primary/10 p-2.5 w-fit">
@@ -244,28 +235,23 @@ export default function HomePage() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="border-t bg-muted/30 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
+          <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Simple, transparent pricing
             </h2>
             <p className="mt-4 text-muted-foreground">
               Start free. Upgrade when you grow. No hidden fees.
             </p>
-          </motion.div>
+          </div>
 
           <div className="mt-16 grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto">
             {plans.map((plan) => (
@@ -312,19 +298,14 @@ export default function HomePage() {
       {/* Testimonials */}
       <section id="testimonials" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
+          <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Loved by gym owners
             </h2>
             <p className="mt-4 text-muted-foreground">
               Here&apos;s what real gym owners have to say.
             </p>
-          </motion.div>
+          </div>
 
           <div className="mt-16 grid gap-6 sm:grid-cols-3">
             {testimonials.map((t) => (
@@ -352,16 +333,11 @@ export default function HomePage() {
       {/* FAQ */}
       <section id="faq" className="border-t bg-muted/30 py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
+          <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Frequently asked questions
             </h2>
-          </motion.div>
+          </div>
 
           <div className="mt-12 space-y-4">
             {faqs.map((faq) => (
@@ -382,11 +358,7 @@ export default function HomePage() {
       {/* CTA */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
+          <div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Ready to streamline your gym?
             </h2>
@@ -405,7 +377,7 @@ export default function HomePage() {
                 <Link href="/login">Login</Link>
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
