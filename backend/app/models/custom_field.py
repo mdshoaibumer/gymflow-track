@@ -6,7 +6,7 @@ registration/edit form. Field values are stored as JSONB on the member record.
 import uuid
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Integer, Boolean, Text
+from sqlalchemy import String, ForeignKey, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
