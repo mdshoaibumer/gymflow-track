@@ -25,6 +25,7 @@ out/
 dist/
 build/
 *.egg-info/
+*.tsbuildinfo
 
 # Database
 *.db
@@ -40,6 +41,9 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Uploaded files (member photos etc.)
+backend/uploads/
 
 # Coverage
 htmlcov/
