@@ -433,6 +433,86 @@ class TestTenantIsolation:
         assert resp2.status_code == 201
 
 
+class TestFatherNameField:
+    """Test father_name field on members."""
+
+    async def test_create_member_with_father_name(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Members can be created with father's name."""
+        payload = {
+            "name": "Rahul Kumar",
+            "phone": "9876500100",
+            "father_name": "Suresh Kumar",
+        }
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+        assert response.json()["father_name"] == "Suresh Kumar"
+
+    async def test_create_member_without_father_name(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Father's name is optional — defaults to null."""
+        payload = {"name": "No Father Name", "phone": "9876500101"}
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+        assert response.json()["father_name"] is None
+
+    async def test_update_member_father_name(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Father's name can be updated via PATCH."""
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={"name": "Update Test", "phone": "9876500102"},
+            headers=auth_headers,
+        )
+        member_id = create_resp.json()["id"]
+
+        response = await client.patch(
+            f"/api/v1/members/{member_id}",
+            json={"father_name": "Rajesh Sharma"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["father_name"] == "Rajesh Sharma"
+
+    async def test_father_name_max_length_rejected(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Father's name exceeding 200 chars is rejected."""
+        payload = {
+            "name": "Long Father",
+            "phone": "9876500103",
+            "father_name": "A" * 201,
+        }
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 422
+
+    async def test_father_name_html_sanitized(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Father's name with HTML tags is sanitized (XSS prevention)."""
+        payload = {
+            "name": "Sanitize Test",
+            "phone": "9876500104",
+            "father_name": "<script>alert('xss')</script>Ramesh",
+        }
+        response = await client.post(
+            "/api/v1/members", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+        # HTML tags should be stripped
+        assert "<script>" not in response.json()["father_name"]
+        assert "Ramesh" in response.json()["father_name"]
+
+
 class TestBatchField:
     """Test batch (morning/evening/afternoon) selection on members."""
 
