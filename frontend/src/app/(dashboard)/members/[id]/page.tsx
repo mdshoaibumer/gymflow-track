@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck } from "lucide-react";
+import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download } from "lucide-react";
 import { useMember } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
+import { useMemberInvoices } from "@/hooks/use-invoices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: member, isLoading } = useMember(id);
   const { data: paymentData } = useMemberPayments(id);
+  const { data: invoiceData } = useMemberInvoices(id);
 
   if (isLoading) {
     return (
@@ -48,6 +50,7 @@ export default function MemberDetailPage() {
   }
 
   const payments = paymentData?.payments ?? [];
+  const invoices = invoiceData?.invoices ?? [];
 
   return (
     <motion.div
@@ -211,6 +214,76 @@ export default function MemberDetailPage() {
                       </td>
                       <td className="px-4 py-2 text-muted-foreground max-w-[200px] truncate">
                         {p.notes || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Invoices */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Invoices
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {invoices.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No invoices generated yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Invoice #</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Date</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Amount</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Plan</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-2 font-medium">{inv.invoice_number}</td>
+                      <td className="px-4 py-2">
+                        {new Date(inv.invoice_date).toLocaleDateString("en-IN")}
+                      </td>
+                      <td className="px-4 py-2">{formatPaise(inv.amount_in_paise)}</td>
+                      <td className="px-4 py-2">{inv.plan_name || "—"}</td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                          >
+                            <a
+                              href={`/api/v1/invoices/${inv.id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" />
+                              PDF
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                          >
+                            <Link href={`/invoices/${inv.id}`}>
+                              View
+                            </Link>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

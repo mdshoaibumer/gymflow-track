@@ -23,6 +23,7 @@ from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.schemas.payment import PaymentCreateRequest, PaymentListResponse
 from app.services.membership_service import MembershipService
+from app.services.invoice_service import InvoiceService
 
 
 class PaymentService:
@@ -31,6 +32,7 @@ class PaymentService:
         self.payment_repo = PaymentRepository(db)
         self.member_repo = MemberRepository(db)
         self.membership_service = MembershipService(db)
+        self.invoice_service = InvoiceService(db)
 
     async def record_payment(
         self, gym_id: UUID, user_id: UUID, data: PaymentCreateRequest
@@ -118,6 +120,10 @@ class PaymentService:
             amount_in_paise=payment.amount_in_paise,
             payment_method=payment.payment_method.value,
         ))
+
+        # Auto-generate invoice for completed payments
+        if payment.payment_status == PaymentStatus.COMPLETED:
+            await self.invoice_service.generate_invoice(payment, gym_id)
 
         return payment
 
