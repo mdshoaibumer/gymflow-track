@@ -33,6 +33,7 @@ class MemberCreateRequest(BaseModel):
     email: EmailStr | None = None
     gender: Gender | None = None
     date_of_birth: date | None = None
+    father_name: str | None = Field(None, max_length=200)
     emergency_contact: str | None = None
     membership_plan: str | None = None
     membership_start: date | None = None
@@ -47,7 +48,7 @@ class MemberCreateRequest(BaseModel):
             raise ValueError("Enter a valid 10-digit Indian mobile number")
         return normalized
 
-    @field_validator("name", "emergency_contact", "membership_plan")
+    @field_validator("name", "father_name", "emergency_contact", "membership_plan")
     @classmethod
     def sanitize_text_fields(cls, v: str | None) -> str | None:
         return strip_html_tags(v) if v else v
@@ -58,6 +59,7 @@ class MemberUpdateRequest(BaseModel):
     phone: str | None = Field(None, min_length=1)
     email: EmailStr | None = None
     gender: Gender | None = None
+    father_name: str | None = Field(None, max_length=200)
     # membership_status is NOT updatable directly — use membership lifecycle APIs
     membership_plan: str | None = None
     membership_start: date | None = None
@@ -78,7 +80,7 @@ class MemberUpdateRequest(BaseModel):
             raise ValueError("Enter a valid 10-digit Indian mobile number")
         return normalized
 
-    @field_validator("name", "membership_plan")
+    @field_validator("name", "father_name", "membership_plan")
     @classmethod
     def sanitize_text_fields(cls, v: str | None) -> str | None:
         return strip_html_tags(v) if v else v
@@ -90,6 +92,7 @@ class MemberResponse(BaseModel):
     phone: str
     email: str | None
     gender: Gender | None
+    father_name: str | None = None
     membership_status: MembershipStatus
     membership_plan: str | None
     membership_start: date | None

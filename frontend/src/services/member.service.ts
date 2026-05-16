@@ -6,6 +6,7 @@ export interface Member {
   phone: string;
   email: string | null;
   gender: "male" | "female" | "other" | null;
+  father_name: string | null;
   membership_status: "active" | "expired" | "frozen" | "pending" | "cancelled";
   membership_plan: string | null;
   membership_start: string | null;
@@ -27,6 +28,7 @@ export interface CreateMemberPayload {
   phone: string;
   email?: string;
   gender?: "male" | "female" | "other";
+  father_name?: string;
   membership_plan?: string;
   membership_start?: string;
   membership_end?: string;

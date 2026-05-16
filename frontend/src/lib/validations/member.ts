@@ -39,6 +39,7 @@ export const memberFormSchema = z.object({
     .pipe(z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number")),
   email: z.union([z.literal(""), z.string().email("Enter a valid email")]).optional(),
   gender: z.enum(["male", "female", "other", ""]).optional(),
+  father_name: z.string().max(200).optional().or(z.literal("")),
   membership_plan: z.string().max(100).optional().or(z.literal("")),
   membership_start: z.string().optional().or(z.literal("")),
   membership_end: z.string().optional().or(z.literal("")),

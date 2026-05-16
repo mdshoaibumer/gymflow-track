@@ -44,6 +44,7 @@ class Member(BaseModel):
         PgEnum(Gender, name="gender"), nullable=True
     )
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    father_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     emergency_contact: Mapped[str | None] = mapped_column(String(15), nullable=True)
 
     # Membership

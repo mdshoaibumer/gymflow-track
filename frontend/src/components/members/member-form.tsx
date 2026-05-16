@@ -39,6 +39,7 @@ export function MemberForm({
       phone: "",
       email: "",
       gender: "" as const,
+      father_name: "",
       membership_plan: "",
       membership_start: "",
       membership_end: "",
@@ -125,6 +126,15 @@ export function MemberForm({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="father_name">Father's Name</Label>
+          <Input
+            id="father_name"
+            {...register("father_name")}
+            placeholder="Father's name"
+          />
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="membership_plan">Plan</Label>
           <Input
             id="membership_plan"
@@ -196,6 +206,7 @@ export function memberToFormValues(member: Member): Partial<MemberFormValues> {
     phone: member.phone,
     email: member.email || "",
     gender: member.gender || "",
+    father_name: member.father_name || "",
     membership_plan: member.membership_plan || "",
     membership_start: member.membership_start || "",
     membership_end: member.membership_end || "",
