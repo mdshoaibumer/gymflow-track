@@ -127,7 +127,7 @@ export function MemberForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="father_name">Father's Name</Label>
+          <Label htmlFor="father_name">Father&apos;s Name</Label>
           <Input
             id="father_name"
             {...register("father_name")}

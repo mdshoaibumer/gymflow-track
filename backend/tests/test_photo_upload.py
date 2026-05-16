@@ -174,7 +174,7 @@ class TestUploadPhoto:
             files={"file": ("photo.gif", io.BytesIO(content), "image/gif")},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         assert "Invalid file type" in response.json()["detail"]
 
     async def test_upload_rejects_oversized_file(
