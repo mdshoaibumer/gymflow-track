@@ -105,7 +105,14 @@ export default function RegisterPage() {
             <CardDescription>Get started in under 10 minutes</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmit(onSubmit)(e);
+              }}
+              className="space-y-4" 
+              noValidate
+            >
               {formError && (
                 <div
                   role="alert"
@@ -211,7 +218,12 @@ export default function RegisterPage() {
                 <Input id="city" placeholder="Mumbai" disabled={isSubmitting} {...reg("city")} />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting} aria-busy={isSubmitting}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isSubmitting} 
+                aria-busy={isSubmitting}
+              >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                 {isSubmitting ? "Creating\u2026" : "Create Account"}
               </Button>

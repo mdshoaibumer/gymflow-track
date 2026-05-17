@@ -108,7 +108,14 @@ export default function LoginPage() {
             <CardDescription>Sign in to your GymFlow Track account</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmit(onSubmit)(e);
+              }}
+              className="space-y-4" 
+              noValidate
+            >
               {formError && (
                 <div
                   role="alert"

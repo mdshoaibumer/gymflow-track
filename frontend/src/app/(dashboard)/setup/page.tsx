@@ -163,11 +163,14 @@ export default function SetupPage() {
             className="space-y-6 text-center"
           >
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Welcome to GymFlow Track{status?.gym_name ? `, ${status.gym_name}` : ""}!
+              <h1 className="text-2xl font-bold tracking-tight text-green-600 dark:text-green-400">
+                Registration Successful! 
               </h1>
+              <h2 className="text-xl font-semibold mt-1">
+                Welcome to GymFlow Track{status?.gym_name ? `, ${status.gym_name}` : ""}
+              </h2>
               <p className="mt-2 text-muted-foreground">
-                Let&apos;s get your gym set up in under 10 minutes.
+                Your account is ready. Let&apos;s quickly set up your gym in under 10 minutes.
               </p>
             </div>
 

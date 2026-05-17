@@ -7,10 +7,10 @@ Create Date: 2026-05-16
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ENUM
 
 revision = "022_member_invoices"
-down_revision = "021_custom_fields"
+down_revision = "021"
 branch_labels = None
 depends_on = None
 
@@ -35,7 +35,7 @@ def upgrade() -> None:
         sa.Column("member_name", sa.String(200), nullable=False),
         sa.Column("member_phone", sa.String(15), nullable=False),
         sa.Column("amount_in_paise", sa.Integer, nullable=False),
-        sa.Column("payment_method", sa.Enum("cash", "upi", "card", "bank_transfer", "other", name="paymentmethod", create_type=False), nullable=False),
+        sa.Column("payment_method", ENUM("cash", "upi", "card", "bank_transfer", "other", name="paymentmethod", create_type=False), nullable=False),
         sa.Column("payment_date", sa.Date, nullable=False),
         sa.Column("plan_name", sa.String(200), nullable=True),
         sa.Column("notes", sa.Text, nullable=True),
