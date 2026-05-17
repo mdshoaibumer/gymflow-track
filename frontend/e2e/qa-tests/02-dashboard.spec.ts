@@ -209,14 +209,14 @@ test.describe("02. DASHBOARD — Responsive", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    // Look for mobile menu button
-    const menuBtn = page.locator("button[aria-label*='menu' i], button:has(svg.lucide-menu)").first();
+    // Look for mobile menu button (aria-label="Open menu")
+    const menuBtn = page.locator("button[aria-label='Open menu']");
     if (await menuBtn.isVisible().catch(() => false)) {
       await menuBtn.click();
       await page.waitForTimeout(500);
-      // Sidebar should become visible
-      const sidebar = page.locator("aside, nav").first();
-      await expect(sidebar).toBeVisible();
+      // Mobile sidebar is a fixed-position aside that appears on click
+      const sidebar = page.locator("aside.fixed");
+      await expect(sidebar).toBeVisible({ timeout: 3000 });
     }
   });
 });

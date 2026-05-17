@@ -144,7 +144,11 @@ test.describe("01. AUTH — Successful Login", () => {
     // Intercept the login API to slow it down so we can observe loading state
     await page.route("**/auth/login", async (route) => {
       await new Promise((r) => setTimeout(r, 2000));
-      await route.continue();
+      try {
+        await route.continue();
+      } catch {
+        // Route may already be handled if page navigated away
+      }
     });
 
     await submitBtn.click();

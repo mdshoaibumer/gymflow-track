@@ -199,6 +199,7 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=raw_refresh,
+            role=user.role.value,
         )
 
     # Grace period (seconds) for concurrent refresh requests (multi-tab scenario).

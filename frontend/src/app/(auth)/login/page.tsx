@@ -66,23 +66,26 @@ export default function LoginPage() {
       // Mark tokens saved (resets _profileFetched so dashboard can hydrate)
       useAuthStore.getState().saveTokens(response.access_token, response.refresh_token);
 
-      // Fetch profile immediately to hydrate user data before navigation.
-      // This ensures the dashboard has user data on mount.
+      // Determine redirect target from login response role (avoids race condition
+      // with getMe() + cookie timing in fast automated flows).
+      // Fall back to profile role if login response doesn't include role.
+      let effectiveRole: string | undefined = response.role;
+
+      // Fetch profile to hydrate user data before navigation.
       try {
         const profile = await authService.getMe();
         useAuthStore.getState().setUser(profile);
-        
-        toast.success("Welcome back!");
-        
-        // Route super admins to admin dashboard
-        if (profile.role === "super_admin") {
-          router.push("/admin");
-        } else {
-          router.push("/dashboard");
-        }
+        if (!effectiveRole) effectiveRole = profile.role;
       } catch {
-        // Profile fetch failed — saveTokens already set isAuthenticated,
-        // dashboard's useAuth will retry on mount
+        // Profile fetch failed — dashboard's useAuth will retry on mount
+      }
+
+      toast.success("Welcome back!");
+
+      // Route super admins to admin dashboard
+      if (effectiveRole === "super_admin") {
+        router.push("/admin");
+      } else {
         router.push("/dashboard");
       }
     } catch (err) {

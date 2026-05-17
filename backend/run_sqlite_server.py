@@ -159,6 +159,7 @@ from app.models.subscription import SubscriptionPlan, GymSubscription, Invoice  
 from app.models.auth_token import RefreshToken, PasswordResetToken  # noqa
 from app.models.audit_log import AuditLog  # noqa
 from app.models.platform_settings import PlatformSettings  # noqa
+from app.models.custom_field import GymCustomField  # noqa
 
 import asyncio
 
