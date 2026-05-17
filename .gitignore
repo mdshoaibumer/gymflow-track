@@ -56,6 +56,8 @@ alembic/versions/__pycache__/
 # Playwright test artifacts (screenshots, traces, error contexts)
 test-results/
 playwright-report/
+playwright-report-qa/
+qa-test-results.json
 
 # Scratch/debug scripts (not production code)
 scratch_tests/
