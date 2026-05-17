@@ -105,7 +105,7 @@ check_health() {
     local attempt=0
 
     while [ $attempt -lt $retries ]; do
-        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+        if docker compose -f "$COMPOSE_FILE" exec -T "$service" curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
             return 0
         fi
         attempt=$((attempt + 1))

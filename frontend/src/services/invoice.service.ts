@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { api as apiClient } from "@/lib/api";
 
 export interface MemberInvoice {
   id: string;
