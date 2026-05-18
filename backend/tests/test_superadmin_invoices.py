@@ -11,7 +11,7 @@ from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 from app.models.member_invoice import MemberInvoice
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
-from app.models.subscription import SubscriptionPlan, GymSubscription, BillingStatus
+from app.models.subscription import SubscriptionPlan, GymSubscription, BillingStatus  # noqa: F401
 from app.models.user import User, UserRole
 
 
