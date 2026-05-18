@@ -10,9 +10,9 @@ Coverage:
 """
 
 import time
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: F401
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.cache import InMemoryCache, get_cache_backend
 

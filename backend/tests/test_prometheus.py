@@ -7,7 +7,7 @@ Coverage:
 3. Various path patterns
 """
 
-import pytest
+import pytest  # noqa: F401
 
 from app.middleware.prometheus import _normalize_path
 

@@ -12,7 +12,7 @@ Coverage:
 
 import asyncio
 
-import pytest
+import pytest  # noqa: F401
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.services.whatsapp_provider import (

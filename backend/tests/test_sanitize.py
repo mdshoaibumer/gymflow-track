@@ -11,7 +11,7 @@ Coverage:
 7. Multiple whitespace collapse
 """
 
-import pytest
+import pytest  # noqa: F401
 
 from app.schemas.sanitize import strip_html_tags
 

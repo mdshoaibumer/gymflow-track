@@ -7,10 +7,10 @@ Coverage:
 3. Response format contains 'detail' field
 """
 
-import pytest
+import pytest  # noqa: F401
 from httpx import AsyncClient
 
-from app.core.exceptions import (
+from app.core.exceptions import (  # noqa: F401
     AlreadyExistsError,
     AuthenticationError,
     AuthorizationError,

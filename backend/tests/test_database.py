@@ -10,9 +10,9 @@ Coverage:
 """
 
 import asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
-import pytest
+import pytest  # noqa: F401
 
 
 class TestEngineConfiguration:
@@ -86,7 +86,7 @@ class TestGetDb:
                 mock_factory.return_value = mock_ctx
 
                 gen = get_db()
-                session = await gen.__anext__()
+                await gen.__anext__()  # Get session (unused — testing rollback)
                 # Simulate an exception being thrown into the generator
                 try:
                     await gen.athrow(ValueError("test error"))

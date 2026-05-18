@@ -8,7 +8,7 @@ Coverage:
 4. Feature flag boundary values
 """
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.entitlements import PLAN_FEATURES, get_plan_features, is_feature_enabled
 

@@ -16,7 +16,6 @@ from datetime import date
 import pytest
 
 from app.core.events import (
-    DomainEvent,
     MembershipExpired,
     MembershipExpiringSoon,
     MembershipRenewed,

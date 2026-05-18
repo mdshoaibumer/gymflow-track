@@ -10,7 +10,7 @@ Coverage:
 import json
 import logging
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.logging_config import (
     DevFormatter,

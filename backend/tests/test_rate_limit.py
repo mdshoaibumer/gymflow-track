@@ -11,10 +11,9 @@ Coverage:
 7. Retry-After header in 429 response
 """
 
-import pytest
+import pytest  # noqa: F401
 from unittest.mock import MagicMock, patch
 
-from app.core.cache import InMemoryCache
 from app.middleware.rate_limit import RateLimitMiddleware
 
 

@@ -15,7 +15,7 @@ Coverage:
 8. Client-provided X-Request-ID is respected
 """
 
-import pytest
+import pytest  # noqa: F401
 from httpx import AsyncClient
 
 

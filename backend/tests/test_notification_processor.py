@@ -10,14 +10,13 @@ Coverage:
 """
 
 import asyncio
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-import pytest
+import pytest  # noqa: F401
 
 from app.services.notification_processor import NotificationProcessor
-from app.services.whatsapp_provider import LogOnlyProvider, SendResult, WhatsAppMessage
+from app.services.whatsapp_provider import LogOnlyProvider
 
 
 def _run(coro):

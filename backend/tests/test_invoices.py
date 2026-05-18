@@ -9,13 +9,11 @@ Note: Some of these may overlap with test_superadmin_invoices,
 but these provide focused router-level coverage.
 """
 
-from uuid import uuid4
-
-import pytest
+import pytest  # noqa: F401
 from httpx import AsyncClient
 
-from app.core.cache import get_cache_backend
-from app.core.security import create_access_token
+from app.core.cache import get_cache_backend  # noqa: F401
+from app.core.security import create_access_token  # noqa: F401
 
 
 class TestInvoiceRouterAccess:

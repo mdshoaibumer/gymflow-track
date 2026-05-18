@@ -10,9 +10,9 @@ Coverage:
 """
 
 from datetime import datetime, timezone, timedelta
-from uuid import uuid4, UUID
+from uuid import uuid4
 
-import pytest
+import pytest  # noqa: F401
 import jwt as pyjwt
 
 from app.core.config import settings

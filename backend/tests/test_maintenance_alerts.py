@@ -8,11 +8,11 @@ Coverage:
 """
 
 import asyncio
-from datetime import date, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import date
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-import pytest
+import pytest  # noqa: F401
 
 from app.services.maintenance_alert_service import MaintenanceAlertService
 

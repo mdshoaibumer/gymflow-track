@@ -7,7 +7,7 @@ Coverage:
 3. Job failure counter structure
 """
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.scheduler import (
     _job_failures,

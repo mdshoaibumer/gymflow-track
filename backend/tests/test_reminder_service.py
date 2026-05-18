@@ -10,11 +10,11 @@ Coverage:
 """
 
 import asyncio
-from datetime import date, datetime, time, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import date, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-import pytest
+import pytest  # noqa: F401
 
 from app.services.reminder_service import (
     DEFAULT_SEND_HOUR,

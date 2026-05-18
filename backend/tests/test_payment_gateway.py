@@ -12,7 +12,7 @@ import asyncio
 import hashlib
 import hmac
 
-import pytest
+import pytest  # noqa: F401
 
 from app.services.payment_gateway import (
     MockProvider,

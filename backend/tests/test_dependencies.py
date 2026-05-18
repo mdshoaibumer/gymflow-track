@@ -11,7 +11,7 @@ Coverage:
 from uuid import uuid4
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock  # noqa: F401
 
 from app.core.dependencies import CurrentUser, _check_user_active
 from app.core.cache import get_cache_backend

@@ -10,7 +10,7 @@ Coverage:
 """
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: F401
 
 from app.schemas.validators import validate_password_strength
 

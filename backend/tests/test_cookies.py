@@ -7,9 +7,9 @@ Coverage:
 3. Cookie security attributes (HttpOnly, Secure, SameSite, Path)
 """
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch  # noqa: F401
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.cookies import (
     ACCESS_COOKIE,

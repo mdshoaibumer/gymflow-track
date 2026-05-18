@@ -9,7 +9,7 @@ Coverage:
 
 from datetime import timezone, timedelta, date, datetime
 
-import pytest
+import pytest  # noqa: F401
 
 from app.core.timezone import IST, now_ist, today_ist
 
