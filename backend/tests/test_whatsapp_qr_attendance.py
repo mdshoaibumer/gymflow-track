@@ -197,13 +197,51 @@ class TestCheckinPattern:
 
 
 @pytest.fixture
-async def wa_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
+async def wa_gym(db_session: AsyncSession) -> Gym:
+    """Gym with a UNIQUE phone number for WhatsApp attendance tests.
+
+    Uses a distinct phone to avoid collisions with sample_gym ("9876543210")
+    which is shared across many test fixtures in the full suite.
+    """
+    from app.models.subscription import GymSubscription, BillingStatus, SubscriptionPlan, PlanTier
+    from app.core.cache import get_cache_backend
+    import sqlalchemy as sa
+
+    gym = Gym(
+        id=uuid4(),
+        name="WhatsApp QR Test Gym",
+        slug=f"wa-qr-gym-{uuid4().hex[:8]}",
+        phone="7777000111",
+        email="waqr@testgym.com",
+    )
+    db_session.add(gym)
+    await db_session.flush()
+
+    # Attach active subscription (needed for middleware)
+    result = await db_session.execute(
+        sa.select(SubscriptionPlan).where(SubscriptionPlan.tier == PlanTier.ELITE)
+    )
+    plan = result.scalar_one()
+    sub = GymSubscription(
+        id=uuid4(),
+        gym_id=gym.id,
+        plan_id=plan.id,
+        status=BillingStatus.ACTIVE,
+    )
+    db_session.add(sub)
+    await db_session.flush()
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
+    return gym
+
+
+@pytest.fixture
+async def wa_member(db_session: AsyncSession, wa_gym: Gym) -> Member:
     """Member with active membership and known phone for WhatsApp tests."""
     member = Member(
         id=uuid4(),
-        gym_id=sample_gym.id,
+        gym_id=wa_gym.id,
         name="Rahul Kumar",
-        phone="9876543210",
+        phone="8888000222",
         membership_status=MembershipStatus.ACTIVE,
         membership_start=date.today() - timedelta(days=15),
         membership_end=date.today() + timedelta(days=15),
@@ -216,13 +254,13 @@ async def wa_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
 
 
 @pytest.fixture
-async def wa_expired_member(db_session: AsyncSession, sample_gym: Gym) -> Member:
+async def wa_expired_member(db_session: AsyncSession, wa_gym: Gym) -> Member:
     """Member with expired membership for rejection tests."""
     member = Member(
         id=uuid4(),
-        gym_id=sample_gym.id,
+        gym_id=wa_gym.id,
         name="Expired User",
-        phone="9876500000",
+        phone="8888000333",
         membership_status=MembershipStatus.EXPIRED,
         membership_start=date.today() - timedelta(days=60),
         membership_end=date.today() - timedelta(days=1),
@@ -242,17 +280,17 @@ class TestWhatsAppAttendanceProcessing:
     """Integration tests for WhatsApp attendance message processing."""
 
     async def test_valid_checkin_marks_attendance(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Valid code + known member = attendance marked."""
-        code = generate_gym_code(sample_gym.id)
+        code = generate_gym_code(wa_gym.id)
         message = f"CHECKIN {code}"
 
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",  # wa_member's phone with country code
+            sender_phone="918888000222",  # wa_member's phone with country code
             message_body=message,
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
 
         assert result is not None
@@ -263,18 +301,18 @@ class TestWhatsAppAttendanceProcessing:
         assert result.attendance.source == CheckInSource.WHATSAPP_QR
 
     async def test_duplicate_checkin_returns_existing(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Second check-in on same day returns existing (idempotent)."""
-        code = generate_gym_code(sample_gym.id)
+        code = generate_gym_code(wa_gym.id)
         message = f"CHECKIN {code}"
 
         # First check-in
         result1 = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body=message,
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
         assert result1 is not None
         assert result1.success is True
@@ -282,26 +320,26 @@ class TestWhatsAppAttendanceProcessing:
         # Second check-in (same day)
         result2 = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body=message,
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
         assert result2 is not None
         assert result2.success is True
         assert "already checked in" in result2.message
 
     async def test_expired_membership_rejected(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_expired_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_expired_member: Member
     ):
         """Expired members are rejected with clear message."""
-        code = generate_gym_code(sample_gym.id)
+        code = generate_gym_code(wa_gym.id)
         message = f"CHECKIN {code}"
 
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876500000",
+            sender_phone="918888000333",
             message_body=message,
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
 
         assert result is not None
@@ -309,14 +347,14 @@ class TestWhatsAppAttendanceProcessing:
         assert "expired" in result.message.lower()
 
     async def test_invalid_code_rejected(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Invalid/expired codes are rejected."""
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body="CHECKIN ZZZZZZ",
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
 
         assert result is not None
@@ -324,17 +362,17 @@ class TestWhatsAppAttendanceProcessing:
         assert "expired" in result.message.lower() or "invalid" in result.message.lower()
 
     async def test_unknown_phone_rejected(
-        self, db_session: AsyncSession, sample_gym: Gym
+        self, db_session: AsyncSession, wa_gym: Gym
     ):
         """Unknown phone number gets informative rejection."""
-        code = generate_gym_code(sample_gym.id)
+        code = generate_gym_code(wa_gym.id)
         message = f"CHECKIN {code}"
 
         result = await process_attendance_message(
             db=db_session,
             sender_phone="919999999999",  # Not registered
             message_body=message,
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
 
         assert result is not None
@@ -342,27 +380,27 @@ class TestWhatsAppAttendanceProcessing:
         assert "not registered" in result.message.lower()
 
     async def test_non_checkin_message_returns_none(
-        self, db_session: AsyncSession, sample_gym: Gym
+        self, db_session: AsyncSession, wa_gym: Gym
     ):
         """Non-checkin messages are ignored (return None)."""
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body="Hello, what are gym timings?",
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
         assert result is None
 
     async def test_unknown_gym_phone_rejected(
-        self, db_session: AsyncSession, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Message to unknown gym number gets rejection."""
-        code = generate_gym_code(wa_member.gym_id)
+        code = generate_gym_code(wa_gym.id)
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body=f"CHECKIN {code}",
-            receiver_phone="918888888888",  # Not any gym's number
+            receiver_phone="910000099999",  # Not any gym's number
         )
 
         assert result is not None
@@ -370,17 +408,17 @@ class TestWhatsAppAttendanceProcessing:
         assert "not linked" in result.message.lower()
 
     async def test_cross_gym_code_rejected(
-        self, db_session: AsyncSession, sample_gym: Gym, other_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, other_gym: Gym, wa_member: Member
     ):
         """Code generated for Gym A won't work when sent to Gym B."""
-        # Generate code for other_gym but send to sample_gym's phone
+        # Generate code for other_gym but send to wa_gym's phone
         other_code = generate_gym_code(other_gym.id)
 
         result = await process_attendance_message(
             db=db_session,
-            sender_phone="919876543210",
+            sender_phone="918888000222",
             message_body=f"CHECKIN {other_code}",
-            receiver_phone=sample_gym.phone,
+            receiver_phone=wa_gym.phone,
         )
 
         assert result is not None
@@ -397,46 +435,46 @@ class TestPhoneNormalization:
     """Tests for phone number lookup with different formats."""
 
     async def test_find_member_with_country_code(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
-        """WhatsApp sends '919876543210', member stored as '9876543210'."""
+        """WhatsApp sends '918888000222', member stored as '8888000222'."""
         from app.repositories.member_repository import MemberRepository
 
         repo = MemberRepository(db_session)
-        member = await _find_member_by_phone(repo, "919876543210", sample_gym.id)
+        member = await _find_member_by_phone(repo, "918888000222", wa_gym.id)
         assert member is not None
         assert member.id == wa_member.id
 
     async def test_find_member_exact_match(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Direct match on stored phone number."""
         from app.repositories.member_repository import MemberRepository
 
         repo = MemberRepository(db_session)
-        member = await _find_member_by_phone(repo, "9876543210", sample_gym.id)
+        member = await _find_member_by_phone(repo, "8888000222", wa_gym.id)
         assert member is not None
         assert member.id == wa_member.id
 
     async def test_find_member_with_plus_prefix(
-        self, db_session: AsyncSession, sample_gym: Gym, wa_member: Member
+        self, db_session: AsyncSession, wa_gym: Gym, wa_member: Member
     ):
         """Phone with + prefix."""
         from app.repositories.member_repository import MemberRepository
 
         repo = MemberRepository(db_session)
-        member = await _find_member_by_phone(repo, "+919876543210", sample_gym.id)
+        member = await _find_member_by_phone(repo, "+918888000222", wa_gym.id)
         assert member is not None
         assert member.id == wa_member.id
 
     async def test_unknown_phone_returns_none(
-        self, db_session: AsyncSession, sample_gym: Gym
+        self, db_session: AsyncSession, wa_gym: Gym
     ):
         """Non-existent phone returns None."""
         from app.repositories.member_repository import MemberRepository
 
         repo = MemberRepository(db_session)
-        member = await _find_member_by_phone(repo, "919999999999", sample_gym.id)
+        member = await _find_member_by_phone(repo, "919999999999", wa_gym.id)
         assert member is None
 
 
@@ -511,10 +549,10 @@ class TestWhatsAppWebhookEndpoint:
         assert response.status_code == 403
 
     async def test_webhook_post_valid_checkin(
-        self, client: AsyncClient, sample_gym: Gym, wa_member: Member
+        self, client: AsyncClient, wa_gym: Gym, wa_member: Member
     ):
         """POST webhook with valid check-in message returns 200."""
-        code = generate_gym_code(sample_gym.id)
+        code = generate_gym_code(wa_gym.id)
 
         # WhatsApp Cloud API webhook format
         payload = {
@@ -524,11 +562,11 @@ class TestWhatsAppWebhookEndpoint:
                         {
                             "value": {
                                 "metadata": {
-                                    "display_phone_number": sample_gym.phone,
+                                    "display_phone_number": wa_gym.phone,
                                 },
                                 "messages": [
                                     {
-                                        "from": "919876543210",
+                                        "from": "918888000222",
                                         "type": "text",
                                         "text": {"body": f"CHECKIN {code}"},
                                     }
