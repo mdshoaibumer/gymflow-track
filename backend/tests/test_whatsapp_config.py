@@ -14,6 +14,7 @@ Covers:
 10. Toggle enable/disable
 """
 
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -605,7 +606,7 @@ class TestNotificationProcessorSendFlow:
             notification_type=NotificationType.WELCOME,
             channel=NotificationChannel.WHATSAPP,
             status=NotificationStatus.PENDING,
-            scheduled_for="2026-01-01T00:00:00Z",
+            scheduled_for=datetime(2026, 1, 1, tzinfo=timezone.utc),
             payload={"member_name": "Test"},  # No member_phone!
         )
         db_session.add(notification)
@@ -638,7 +639,7 @@ class TestNotificationProcessorSendFlow:
             notification_type=NotificationType.WELCOME,
             channel=NotificationChannel.WHATSAPP,
             status=NotificationStatus.PENDING,
-            scheduled_for="2026-01-01T00:00:00Z",
+            scheduled_for=datetime(2026, 1, 1, tzinfo=timezone.utc),
             payload={"member_name": "Test", "member_phone": "9876543210"},
         )
         db_session.add(notification)
@@ -682,7 +683,7 @@ class TestNotificationProcessorSendFlow:
             notification_type=NotificationType.EXPIRY_7_DAYS,
             channel=NotificationChannel.WHATSAPP,
             status=NotificationStatus.PENDING,
-            scheduled_for="2026-01-01T00:00:00Z",
+            scheduled_for=datetime(2026, 1, 1, tzinfo=timezone.utc),
             payload={
                 "member_name": "Fail Member",
                 "member_phone": "9876543210",
