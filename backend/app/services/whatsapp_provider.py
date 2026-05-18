@@ -94,9 +94,8 @@ class AiSensyProvider(WhatsAppProvider):
     AiSensy WhatsApp BSP adapter.
     Docs: https://docs.aisensy.com/
 
-    IMPORTANT: Not fully implemented — requires API key and campaign setup.
-    This is the structural adapter; actual HTTP calls will be added
-    when the gym owner configures their AiSensy account.
+    Each gym owner configures their own AiSensy account.
+    API key is stored per-gym in whatsapp_configs table.
     """
 
     def __init__(self, api_key: str, base_url: str = "https://backend.aisensy.com"):
@@ -106,8 +105,14 @@ class AiSensyProvider(WhatsAppProvider):
     async def send_template_message(self, message: WhatsAppMessage) -> SendResult:
         """
         Send via AiSensy Campaign API.
-        Structure prepared for:
         POST /campaign/t1/api/v2
+
+        AiSensy requires:
+        - apiKey: The gym owner's API key
+        - campaignName: Pre-approved WhatsApp template name
+        - destination: Phone in E.164 format (e.g. 919876543210)
+        - userName: First template variable (member name)
+        - templateParams: Ordered list of template variables
         """
         import httpx
 
@@ -134,10 +139,15 @@ class AiSensyProvider(WhatsAppProvider):
                         provider_message_id=data.get("data", {}).get("id"),
                     )
                 else:
+                    error_detail = response.text[:200]  # Truncate long errors
                     return SendResult(
                         success=False,
-                        error_message=f"AiSensy HTTP {response.status_code}: {response.text}",
+                        error_message=f"AiSensy HTTP {response.status_code}: {error_detail}",
                     )
+        except httpx.TimeoutException:
+            return SendResult(success=False, error_message="AiSensy request timed out (30s)")
+        except httpx.ConnectError:
+            return SendResult(success=False, error_message="Cannot connect to AiSensy API")
         except Exception as e:
             return SendResult(success=False, error_message=str(e))
 

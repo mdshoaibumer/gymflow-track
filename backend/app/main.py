@@ -22,7 +22,7 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.middleware.body_size_limit import BodySizeLimitMiddleware
 from app.middleware.prometheus import PrometheusMiddleware, metrics_endpoint
-from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin, custom_fields, invoices
+from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin, custom_fields, invoices, whatsapp_config
 
 # Configure structured logging BEFORE anything else
 setup_logging()
@@ -67,16 +67,22 @@ async def lifespan(app: FastAPI):
 
 
 def _setup_whatsapp_provider() -> None:
-    """Configure the WhatsApp provider from settings."""
+    """
+    Configure the global fallback WhatsApp provider.
+
+    NOTE: The NotificationProcessor now resolves providers per-gym from the
+    whatsapp_configs table. This global setting serves as a legacy fallback
+    and for logging purposes only.
+    """
     from app.services.whatsapp_provider import LogOnlyProvider, AiSensyProvider
 
     provider_name = settings.WHATSAPP_PROVIDER
     if provider_name == "aisensy" and settings.WHATSAPP_API_KEY:
         provider = AiSensyProvider(api_key=settings.WHATSAPP_API_KEY)
-        logger.info("WhatsApp provider: AiSensy")
+        logger.info("WhatsApp provider: AiSensy (global fallback)")
     else:
         provider = LogOnlyProvider()
-        logger.info("WhatsApp provider: log_only (no messages will be sent)")
+        logger.info("WhatsApp provider: log_only (per-gym config will override when available)")
     configure_provider(provider)
 
 
@@ -210,6 +216,7 @@ app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytic
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Super Admin"])
 app.include_router(custom_fields.router, prefix="/api/v1/custom-fields", tags=["Custom Fields"])
 app.include_router(invoices.router, prefix="/api/v1", tags=["Invoices"])
+app.include_router(whatsapp_config.router, prefix="/api/v1/whatsapp", tags=["WhatsApp Configuration"])
 
 # Serve uploaded files (member photos, etc.)
 # The uploads directory is created on first photo upload; ensure mount doesn't

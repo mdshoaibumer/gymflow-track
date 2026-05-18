@@ -103,13 +103,14 @@ async def _process_notifications_job() -> None:
     """
     Periodic job: send pending notifications that are due.
     Runs every 5 minutes.
+    Provider is resolved per-gym by the NotificationProcessor.
     """
     logger.debug("Running process_notifications job")
 
     try:
         async with async_session_factory() as session:
             async with session.begin():
-                processor = NotificationProcessor(session, _provider)
+                processor = NotificationProcessor(session)
                 await processor.process_pending(batch_size=100)
         _job_failures["process_notifications"] = 0
     except Exception:
