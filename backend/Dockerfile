@@ -45,8 +45,8 @@ COPY --from=deps /install /usr/local
 COPY --chown=gymflowtrack:gymflowtrack . .
 
 # Create necessary directories with correct ownership
-RUN mkdir -p /app/logs /tmp/gymflowtrack && \
-    chown -R gymflowtrack:gymflowtrack /app /tmp/gymflowtrack
+RUN mkdir -p /app/logs /tmp/gymflowtrack /app/uploads && \
+    chown -R gymflowtrack:gymflowtrack /app /tmp/gymflowtrack /app/uploads
 
 USER gymflowtrack
 
