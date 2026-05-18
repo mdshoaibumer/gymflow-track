@@ -6,11 +6,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { gymService } from "@/services/gym.service";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface GymLogoUploadProps {
   logoUrl: string | null;
   disabled?: boolean;
 }
+
+const getFullAssetUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  try {
+    const origin = new URL(API_URL).origin;
+    return `${origin}${url}`;
+  } catch {
+    return url;
+  }
+};
 
 export function GymLogoUpload({ logoUrl, disabled }: GymLogoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +79,7 @@ export function GymLogoUpload({ logoUrl, disabled }: GymLogoUploadProps) {
     e.target.value = "";
   };
 
-  const currentImage = preview || logoUrl;
+  const currentImage = preview || getFullAssetUrl(logoUrl);
   const isLoading = uploadMutation.isPending || deleteMutation.isPending;
 
   return (

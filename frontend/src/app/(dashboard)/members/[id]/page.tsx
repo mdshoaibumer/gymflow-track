@@ -9,6 +9,7 @@ import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
 import { useMemberInvoices } from "@/hooks/use-invoices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { invoiceService } from "@/services/invoice.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
@@ -266,7 +267,7 @@ export default function MemberDetailPage() {
                             asChild
                           >
                             <a
-                              href={`/api/v1/invoices/${inv.id}/pdf`}
+                              href={invoiceService.getDownloadUrl(inv.id)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >

@@ -1,4 +1,4 @@
-import { api as apiClient } from "@/lib/api";
+import { api as apiClient, API_URL } from "@/lib/api";
 
 export interface MemberInvoice {
   id: string;
@@ -51,6 +51,6 @@ export const invoiceService = {
   },
 
   getDownloadUrl(invoiceId: string): string {
-    return `/api/v1/invoices/${invoiceId}/pdf`;
+    return `${API_URL}/invoices/${invoiceId}/pdf`;
   },
 };

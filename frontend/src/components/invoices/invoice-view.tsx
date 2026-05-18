@@ -3,6 +3,18 @@
 import { MemberInvoice } from "@/services/invoice.service";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
+import { API_URL } from "@/lib/api";
+
+const getFullAssetUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  try {
+    const origin = new URL(API_URL).origin;
+    return `${origin}${url}`;
+  } catch {
+    return url;
+  }
+};
 
 interface InvoiceViewProps {
   invoice: MemberInvoice;
@@ -46,7 +58,7 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
         <div className="text-center border-b pb-4 mb-6">
           {invoice.gym_logo_url && (
             <img
-              src={invoice.gym_logo_url}
+              src={getFullAssetUrl(invoice.gym_logo_url)!}
               alt={invoice.gym_name}
               className="h-16 mx-auto mb-2 object-contain"
             />

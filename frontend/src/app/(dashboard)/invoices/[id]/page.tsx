@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useInvoice } from "@/hooks/use-invoices";
 import { InvoiceView } from "@/components/invoices/invoice-view";
+import { invoiceService } from "@/services/invoice.service";
 
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +27,7 @@ export default function InvoicePage() {
   }
 
   const handleDownloadPdf = () => {
-    window.open(`/api/v1/invoices/${invoice.id}/pdf`, "_blank");
+    window.open(invoiceService.getDownloadUrl(invoice.id), "_blank");
   };
 
   return (

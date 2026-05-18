@@ -1,4 +1,4 @@
-import { request } from "@/lib/api";
+import { request, api } from "@/lib/api";
 
 export interface Gym {
   id: string;
@@ -39,16 +39,11 @@ export const gymService = {
   uploadLogo: async (file: File): Promise<Gym> => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/v1/gyms/me/logo", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Upload failed" }));
-      throw new Error(err.detail || "Upload failed");
-    }
-    return res.json();
+    return api.post<Gym>("/gyms/me/logo", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }).then((res) => res.data);
   },
 
   deleteLogo: () =>
