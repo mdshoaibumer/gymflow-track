@@ -62,7 +62,6 @@ async def conc_member(
 class TestConcurrentPayments:
     """Verify payment idempotency under concurrent requests."""
 
-    @pytest.mark.asyncio
     async def test_concurrent_payments_with_same_idempotency_key(
         self,
         client: AsyncClient,
@@ -97,7 +96,6 @@ class TestConcurrentPayments:
                 f"Expected 1 payment, got {len(payment_ids)} different IDs"
             )
 
-    @pytest.mark.asyncio
     async def test_concurrent_payments_without_idempotency_key(
         self,
         client: AsyncClient,
@@ -132,7 +130,6 @@ class TestConcurrentPayments:
 class TestConcurrentMemberCreation:
     """Verify concurrent member creation handles duplicates correctly."""
 
-    @pytest.mark.asyncio
     async def test_concurrent_duplicate_phone(
         self, client: AsyncClient, auth_headers: dict
     ):
@@ -166,7 +163,6 @@ class TestConcurrentMemberCreation:
 class TestConcurrentAttendance:
     """Verify concurrent check-in produces exactly one record."""
 
-    @pytest.mark.asyncio
     async def test_concurrent_qr_check_in(
         self,
         client: AsyncClient,
@@ -205,7 +201,6 @@ class TestConcurrentAttendance:
 class TestConcurrentRegistration:
     """Verify concurrent gym registrations are handled correctly."""
 
-    @pytest.mark.asyncio
     async def test_concurrent_registrations_unique_emails(
         self, client: AsyncClient
     ):

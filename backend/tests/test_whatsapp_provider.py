@@ -8,11 +8,10 @@ Coverage:
 4. WhatsAppMessage dataclass
 5. SendResult dataclass
 6. Phone number formatting (country code prepend)
+7. Error handling (timeout, connection error, generic exception)
 """
 
-import asyncio
-
-import pytest  # noqa: F401
+import httpx
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from app.services.whatsapp_provider import (
@@ -23,11 +22,6 @@ from app.services.whatsapp_provider import (
     WhatsAppMessage,
     build_message_from_notification,
 )
-
-
-def _run(coro):
-    """Helper to run an async function synchronously in tests."""
-    return asyncio.run(coro)
 
 
 class TestWhatsAppMessage:
@@ -73,14 +67,14 @@ class TestSendResult:
 class TestLogOnlyProvider:
     """LogOnlyProvider logs messages without external calls."""
 
-    def test_send_returns_success(self):
+    async def test_send_returns_success(self):
         provider = LogOnlyProvider()
         msg = WhatsAppMessage(
             phone="919876543210",
             template_name="test_template",
             variables=["var1", "var2"],
         )
-        result = _run(provider.send_template_message(msg))
+        result = await provider.send_template_message(msg)
         assert result.success is True
         assert result.provider_message_id == "log_only_mock"
 
@@ -92,7 +86,7 @@ class TestLogOnlyProvider:
 class TestAiSensyProvider:
     """AiSensyProvider with mocked HTTP calls."""
 
-    def test_successful_send(self):
+    async def test_successful_send(self):
         provider = AiSensyProvider(api_key="test_api_key")
         msg = WhatsAppMessage(
             phone="919876543210",
@@ -111,12 +105,42 @@ class TestAiSensyProvider:
             mock_client.__aexit__ = AsyncMock(return_value=False)
             MockClient.return_value = mock_client
 
-            result = _run(provider.send_template_message(msg))
+            result = await provider.send_template_message(msg)
 
         assert result.success is True
         assert result.provider_message_id == "aisensy_msg_123"
 
-    def test_failed_send_http_error(self):
+    async def test_successful_send_empty_variables(self):
+        """Send with empty variables list — userName defaults to empty."""
+        provider = AiSensyProvider(api_key="test_api_key")
+        msg = WhatsAppMessage(
+            phone="919876543210",
+            template_name="test",
+            variables=[],
+        )
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": {"id": "msg_456"}}
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = mock_client
+
+            result = await provider.send_template_message(msg)
+
+            # Verify the payload sent to AiSensy
+            call_args = mock_client.post.call_args
+            payload = call_args.kwargs["json"]
+            assert payload["userName"] == ""
+            assert payload["templateParams"] == []
+
+        assert result.success is True
+
+    async def test_failed_send_http_error(self):
         provider = AiSensyProvider(api_key="test_api_key")
         msg = WhatsAppMessage(
             phone="919876543210",
@@ -135,14 +159,13 @@ class TestAiSensyProvider:
             mock_client.__aexit__ = AsyncMock(return_value=False)
             MockClient.return_value = mock_client
 
-            result = _run(provider.send_template_message(msg))
+            result = await provider.send_template_message(msg)
 
         assert result.success is False
         assert "401" in result.error_message
+        assert "Unauthorized" in result.error_message
 
-    def test_timeout_error(self):
-        import httpx
-
+    async def test_timeout_error(self):
         provider = AiSensyProvider(api_key="test_api_key")
         msg = WhatsAppMessage(
             phone="919876543210",
@@ -157,14 +180,80 @@ class TestAiSensyProvider:
             mock_client.__aexit__ = AsyncMock(return_value=False)
             MockClient.return_value = mock_client
 
-            result = _run(provider.send_template_message(msg))
+            result = await provider.send_template_message(msg)
 
         assert result.success is False
         assert "timed out" in result.error_message
 
+    async def test_connect_error(self):
+        provider = AiSensyProvider(api_key="test_api_key")
+        msg = WhatsAppMessage(
+            phone="919876543210",
+            template_name="test",
+            variables=["John"],
+        )
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.side_effect = httpx.ConnectError("Connection refused")
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = mock_client
+
+            result = await provider.send_template_message(msg)
+
+        assert result.success is False
+        assert "Cannot connect" in result.error_message
+
+    async def test_generic_exception(self):
+        provider = AiSensyProvider(api_key="test_api_key")
+        msg = WhatsAppMessage(
+            phone="919876543210",
+            template_name="test",
+            variables=["John"],
+        )
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.side_effect = RuntimeError("unexpected")
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = mock_client
+
+            result = await provider.send_template_message(msg)
+
+        assert result.success is False
+        assert "unexpected" in result.error_message
+
     def test_provider_name(self):
         provider = AiSensyProvider(api_key="key")
         assert provider.provider_name() == "aisensy"
+
+    def test_custom_base_url(self):
+        provider = AiSensyProvider(api_key="key", base_url="https://custom.example.com")
+        assert provider.base_url == "https://custom.example.com"
+
+    async def test_long_error_response_truncated(self):
+        """Error responses longer than 200 chars are truncated."""
+        provider = AiSensyProvider(api_key="test_api_key")
+        msg = WhatsAppMessage(phone="919876543210", template_name="t", variables=[])
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "x" * 500  # 500 char error
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = mock_client
+
+            result = await provider.send_template_message(msg)
+
+        assert result.success is False
+        # Error message should be truncated (200 chars of x + prefix)
+        assert len(result.error_message) < 500
 
 
 class TestBuildMessageFromNotification:
@@ -279,16 +368,18 @@ class TestBuildMessageFromNotification:
 
 
 class TestTemplateMap:
-    """Verify TEMPLATE_MAP has all expected entries."""
+    """Verify all expected templates are mapped."""
 
     def test_all_notification_types_mapped(self):
         expected_types = [
-            "expiry_7_days",
-            "expiry_3_days",
-            "membership_expired",
-            "payment_overdue",
-            "welcome",
-            "renewal_confirmation",
+            "expiry_7_days", "expiry_3_days", "membership_expired",
+            "payment_overdue", "welcome", "renewal_confirmation",
         ]
-        for nt in expected_types:
-            assert nt in TEMPLATE_MAP
+        for ntype in expected_types:
+            assert ntype in TEMPLATE_MAP, f"Missing template for {ntype}"
+
+    def test_template_names_are_non_empty(self):
+        for ntype, template in TEMPLATE_MAP.items():
+            assert template, f"Empty template name for {ntype}"
+
+

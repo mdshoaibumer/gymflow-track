@@ -17,7 +17,6 @@ Architecture:
     - The schema is created once per test session using create_all().
 """
 
-import asyncio
 from uuid import uuid4
 
 import pytest
@@ -51,14 +50,6 @@ TEST_DATABASE_URL = f"{_base_url}/gymflowtrack_test"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create a single event loop for the entire test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
