@@ -7,6 +7,14 @@ import type {
 } from "@/services/whatsapp-config.service";
 import { toast } from "sonner";
 
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "response" in err) {
+    const resp = (err as { response?: { data?: { detail?: string } } }).response;
+    if (resp?.data?.detail) return resp.data.detail;
+  }
+  return fallback;
+}
+
 const KEYS = {
   config: ["whatsapp-config"] as const,
   status: ["whatsapp-status"] as const,
@@ -38,9 +46,8 @@ export function useSaveWhatsAppConfig() {
       qc.invalidateQueries({ queryKey: KEYS.status });
       toast.success("WhatsApp configuration saved");
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.detail || "Failed to save configuration";
-      toast.error(msg);
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "Failed to save configuration"));
     },
   });
 }
@@ -56,9 +63,8 @@ export function useToggleWhatsApp() {
         data.is_enabled ? "WhatsApp automation enabled" : "WhatsApp automation disabled"
       );
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.detail || "Failed to toggle";
-      toast.error(msg);
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "Failed to toggle"));
     },
   });
 }
@@ -73,9 +79,8 @@ export function useTestWhatsApp() {
         toast.error(data.message);
       }
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.detail || "Test message failed";
-      toast.error(msg);
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "Test message failed"));
     },
   });
 }
@@ -89,9 +94,8 @@ export function useRemoveWhatsAppConfig() {
       qc.invalidateQueries({ queryKey: KEYS.status });
       toast.success("WhatsApp configuration removed");
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.detail || "Failed to remove configuration";
-      toast.error(msg);
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "Failed to remove configuration"));
     },
   });
 }
