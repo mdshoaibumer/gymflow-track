@@ -1510,3 +1510,50 @@ test.describe("11. DATA INTEGRITY", () => {
     expect(successCount).toBe(1);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+//  12. MEMBER PHOTO & CAM SNAP OPERATIONS
+// ══════════════════════════════════════════════════════════════════════
+test.describe("12. MEMBER PHOTO & CAM SNAP", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginViaUI(page, OWNER_EMAIL);
+    await navigateToMembers(page);
+  });
+
+  test("12.01 — Upload photo and webcam snapping options present", async ({ page }) => {
+    await clickAddMember(page);
+    
+    // Check uploader section is present
+    const photoSection = page.locator("text=/Member Photo/i");
+    await expect(photoSection).toBeVisible({ timeout: 5000 });
+
+    // Check "Upload Photo" button is visible
+    const uploadBtn = page.getByRole("button", { name: /upload photo/i });
+    await expect(uploadBtn).toBeVisible();
+
+    // Check "Take Snap" button is visible
+    const snapBtn = page.getByRole("button", { name: /take snap/i });
+    await expect(snapBtn).toBeVisible();
+
+    await page.screenshot({ path: "test-results/members/121-uploader-options.png" });
+  });
+
+  test("12.02 — Live webcam snaps trigger modal view", async ({ page }) => {
+    await clickAddMember(page);
+    const snapBtn = page.getByRole("button", { name: /take snap/i });
+    await snapBtn.click();
+
+    // The premium camera modal should slide or pop open
+    const modalTitle = page.locator("text=/Live Camera Snap/i");
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+
+    // Verify "Close" button exists inside the modal
+    const closeBtn = page.locator("button:has-text('Close')");
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+
+    // Modal is closed
+    await expect(modalTitle).not.toBeVisible();
+    await page.screenshot({ path: "test-results/members/122-camera-modal.png" });
+  });
+});

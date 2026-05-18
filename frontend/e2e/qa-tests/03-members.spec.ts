@@ -473,3 +473,68 @@ test.describe("03. MEMBERS — Mobile", () => {
     expect(bodyWidth).toBeLessThanOrEqual(400);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+//  PHOTO & WEBCAM SNAP
+// ══════════════════════════════════════════════════════════════════════
+test.describe("03. MEMBERS — Photo & Webcam Snap", () => {
+  test("upload photo and webcam snapping options present", async ({ page }) => {
+    await loginViaUI(page, ownerEmail);
+    await page.goto("/members");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
+
+    // Open add member form
+    const addBtn = page.getByRole("button", { name: /add member/i }).first();
+    if (await addBtn.isVisible().catch(() => false)) {
+      await addBtn.click();
+    } else {
+      await page.locator("button:has(svg.lucide-plus), button:has(svg.lucide-user-plus)").first().click();
+    }
+    await page.waitForTimeout(500);
+
+    // Check uploader section is present
+    const photoSection = page.locator("text=/Member Photo/i");
+    await expect(photoSection).toBeVisible({ timeout: 5000 });
+
+    // Check "Upload Photo" button is visible
+    const uploadBtn = page.getByRole("button", { name: /upload photo/i });
+    await expect(uploadBtn).toBeVisible();
+
+    // Check "Take Snap" button is visible
+    const snapBtn = page.getByRole("button", { name: /take snap/i });
+    await expect(snapBtn).toBeVisible();
+  });
+
+  test("live webcam snaps trigger modal view", async ({ page }) => {
+    await loginViaUI(page, ownerEmail);
+    await page.goto("/members");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
+
+    // Open add member form
+    const addBtn = page.getByRole("button", { name: /add member/i }).first();
+    if (await addBtn.isVisible().catch(() => false)) {
+      await addBtn.click();
+    } else {
+      await page.locator("button:has(svg.lucide-plus), button:has(svg.lucide-user-plus)").first().click();
+    }
+    await page.waitForTimeout(500);
+
+    // Open camera snaps modal
+    const snapBtn = page.getByRole("button", { name: /take snap/i });
+    await snapBtn.click();
+
+    // The premium camera modal should slide or pop open
+    const modalTitle = page.locator("text=/Capture Member Photo/i");
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+
+    // Verify "Close modal" button exists inside the modal and click it
+    const closeBtn = page.getByRole("button", { name: "Close modal" });
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+
+    // Modal is closed
+    await expect(modalTitle).not.toBeVisible();
+  });
+});
