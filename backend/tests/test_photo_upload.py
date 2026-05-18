@@ -206,7 +206,7 @@ class TestUploadPhoto:
             files={"file": ("fake.jpg", io.BytesIO(content), "image/jpeg")},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         assert "does not match" in response.json()["detail"]
 
     async def test_upload_rejects_wav_disguised_as_webp(
@@ -220,7 +220,7 @@ class TestUploadPhoto:
             files={"file": ("audio.webp", io.BytesIO(content), "image/webp")},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         assert "does not match" in response.json()["detail"]
 
     async def test_upload_rejects_avi_disguised_as_webp(
@@ -234,7 +234,7 @@ class TestUploadPhoto:
             files={"file": ("video.webp", io.BytesIO(content), "image/webp")},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         assert "does not match" in response.json()["detail"]
 
     async def test_upload_replaces_existing_photo(
