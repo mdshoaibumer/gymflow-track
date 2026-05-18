@@ -5,6 +5,7 @@ import { Camera, Trash2, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadMemberPhoto, useDeleteMemberPhoto } from "@/hooks/use-members";
 import { API_URL } from "@/lib/api";
+import { MemberCameraModal } from "./member-camera-modal";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_MB = 5;
@@ -20,9 +21,11 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const uploadMutation = useUploadMemberPhoto();
   const deleteMutation = useDeleteMemberPhoto();
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cacheBust, setCacheBust] = useState(0);
 
   const fullPhotoUrl = photoUrl
-    ? `${API_URL.replace("/api/v1", "")}${photoUrl}`
+    ? `${API_URL.replace("/api/v1", "")}${photoUrl}?cb=${cacheBust}`
     : null;
 
   const displayUrl = previewUrl || fullPhotoUrl;
@@ -51,6 +54,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         { id: memberId, file },
         {
           onSuccess: () => {
+            setCacheBust((prev) => prev + 1);
             URL.revokeObjectURL(objectUrl);
             setPreviewUrl(null);
           },
@@ -67,9 +71,36 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
     [memberId, uploadMutation]
   );
 
+  const handleCameraCapture = useCallback(
+    (file: File) => {
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+
+      uploadMutation.mutate(
+        { id: memberId, file },
+        {
+          onSuccess: () => {
+            setCacheBust((prev) => prev + 1);
+            URL.revokeObjectURL(objectUrl);
+            setPreviewUrl(null);
+          },
+          onError: () => {
+            URL.revokeObjectURL(objectUrl);
+            setPreviewUrl(null);
+          },
+        }
+      );
+    },
+    [memberId, uploadMutation]
+  );
+
   const handleDelete = useCallback(() => {
     if (!confirm("Remove this member's photo?")) return;
-    deleteMutation.mutate(memberId);
+    deleteMutation.mutate(memberId, {
+      onSuccess: () => {
+        setCacheBust((prev) => prev + 1);
+      },
+    });
     setPreviewUrl(null);
   }, [memberId, deleteMutation]);
 
@@ -96,7 +127,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 justify-center">
         <Button
           type="button"
           variant="outline"
@@ -105,7 +136,18 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
           disabled={isLoading}
         >
           <Camera className="mr-1.5 h-3.5 w-3.5" />
-          {photoUrl ? "Change" : "Upload"}
+          Upload Photo
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsCameraOpen(true)}
+          disabled={isLoading}
+        >
+          <Camera className="mr-1.5 h-3.5 w-3.5" />
+          Take Snap
         </Button>
 
         {photoUrl && (
@@ -131,6 +173,12 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         onChange={handleFileSelect}
         className="hidden"
         aria-label="Upload member photo"
+      />
+
+      <MemberCameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
       />
     </div>
   );

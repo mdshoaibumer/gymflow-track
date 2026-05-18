@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Camera, Upload, Trash2, User } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useCustomFields } from "@/hooks/use-custom-fields";
@@ -11,12 +11,29 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { Member } from "@/services/member.service";
 import type { CustomField } from "@/services/custom-field.service";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { MemberCameraModal } from "./member-camera-modal";
+import { API_URL } from "@/lib/api";
+
+const getFullAssetUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  try {
+    const origin = new URL(API_URL).origin;
+    return `${origin}${url}`;
+  } catch {
+    return url;
+  }
+};
 
 interface MemberFormProps {
   defaultValues?: Partial<MemberFormValues>;
   defaultCustomFields?: Record<string, string | number | null>;
-  onSubmit: (data: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => Promise<void>;
+  initialPhotoUrl?: string | null;
+  onSubmit: (data: MemberFormValues & { 
+    custom_fields?: Record<string, string | number | null>;
+    photoFile?: File | null;
+  }) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
   title: string;
@@ -26,6 +43,7 @@ interface MemberFormProps {
 export function MemberForm({
   defaultValues,
   defaultCustomFields,
+  initialPhotoUrl,
   onSubmit,
   onCancel,
   submitLabel,
@@ -38,6 +56,41 @@ export function MemberForm({
   const [cfValues, setCfValues] = useState<Record<string, string | number | null>>(
     defaultCustomFields ?? {}
   );
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Please select a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Photo must be under 5MB.");
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleCameraCapture = (file: File) => {
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+    }
+  };
 
   const {
     register,
@@ -68,6 +121,7 @@ export function MemberForm({
       const payload = {
         ...(data as MemberFormValues),
         custom_fields: Object.keys(cfValues).length > 0 ? cfValues : undefined,
+        photoFile,
       };
       await onSubmit(payload);
     } catch (err) {
@@ -91,6 +145,80 @@ export function MemberForm({
         onSubmit={handleSubmit(handleFormSubmit)}
         className="grid gap-4 sm:grid-cols-2"
       >
+        {/* Photo Upload & Webcam Option */}
+        <div className="sm:col-span-2 flex flex-col items-start gap-3 pb-4 border-b">
+          <Label className="text-sm font-medium">Member Photo</Label>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+            <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-dashed border-muted bg-muted/50 flex items-center justify-center flex-shrink-0">
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+              ) : initialPhotoUrl ? (
+                <img
+                  src={getFullAssetUrl(initialPhotoUrl)!}
+                  alt="Existing"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-10 w-10 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex flex-col gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  Upload Photo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCameraOpen(true)}
+                >
+                  <Camera className="mr-1.5 h-3.5 w-3.5" />
+                  Take Snap
+                </Button>
+                {(photoFile || initialPhotoUrl) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemovePhoto}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Capture live with your device camera or select a JPEG/PNG/WebP under 5MB.
+              </p>
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp"
+            onChange={handlePhotoSelect}
+            className="hidden"
+          />
+
+          <MemberCameraModal
+            isOpen={isCameraOpen}
+            onClose={() => setIsCameraOpen(false)}
+            onCapture={handleCameraCapture}
+          />
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="name">Name *</Label>
           <Input

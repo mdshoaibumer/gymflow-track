@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import { Search, Pencil, Trash2, Plus, UserPlus, Download, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
-import type { Member, CreateMemberPayload } from "@/services/member.service";
+import { memberService, type Member, type CreateMemberPayload } from "@/services/member.service";
 import { RoleGate } from "@/components/role-gate";
 import { MemberForm, memberToFormValues } from "@/components/members/member-form";
 import { DeleteConfirmDialog } from "@/components/members/delete-confirm-dialog";
@@ -81,19 +81,61 @@ export default function MembersPage() {
   const updateMutation = useUpdateMember();
   const deleteMutation = useDeleteMember();
 
-  const handleCreate = async (values: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => {
+  const handleCreate = async (
+    values: MemberFormValues & { 
+      custom_fields?: Record<string, string | number | null>;
+      photoFile?: File | null;
+    }
+  ) => {
     if (createMutation.isPending) return;
     const payload = formValuesToPayload(values);
-    await createMutation.mutateAsync(payload);
+    try {
+      const newMember = await createMutation.mutateAsync(payload);
+      if (newMember && values.photoFile) {
+        try {
+          await memberService.uploadPhoto(newMember.id, values.photoFile);
+          toast.success("Member and photo registered successfully!");
+        } catch (err) {
+          console.error("Failed to upload member photo:", err);
+          toast.error("Member registered successfully, but photo upload failed.");
+        }
+      } else {
+        toast.success("Member registered successfully!");
+      }
+    } catch (err) {
+      console.error("Registration failed:", err);
+      throw err;
+    }
     setShowCreateForm(false);
   };
 
-  const handleEdit = async (values: MemberFormValues & { custom_fields?: Record<string, string | number | null> }) => {
+  const handleEdit = async (
+    values: MemberFormValues & { 
+      custom_fields?: Record<string, string | number | null>;
+      photoFile?: File | null;
+    }
+  ) => {
     if (!editingMember || updateMutation.isPending) return;
     const payload = formValuesToPayload(values);
     // Include version for optimistic locking — server returns 409 if stale
     payload.version = editingMember.version;
-    await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
+    try {
+      const updatedMember = await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
+      if (updatedMember && values.photoFile) {
+        try {
+          await memberService.uploadPhoto(updatedMember.id, values.photoFile);
+          toast.success("Member and photo updated successfully!");
+        } catch (err) {
+          console.error("Failed to upload member photo:", err);
+          toast.error("Member updated successfully, but photo upload failed.");
+        }
+      } else {
+        toast.success("Member updated successfully!");
+      }
+    } catch (err) {
+      console.error("Update failed:", err);
+      throw err;
+    }
     setEditingMember(null);
   };
 
@@ -110,7 +152,7 @@ export default function MembersPage() {
         header: "Name",
         cell: ({ row }) => {
           const photoUrl = row.original.photo_url
-            ? `${API_URL.replace("/api/v1", "")}${row.original.photo_url}`
+            ? `${API_URL.replace("/api/v1", "")}${row.original.photo_url}?v=${row.original.version || 0}`
             : null;
           return (
             <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">
@@ -308,6 +350,7 @@ export default function MembersPage() {
             submitLabel="Save Changes"
             defaultValues={memberToFormValues(editingMember).formValues}
             defaultCustomFields={memberToFormValues(editingMember).customFieldValues}
+            initialPhotoUrl={editingMember.photo_url}
             onSubmit={handleEdit}
             onCancel={() => setEditingMember(null)}
             isPending={updateMutation.isPending}
