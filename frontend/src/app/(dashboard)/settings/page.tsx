@@ -10,6 +10,7 @@ import type { GymUpdatePayload } from "@/services/gym.service";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CustomFieldsManager } from "@/components/settings/custom-fields-manager";
 import { GymLogoUpload } from "@/components/settings/gym-logo-upload";
+import { WhatsAppConfigCard } from "@/components/settings/whatsapp-config-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -232,6 +233,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* WhatsApp Integration (Owner only) */}
+      {isOwner && <WhatsAppConfigCard gymId={gym?.id} />}
 
       {/* WhatsApp Template */}
       <Card>
