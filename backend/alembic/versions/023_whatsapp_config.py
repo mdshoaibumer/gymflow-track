@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
 
-revision = "023"
-down_revision = "022"
+revision = "023_whatsapp_config"
+down_revision = "022_member_invoices"
 branch_labels = None
 depends_on = None
 
