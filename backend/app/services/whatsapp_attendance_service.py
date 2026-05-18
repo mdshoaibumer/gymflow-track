@@ -186,19 +186,20 @@ async def _find_gym_by_phone(db: AsyncSession, phone: str) -> Gym | None:
     Find a gym by its phone number.
 
     Tries multiple phone formats (with/without country code, with/without leading 0).
+    Uses .first() because gym phone is not unique-constrained.
     """
     # Normalize: remove +, spaces, dashes
     normalized = phone.strip().replace("+", "").replace(" ", "").replace("-", "")
 
     # Try exact match first
     result = await db.execute(select(Gym).where(Gym.phone == normalized, Gym.is_active == True))  # noqa: E712
-    gym = result.scalar_one_or_none()
+    gym = result.scalars().first()
     if gym:
         return gym
 
     # Try with + prefix
     result = await db.execute(select(Gym).where(Gym.phone == f"+{normalized}", Gym.is_active == True))  # noqa: E712
-    gym = result.scalar_one_or_none()
+    gym = result.scalars().first()
     if gym:
         return gym
 
@@ -206,7 +207,7 @@ async def _find_gym_by_phone(db: AsyncSession, phone: str) -> Gym | None:
     if normalized.startswith("91") and len(normalized) > 10:
         local = normalized[2:]
         result = await db.execute(select(Gym).where(Gym.phone == local, Gym.is_active == True))  # noqa: E712
-        gym = result.scalar_one_or_none()
+        gym = result.scalars().first()
         if gym:
             return gym
 
