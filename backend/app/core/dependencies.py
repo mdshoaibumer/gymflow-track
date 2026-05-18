@@ -93,7 +93,14 @@ async def get_current_user(
             detail="Invalid token claims",
         )
 
-    user_id = UUID(payload["sub"])
+    try:
+        user_id = UUID(payload["sub"])
+    except (KeyError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token claims",
+        )
+
     gym_id_raw = payload.get("gym_id")
     gym_id = UUID(gym_id_raw) if gym_id_raw else None
 
