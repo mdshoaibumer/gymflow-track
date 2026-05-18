@@ -1,6 +1,6 @@
 """Pydantic schemas for member invoices."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -19,6 +19,7 @@ class InvoiceResponse(BaseModel):
 
     member_name: str
     member_phone: str
+    owner_name: str | None = None
 
     amount_in_paise: int
     payment_method: str
@@ -26,7 +27,7 @@ class InvoiceResponse(BaseModel):
     plan_name: str | None = None
     notes: str | None = None
 
-    created_at: str  # ISO datetime
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 

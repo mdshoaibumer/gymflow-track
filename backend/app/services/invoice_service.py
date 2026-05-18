@@ -67,35 +67,32 @@ class InvoiceService:
         logger.info(f"Invoice {invoice_number} generated for payment {payment.id}")
         return invoice
 
-    async def get_invoice(self, invoice_id: UUID, gym_id: UUID) -> MemberInvoice:
+    async def get_invoice(self, invoice_id: UUID, gym_id: UUID | None = None) -> MemberInvoice:
         """Get a single invoice by ID."""
-        stmt = select(MemberInvoice).where(
-            MemberInvoice.id == invoice_id,
-            MemberInvoice.gym_id == gym_id,
-        )
+        stmt = select(MemberInvoice).where(MemberInvoice.id == invoice_id)
+        if gym_id is not None:
+            stmt = stmt.where(MemberInvoice.gym_id == gym_id)
         result = await self.db.execute(stmt)
         invoice = result.scalar_one_or_none()
         if not invoice:
             raise NotFoundError("Invoice not found")
         return invoice
 
-    async def get_invoice_by_payment(self, payment_id: UUID, gym_id: UUID) -> MemberInvoice | None:
+    async def get_invoice_by_payment(self, payment_id: UUID, gym_id: UUID | None = None) -> MemberInvoice | None:
         """Get invoice for a specific payment."""
-        stmt = select(MemberInvoice).where(
-            MemberInvoice.payment_id == payment_id,
-            MemberInvoice.gym_id == gym_id,
-        )
+        stmt = select(MemberInvoice).where(MemberInvoice.payment_id == payment_id)
+        if gym_id is not None:
+            stmt = stmt.where(MemberInvoice.gym_id == gym_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def list_member_invoices(
-        self, gym_id: UUID, member_id: UUID, skip: int = 0, limit: int = 50
+        self, gym_id: UUID | None, member_id: UUID, skip: int = 0, limit: int = 50
     ) -> tuple[list[MemberInvoice], int]:
         """List invoices for a specific member."""
-        base = select(MemberInvoice).where(
-            MemberInvoice.gym_id == gym_id,
-            MemberInvoice.member_id == member_id,
-        )
+        base = select(MemberInvoice).where(MemberInvoice.member_id == member_id)
+        if gym_id is not None:
+            base = base.where(MemberInvoice.gym_id == gym_id)
         count_stmt = select(func.count()).select_from(base.subquery())
         total = (await self.db.execute(count_stmt)).scalar() or 0
 
@@ -104,10 +101,12 @@ class InvoiceService:
         return list(result.scalars().all()), total
 
     async def list_gym_invoices(
-        self, gym_id: UUID, skip: int = 0, limit: int = 50
+        self, gym_id: UUID | None, skip: int = 0, limit: int = 50
     ) -> tuple[list[MemberInvoice], int]:
         """List all invoices for a gym."""
-        base = select(MemberInvoice).where(MemberInvoice.gym_id == gym_id)
+        base = select(MemberInvoice)
+        if gym_id is not None:
+            base = base.where(MemberInvoice.gym_id == gym_id)
         count_stmt = select(func.count()).select_from(base.subquery())
         total = (await self.db.execute(count_stmt)).scalar() or 0
 
@@ -115,107 +114,363 @@ class InvoiceService:
         result = await self.db.execute(stmt)
         return list(result.scalars().all()), total
 
-    def generate_pdf(self, invoice: MemberInvoice) -> bytes:
-        """Generate a PDF invoice using reportlab."""
+    async def get_owner_name(self, gym_id: UUID) -> str:
+        """Fetch the gym owner's name, falling back to first user or Admin."""
+        from app.models.user import User, UserRole
+        stmt = select(User).where(User.gym_id == gym_id, User.role == UserRole.OWNER)
+        result = await self.db.execute(stmt)
+        owner = result.scalar_one_or_none()
+        if not owner:
+            # Fall back to first user
+            stmt = select(User).where(User.gym_id == gym_id).order_by(User.created_at.asc()).limit(1)
+            result = await self.db.execute(stmt)
+            owner = result.scalar_one_or_none()
+        return owner.name if owner else "Admin"
+
+    def generate_pdf(self, invoice: MemberInvoice, owner_name: str | None = None) -> bytes:
+        """Generate a premium PDF invoice matching the layout and design of 1.webp."""
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.units import mm
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, KeepTogether
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib import colors
-        from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+        from datetime import timedelta
+        import os
 
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=20 * mm)
+        
+        # A4 Page is 210mm x 297mm.
+        # Margins: 20mm left/right, 25mm top, 25mm bottom to clear the red bands nicely.
+        doc = SimpleDocTemplate(
+            buffer, 
+            pagesize=A4, 
+            leftMargin=20 * mm, 
+            rightMargin=20 * mm, 
+            topMargin=25 * mm, 
+            bottomMargin=25 * mm
+        )
+        
         styles = getSampleStyleSheet()
 
-        # Custom styles
-        title_style = ParagraphStyle(
-            "InvoiceTitle", parent=styles["Heading1"], fontSize=22, alignment=TA_CENTER
+        # Premium Typography & Custom Styles
+        gym_address_style = ParagraphStyle(
+            "GymAddress", 
+            parent=styles["Normal"], 
+            fontSize=9, 
+            leading=12, 
+            textColor=colors.HexColor("#555555"),
+            fontName="Helvetica"
         )
-        gym_style = ParagraphStyle(
-            "GymName", parent=styles["Heading2"], fontSize=16, alignment=TA_CENTER
+        member_addr_style = ParagraphStyle(
+            "MemberAddress", 
+            parent=styles["Normal"], 
+            fontSize=9, 
+            leading=12, 
+            textColor=colors.HexColor("#555555"),
+            fontName="Helvetica"
+        )
+        meta_label_style = ParagraphStyle(
+            "MetaLabel", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=14, 
+            textColor=colors.HexColor("#444444"),
+            fontName="Helvetica-Bold",
+            alignment=TA_RIGHT
+        )
+        meta_val_style = ParagraphStyle(
+            "MetaVal", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=14, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica",
+            alignment=TA_RIGHT
+        )
+        total_label_style = ParagraphStyle(
+            "TotalLabel", 
+            parent=styles["Normal"], 
+            fontSize=22, 
+            leading=26, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold"
+        )
+        total_amount_style = ParagraphStyle(
+            "TotalAmount", 
+            parent=styles["Normal"], 
+            fontSize=22, 
+            leading=26, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold",
+            alignment=TA_RIGHT
+        )
+        th_style = ParagraphStyle(
+            "TableHeader", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=12, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold"
+        )
+        th_right_style = ParagraphStyle(
+            "TableHeaderRight", 
+            parent=th_style, 
+            alignment=TA_RIGHT
+        )
+        td_desc_style = ParagraphStyle(
+            "TableDesc", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=13, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica"
+        )
+        td_amount_style = ParagraphStyle(
+            "TableAmount", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=13, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold",
+            alignment=TA_RIGHT
+        )
+        subtotal_label_style = ParagraphStyle(
+            "SubtotalLabel", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=12, 
+            textColor=colors.HexColor("#555555"),
+            fontName="Helvetica-Bold",
+            alignment=TA_RIGHT
+        )
+        subtotal_val_style = ParagraphStyle(
+            "SubtotalVal", 
+            parent=styles["Normal"], 
+            fontSize=10, 
+            leading=12, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold",
+            alignment=TA_RIGHT
+        )
+        sale_by_style = ParagraphStyle(
+            "SaleBy", 
+            parent=styles["Normal"], 
+            fontSize=9, 
+            leading=12, 
+            textColor=colors.HexColor("#777777"),
+            fontName="Helvetica-Bold"
+        )
+        terms_title_style = ParagraphStyle(
+            "TermsTitle", 
+            parent=styles["Normal"], 
+            fontSize=11, 
+            leading=14, 
+            textColor=colors.HexColor("#111111"),
+            fontName="Helvetica-Bold"
+        )
+        terms_text_style = ParagraphStyle(
+            "TermsText", 
+            parent=styles["Normal"], 
+            fontSize=9, 
+            leading=12, 
+            textColor=colors.HexColor("#555555"),
+            fontName="Helvetica"
         )
 
         elements = []
 
-        # Gym header
-        elements.append(Paragraph(invoice.gym_name, gym_style))
+        # ------------------ Gym Header ------------------
+        # Try to resolve and load the gym logo
+        logo_img = None
+        if invoice.gym_logo_url:
+            clean_url = invoice.gym_logo_url.lstrip("/")
+            if clean_url.startswith("uploads/"):
+                clean_url = clean_url[len("uploads/"):]
+            
+            paths_to_try = [
+                os.path.join("/app/uploads", clean_url),
+                os.path.join("uploads", clean_url),
+                os.path.join(".", clean_url),
+            ]
+            for p in paths_to_try:
+                if os.path.exists(p) and os.path.isfile(p):
+                    try:
+                        # Limit logo height to 18mm while keeping aspect ratio
+                        logo_img = Image(p, height=18 * mm, width=45 * mm, kind='proportional')
+                        logo_img.hAlign = 'RIGHT'
+                        break
+                    except Exception as e:
+                        logger.error(f"Error loading logo image: {e}")
+                        
+        # Fallback placeholder typographic logo if no custom logo is present
+        if not logo_img:
+            fallback_text = f"<b>{invoice.gym_name.upper()}</b>"
+            fallback_style = ParagraphStyle(
+                "FallbackLogo", 
+                parent=styles["Normal"], 
+                fontSize=13, 
+                leading=15, 
+                textColor=colors.HexColor("#D32F2F"),
+                fontName="Helvetica-Bold",
+                alignment=TA_RIGHT
+            )
+            logo_img = Paragraph(fallback_text, fallback_style)
+
+        # Gym Name and Address in Left, Logo in Right
+        gym_info_html = f"<b>{invoice.gym_name.upper()}</b>"
         if invoice.gym_address:
-            elements.append(Paragraph(invoice.gym_address, ParagraphStyle("Addr", parent=styles["Normal"], alignment=TA_CENTER)))
+            gym_info_html += f"<br/>{invoice.gym_address}"
         if invoice.gym_phone:
-            elements.append(Paragraph(f"Phone: {invoice.gym_phone}", ParagraphStyle("Phone", parent=styles["Normal"], alignment=TA_CENTER)))
+            gym_info_html += f"<br/>Phone: {invoice.gym_phone}"
+            
+        header_p = Paragraph(gym_info_html, gym_address_style)
+        header_table = Table([[header_p, logo_img]], colWidths=[110 * mm, 60 * mm])
+        header_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        elements.append(header_table)
         elements.append(Spacer(1, 10 * mm))
 
-        # Invoice title
-        elements.append(Paragraph("INVOICE", title_style))
-        elements.append(Spacer(1, 5 * mm))
-
-        # Invoice meta
-        meta_data = [
-            ["Invoice No:", invoice.invoice_number],
-            ["Invoice Date:", invoice.invoice_date.strftime("%d %b %Y")],
-            ["Payment Date:", invoice.payment_date.strftime("%d %b %Y")],
-        ]
-        meta_table = Table(meta_data, colWidths=[80 * mm, 80 * mm])
-        meta_table.setStyle(TableStyle([
-            ("FONTSIZE", (0, 0), (-1, -1), 10),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        # ------------------ Bill To & Invoice Meta ------------------
+        # Left side: BILL TO
+        bill_to_p = Paragraph(
+            f"<font color='#555555'><b>BILL TO</b></font><br/><b>{invoice.member_name}</b><br/>{invoice.member_phone}",
+            member_addr_style
+        )
+        
+        # Right side: Invoice Meta
+        inv_date_str = invoice.invoice_date.strftime("%d-%b-%Y")
+        meta_html_labels = "<b>INVOICE #</b><br/><b>INVOICE DATE</b>"
+        meta_html_vals = f"{invoice.invoice_number}<br/>{inv_date_str}"
+        
+        meta_lbl_p = Paragraph(meta_html_labels, meta_label_style)
+        meta_val_p = Paragraph(meta_html_vals, meta_val_style)
+        
+        meta_right_table = Table([[meta_lbl_p, meta_val_p]], colWidths=[30 * mm, 30 * mm])
+        meta_right_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
         ]))
-        elements.append(meta_table)
+
+        meta_container_table = Table([[bill_to_p, meta_right_table]], colWidths=[110 * mm, 60 * mm])
+        meta_container_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        elements.append(meta_container_table)
         elements.append(Spacer(1, 8 * mm))
 
-        # Member details
-        elements.append(Paragraph("<b>Bill To:</b>", styles["Normal"]))
-        elements.append(Paragraph(invoice.member_name, styles["Normal"]))
-        elements.append(Paragraph(f"Phone: {invoice.member_phone}", styles["Normal"]))
-        elements.append(Spacer(1, 8 * mm))
-
-        # Line items table
+        # ------------------ Invoice Total Banner ------------------
         amount_rupees = invoice.amount_in_paise / 100
+        total_lbl = Paragraph("Invoice Total", total_label_style)
+        total_val = Paragraph(f"₹{amount_rupees:,.2f}", total_amount_style)
+        
+        total_banner = Table([[total_lbl, total_val]], colWidths=[85 * mm, 85 * mm])
+        total_banner.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LINEABOVE", (0, 0), (-1, -1), 1.5, colors.HexColor("#111111")),
+            ("LINEBELOW", (0, 0), (-1, -1), 1.5, colors.HexColor("#111111")),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        elements.append(total_banner)
+        elements.append(Spacer(1, 8 * mm))
+
+        # ------------------ Line Items Table ------------------
+        duration_days = 30
+        plan_lower = (invoice.plan_name or "").lower()
+        if "6 month" in plan_lower:
+            duration_days = 180
+        elif "3 month" in plan_lower:
+            duration_days = 90
+        elif "12 month" in plan_lower or "year" in plan_lower:
+            duration_days = 365
+        
+        start_date = invoice.invoice_date
+        end_date = start_date + timedelta(days=duration_days)
+        start_str = start_date.strftime("%d-%b-%Y")
+        end_str = end_date.strftime("%d-%b-%Y")
+
+        th_sr = Paragraph("SR. NO.", th_style)
+        th_desc = Paragraph("DESCRIPTION", th_style)
+        th_amt = Paragraph("AMOUNT", th_right_style)
+
+        td_sr = Paragraph("1", td_desc_style)
+        plan_display = (invoice.plan_name or "Membership Payment").upper()
+        desc_html = f"<b>{plan_display}</b><br/><font color='#777777' size='8'><i>{start_str} to {end_str}</i></font>"
+        td_desc = Paragraph(desc_html, td_desc_style)
+        td_amt = Paragraph(f"₹{amount_rupees:,.2f}", td_amount_style)
+
         items_data = [
-            ["Description", "Amount (₹)"],
-            [invoice.plan_name or "Membership Payment", f"₹{amount_rupees:,.2f}"],
+            [th_sr, th_desc, th_amt],
+            [td_sr, td_desc, td_amt]
         ]
-        items_table = Table(items_data, colWidths=[120 * mm, 40 * mm])
+        
+        items_table = Table(items_data, colWidths=[20 * mm, 115 * mm, 35 * mm])
         items_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2937")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 11),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#111111")),
+            ("LINEBELOW", (0, 1), (-1, 1), 1, colors.HexColor("#E5E7EB")),
             ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
         ]))
         elements.append(items_table)
-        elements.append(Spacer(1, 5 * mm))
+        elements.append(Spacer(1, 4 * mm))
 
-        # Total
-        total_data = [["Total:", f"₹{amount_rupees:,.2f}"]]
-        total_table = Table(total_data, colWidths=[120 * mm, 40 * mm])
-        total_table.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 12),
-            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-            ("LINEABOVE", (0, 0), (-1, 0), 1, colors.black),
+        # ------------------ Subtotal ------------------
+        subtotal_lbl = Paragraph("SUB TOTAL", subtotal_label_style)
+        subtotal_val = Paragraph(f"₹{amount_rupees:,.2f}", subtotal_val_style)
+        
+        subtotal_table = Table([["", subtotal_lbl, subtotal_val]], colWidths=[100 * mm, 35 * mm, 35 * mm])
+        subtotal_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ]))
-        elements.append(total_table)
-        elements.append(Spacer(1, 5 * mm))
+        elements.append(subtotal_table)
+        elements.append(Spacer(1, 12 * mm))
 
-        # Payment method
-        method_display = invoice.payment_method.value.replace("_", " ").title()
-        elements.append(Paragraph(f"<b>Payment Mode:</b> {method_display}", styles["Normal"]))
+        # ------------------ Footer Block ------------------
+        sale_by_name = owner_name or "ADMIN"
+        sale_by_p = Paragraph(f"<font color='#777777'>SALE BY : </font>{sale_by_name.upper()}", sale_by_style)
+        
+        terms_lbl = Paragraph("TERMS & CONDITIONS", terms_title_style)
+        terms_val = Paragraph("Terms and conditions apply", terms_text_style)
+        
+        footer_block = KeepTogether([
+            sale_by_p,
+            Spacer(1, 8 * mm),
+            terms_lbl,
+            Spacer(1, 2 * mm),
+            terms_val
+        ])
+        elements.append(footer_block)
 
-        if invoice.notes:
-            elements.append(Spacer(1, 3 * mm))
-            elements.append(Paragraph(f"<b>Notes:</b> {invoice.notes}", styles["Normal"]))
+        def draw_red_bands(canvas, doc):
+            canvas.saveState()
+            canvas.setFillColor(colors.HexColor("#D32F2F"))
+            canvas.rect(0, 285 * mm, 210 * mm, 12 * mm, stroke=0, fill=1)
+            canvas.rect(0, 0, 210 * mm, 12 * mm, stroke=0, fill=1)
+            canvas.restoreState()
 
-        elements.append(Spacer(1, 15 * mm))
-        elements.append(Paragraph("Thank you for your payment!", ParagraphStyle("Thanks", parent=styles["Normal"], alignment=TA_CENTER, fontSize=11)))
-
-        doc.build(elements)
+        doc.build(elements, onFirstPage=draw_red_bands, onLaterPages=draw_red_bands)
         return buffer.getvalue()
 
     async def _next_invoice_number(self, gym_id: UUID) -> str:
