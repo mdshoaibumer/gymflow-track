@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { UserCheck, Search, AlertCircle, RefreshCw, CalendarCheck } from "lucide-react";
+import { UserCheck, Search, AlertCircle, RefreshCw, CalendarCheck, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useAttendanceToday,
@@ -11,6 +12,7 @@ import {
   useCheckOut,
 } from "@/hooks/use-attendance";
 import { useMembers } from "@/hooks/use-members";
+import { useAuthStore } from "@/store/auth-store";
 import { DashboardCard } from "@/components/layout/dashboard-card";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -19,12 +21,120 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeatureGate } from "@/components/subscription/feature-gate";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const STATUS_VARIANTS: Record<string, "success" | "secondary" | "outline"> = {
   checked_in: "success",
   checked_out: "secondary",
   cancelled: "outline",
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+interface QRDisplayData {
+  gym_name: string;
+  code: string;
+  whatsapp_url: string;
+  refresh_in_seconds: number;
+  message: string;
+}
+
+function AttendanceQRDialog() {
+  const user = useAuthStore((s) => s.user);
+  const gymId = user?.gym_id;
+  const [data, setData] = useState<QRDisplayData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [open, setOpen] = useState(false);
+
+  const fetchQRData = useCallback(async () => {
+    if (!gymId) return;
+    try {
+      const response = await fetch(`${API_URL}/gym-display/${gymId}/qr-data`);
+      if (!response.ok) throw new Error(`Failed to fetch QR data: ${response.statusText}`);
+      const result: QRDisplayData = await response.json();
+      setData(result);
+      setTimeLeft(result.refresh_in_seconds);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load QR code");
+    }
+  }, [gymId]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchQRData();
+    const interval = setInterval(fetchQRData, 30_000);
+    return () => clearInterval(interval);
+  }, [open, fetchQRData]);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 30));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [open]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <QrCode className="h-4 w-4" />
+          Generate QR
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Attendance QR Code</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4 py-4">
+          {error ? (
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-destructive mb-2" />
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button variant="ghost" size="sm" className="mt-2" onClick={fetchQRData}>
+                <RefreshCw className="mr-1 h-3 w-3" /> Retry
+              </Button>
+            </div>
+          ) : !data ? (
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-48 w-48 rounded" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ) : (
+            <>
+              <div className="rounded-lg border bg-white p-4">
+                <QRCodeSVG value={data.whatsapp_url} size={200} level="M" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-2xl font-mono font-bold tracking-widest">{data.code}</p>
+                <p className="text-xs text-muted-foreground">
+                  Code refreshes in {timeLeft}s
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Members scan this QR to check in via WhatsApp
+                </p>
+              </div>
+              <div className="w-full rounded-md bg-muted p-3">
+                <p className="text-xs text-center text-muted-foreground">
+                  Display this on a TV/tablet at the entrance, or use the full-screen display at{" "}
+                  <code className="text-primary">/gym-display?gymId={gymId}</code>
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function AttendancePage() {
   return (
@@ -70,11 +180,14 @@ function AttendanceContent() {
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
-        <p className="text-sm text-muted-foreground">
-          Daily attendance tracking. Search members to mark check-in.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
+          <p className="text-sm text-muted-foreground">
+            Daily attendance tracking. Search members to mark check-in.
+          </p>
+        </div>
+        <AttendanceQRDialog />
       </div>
 
       {/* Stats Cards */}

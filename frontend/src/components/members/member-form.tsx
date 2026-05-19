@@ -219,6 +219,14 @@ export function MemberForm({
             onCapture={handleCameraCapture}
           />
         </div>
+
+        {/* Personal Details Section */}
+        <div className="sm:col-span-2">
+          <p className="text-sm font-medium text-muted-foreground">
+            Personal Details
+          </p>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="name">Name *</Label>
           <Input
@@ -291,6 +299,13 @@ export function MemberForm({
             <option value="afternoon">Afternoon</option>
             <option value="evening">Evening</option>
           </select>
+        </div>
+
+        {/* Membership & Payment Section — visually separated */}
+        <div className="sm:col-span-2 mt-2 border-t pt-4">
+          <p className="text-sm font-medium text-muted-foreground">
+            Membership &amp; Initial Payment (optional — can also be added later from Payments)
+          </p>
         </div>
 
         <div className="space-y-1.5">
