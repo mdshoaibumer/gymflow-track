@@ -107,25 +107,25 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
   const isNeutral = hasGrowth && kpi.growth_percent === 0;
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="group hover:shadow-soft-md transition-all duration-200">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-muted-foreground truncate pr-2">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate pr-2">
             {kpi.label}
           </p>
-          <div className={cn("rounded-md bg-muted p-1.5 flex-shrink-0")}>
+          <div className={cn("rounded-lg bg-muted/60 p-1.5 flex-shrink-0 group-hover:bg-muted transition-colors duration-200")}>
             <Icon className={cn("h-3.5 w-3.5", config.color)} />
           </div>
         </div>
         <p className="text-2xl font-bold tracking-tight">{displayValue}</p>
-        <div className="mt-1.5 flex items-center gap-1.5">
+        <div className="mt-2 flex items-center gap-1.5">
           {hasGrowth && !isNeutral && (
             <span
               className={cn(
-                "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
                 isPositive
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                  : "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                  : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
               )}
             >
               {isPositive ? (

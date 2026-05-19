@@ -30,7 +30,7 @@ export function ResponsiveDataTable<T>({
       {/* Desktop table — hidden on small screens when mobile cards are available */}
       <div
         className={cn(
-          "overflow-x-auto rounded-md border",
+          "overflow-x-auto rounded-xl border",
           renderMobileCard ? "hidden md:block" : "block",
         )}
       >
@@ -40,12 +40,12 @@ export function ResponsiveDataTable<T>({
           )}
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/50">
+              <tr key={headerGroup.id} className="border-b bg-muted/30">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     {header.isPlaceholder
                       ? null
@@ -69,7 +69,7 @@ export function ResponsiveDataTable<T>({
               : rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b transition-colors hover:bg-muted/50"
+                    className="border-b transition-colors duration-150 hover:bg-muted/40 last:border-b-0"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3">

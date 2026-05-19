@@ -51,18 +51,18 @@ export function Breadcrumbs({ overrideLastLabel, className }: BreadcrumbsProps) 
   return (
     <nav
       aria-label="Breadcrumb"
-      className={cn("flex items-center gap-1.5 text-sm text-muted-foreground", className)}
+      className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}
     >
       <Link
         href="/dashboard"
-        className="flex items-center hover:text-foreground transition-colors"
+        className="flex items-center hover:text-foreground transition-colors duration-150"
         aria-label="Home"
       >
         <Home className="h-3.5 w-3.5" />
       </Link>
       {crumbs.map((crumb) => (
         <span key={crumb.href} className="flex items-center gap-1.5">
-          <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
           {crumb.isLast ? (
             <span className="font-medium text-foreground truncate max-w-[200px]">
               {crumb.label}
@@ -70,7 +70,7 @@ export function Breadcrumbs({ overrideLastLabel, className }: BreadcrumbsProps) 
           ) : (
             <Link
               href={crumb.href}
-              className="hover:text-foreground transition-colors truncate max-w-[150px]"
+              className="hover:text-foreground transition-colors duration-150 truncate max-w-[150px]"
             >
               {crumb.label}
             </Link>

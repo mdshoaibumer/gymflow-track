@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 
 export default function GlobalNotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <div className="rounded-full bg-muted p-4">
-        <FileQuestion className="h-10 w-10 text-muted-foreground" />
+    <main className="flex min-h-screen flex-col items-center justify-center gap-5 p-8 text-center bg-background">
+      <div className="rounded-xl bg-muted/60 p-5">
+        <FileQuestion className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h1 className="text-4xl font-bold">404</h1>
-      <p className="text-muted-foreground max-w-sm">
-        The page you&apos;re looking for doesn&apos;t exist.
-      </p>
-      <Button asChild>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">404</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          The page you&apos;re looking for doesn&apos;t exist or has been moved.
+        </p>
+      </div>
+      <Button asChild size="sm">
         <Link href="/">Go Home</Link>
       </Button>
     </main>

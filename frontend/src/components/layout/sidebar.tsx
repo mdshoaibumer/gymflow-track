@@ -72,9 +72,14 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
 
   return (
     <>
-      <div className="flex h-16 items-center justify-between border-b px-6">
-        <Link href="/dashboard" className="text-xl font-bold text-primary">
-          GymFlow Track
+      <div className="flex h-14 items-center justify-between px-5">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-glow">
+            <span className="text-sm font-bold text-primary-foreground">G</span>
+          </div>
+          <span className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors duration-200">
+            GymFlow
+          </span>
         </Link>
         {showClose && (
           <Button
@@ -82,12 +87,13 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
             size="icon"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close menu"
+            className="h-8 w-8"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
-      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5">
         {visibleItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -100,34 +106,36 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
               href={item.href}
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
                 isActive
-                  ? "bg-primary/10 text-primary shadow-sm"
+                  ? "bg-primary/8 text-primary"
                   : isLocked
                     ? "text-muted-foreground/50 hover:bg-accent/50"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-              {isLocked && (
-                <Lock className="ml-auto h-3 w-3 text-muted-foreground/40" />
-              )}
-              {isActive && !isLocked && (
+              {isActive && (
                 <motion.div
-                  layoutId="sidebar-indicator"
-                  className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                  layoutId="sidebar-active-bg"
+                  className="absolute inset-0 rounded-lg bg-primary/8 dark:bg-primary/10"
+                  transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
                 />
+              )}
+              <item.icon className={cn("relative h-4 w-4 shrink-0", isActive && "text-primary")} />
+              <span className="relative">{item.label}</span>
+              {isLocked && (
+                <Lock className="relative ml-auto h-3 w-3 text-muted-foreground/40" />
               )}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t p-4">
-        <p className="text-xs text-muted-foreground text-center">
-          GymFlow Track v1.0
-        </p>
+      <div className="border-t px-4 py-3">
+        <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <p className="text-2xs text-muted-foreground text-center font-medium">
+            GymFlow Track v1.0
+          </p>
+        </div>
       </div>
     </>
   );
@@ -139,7 +147,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 flex-col border-r bg-card md:flex">
+      <aside className="hidden w-[260px] flex-col border-r bg-sidebar md:flex">
         <SidebarContent />
       </aside>
 
@@ -151,16 +159,16 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/50 md:hidden"
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ type: "spring", bounce: 0.1, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-card shadow-xl md:hidden"
+              transition={{ type: "spring", bounce: 0.08, duration: 0.3 }}
+              className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-card shadow-soft-lg md:hidden"
             >
               <SidebarContent showClose />
             </motion.aside>

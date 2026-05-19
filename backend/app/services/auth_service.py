@@ -36,6 +36,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.services.billing_service import create_trial_subscription
+from app.services.email_service import send_password_reset_email
 
 # Maximum depth for following refresh token replacement chains.
 # Prevents DoS via adversarial token chains that cause unbounded DB queries.
@@ -450,14 +451,13 @@ class AuthService:
         self.db.add(reset_token)
         await self.db.flush()
 
-        # Only log raw token in development — NEVER in production/staging
-        if settings.is_development:
-            logger.info(
-                f"Password reset token generated for user {user.id}. "
-                f"Token (DEV ONLY): {raw_token}"
-            )
-        else:
-            logger.info(f"Password reset token generated for user {user.id}")
+        # Send reset email via Resend (falls back to logging in dev if key not set)
+        await send_password_reset_email(
+            to_email=user.email,
+            user_name=user.name or "there",
+            reset_token=raw_token,
+        )
+        logger.info(f"Password reset token generated for user {user.id}")
 
         return "If an account exists with that email, a reset link has been sent."
 

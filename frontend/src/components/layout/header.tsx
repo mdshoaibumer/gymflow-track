@@ -40,48 +40,53 @@ export function Header() {
     : "GF";
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 md:px-6">
+    <header className="flex h-14 items-center justify-between border-b bg-card/60 backdrop-blur-md px-4 md:px-6">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden"
+        className="md:hidden h-8 w-8"
         onClick={toggleSidebar}
         aria-label="Open menu"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-4 w-4" />
       </Button>
 
       {/* Mobile logo */}
-      <span className="text-lg font-bold text-primary md:hidden">GymFlow Track</span>
+      <div className="flex items-center gap-2 md:hidden">
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
+          <span className="text-[10px] font-bold text-primary-foreground">G</span>
+        </div>
+        <span className="text-sm font-semibold text-foreground">GymFlow</span>
+      </div>
 
       {/* Desktop search trigger */}
       <Button
         variant="outline"
-        className="hidden md:inline-flex h-9 w-64 justify-start gap-2 text-sm text-muted-foreground"
+        className="hidden md:inline-flex h-8 w-60 justify-start gap-2 text-xs text-muted-foreground border-border/60 bg-muted/40 hover:bg-muted/60"
         onClick={() => {
           document.dispatchEvent(
             new KeyboardEvent("keydown", { key: "k", metaKey: true }),
           );
         }}
       >
-        <Search className="h-4 w-4" />
+        <Search className="h-3.5 w-3.5" />
         <span>Search…</span>
-        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-2xs font-medium text-muted-foreground">
           ⌘K
         </kbd>
       </Button>
 
       {/* Right section */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         <ThemeToggle />
         <NotificationCenter />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="User menu">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1" aria-label="User menu">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>

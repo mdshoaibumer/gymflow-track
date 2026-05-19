@@ -38,14 +38,17 @@ export default function DashboardLayout({
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          <p className="text-xs text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Skip to content link for accessibility */}
       <a
         href="#main-content"
@@ -57,8 +60,8 @@ export default function DashboardLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         <BillingBanner />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6">
-          <Breadcrumbs className="mb-4" />
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <Breadcrumbs className="mb-5" />
           <ErrorBoundary key={pathname}>{children}</ErrorBoundary>
         </main>
       </div>

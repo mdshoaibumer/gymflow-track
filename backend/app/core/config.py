@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     # Comma-separated allowed hostnames. Enforced by TrustedHostMiddleware in production.
     ALLOWED_HOSTS: str = "*"
 
+    # === Email (Resend) ===
+    RESEND_API_KEY: str = ""  # Get from https://resend.com/api-keys
+    RESEND_FROM_EMAIL: str = "GymFlow <onboarding@resend.dev>"  # Use your domain in production
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # === WhatsApp ===
     WHATSAPP_PROVIDER: str = "log_only"  # "log_only" | "aisensy"
     WHATSAPP_API_KEY: str = ""

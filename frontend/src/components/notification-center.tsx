@@ -47,17 +47,17 @@ export function NotificationCenter() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9" aria-label="Notifications">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8" aria-label="Notifications">
           <Bell className="h-4 w-4" />
           {totalUnread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground animate-fade-in">
               {totalUnread > 99 ? "99+" : totalUnread}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0" forceMount>
-        <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3">
           <h4 className="text-sm font-semibold">Notifications</h4>
           {stats && (
             <div className="flex gap-2">
@@ -70,10 +70,12 @@ export function NotificationCenter() {
           )}
         </div>
 
-        <div className="max-h-[320px] overflow-y-auto">
+        <div className="max-h-[320px] overflow-y-auto border-t">
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="rounded-xl bg-muted/60 p-3 mb-3">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+              </div>
               <p className="text-sm text-muted-foreground">No recent notifications</p>
             </div>
           ) : (
@@ -118,9 +120,9 @@ function NotificationItem({ notification }: { notification: Notification }) {
         : "text-muted-foreground";
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors">
-      <div className="mt-0.5 rounded-full bg-primary/10 p-1.5 shrink-0">
-        <Icon className="h-3.5 w-3.5 text-primary" />
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-muted/40 transition-colors duration-150">
+      <div className="mt-0.5 rounded-lg bg-muted/60 p-1.5 shrink-0">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{memberName}</p>

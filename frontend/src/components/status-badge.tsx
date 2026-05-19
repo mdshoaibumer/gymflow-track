@@ -12,6 +12,7 @@ Author         : Mohammed Shoaib U
 ************************************************************/
 
 import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type BadgeVariant = NonNullable<BadgeProps["variant"]>;
 
@@ -42,7 +43,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const variant = STATUS_VARIANTS[status] || "secondary";
   return (
-    <Badge variant={variant} className={`capitalize ${className ?? ""}`}>
+    <Badge variant={variant} className={cn("capitalize text-[11px]", className)}>
       {status.replace(/_/g, " ")}
     </Badge>
   );

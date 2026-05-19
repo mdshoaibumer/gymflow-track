@@ -261,14 +261,14 @@ export default function MembersPage() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       className="space-y-6"
     >
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm mt-1">
             {total} member{total !== 1 ? "s" : ""} in your gym
             {!usage.isLoading && !usage.isUnlimitedMembers && (
               <span className="ml-1">
@@ -281,6 +281,7 @@ export default function MembersPage() {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() =>
                 downloadCsv(
                   "/members/csv",
@@ -295,6 +296,7 @@ export default function MembersPage() {
               Export CSV
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 setShowCreateForm(true);
                 setEditingMember(null);
@@ -314,7 +316,7 @@ export default function MembersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or phone..."
-          className="pl-9"
+          className="pl-9 h-9"
           aria-label="Search members"
         />
       </div>

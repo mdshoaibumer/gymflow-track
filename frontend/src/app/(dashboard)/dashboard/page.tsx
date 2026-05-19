@@ -81,13 +81,13 @@ export default function DashboardPage() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="space-y-6"
+      className="space-y-8"
     >
       {/* Header + Filters */}
-      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm mt-1">
             Welcome back! Here&apos;s your gym analytics overview.
           </p>
         </div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
       <motion.div variants={item}>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Attendance Trend</CardTitle>
+            <CardTitle>Attendance Trend</CardTitle>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
@@ -145,27 +145,32 @@ export default function DashboardPage() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
                     className="fill-muted-foreground"
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
                     className="fill-muted-foreground"
                     allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       fontSize: "12px",
+                      boxShadow: "0 4px 16px -4px rgba(0, 0, 0, 0.08)",
                     }}
                   />
                   <Area

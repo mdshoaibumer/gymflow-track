@@ -100,17 +100,17 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm animate-fade-in-up">
-        <Card>
-          <CardHeader className="text-center">
-            <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
-              GymFlow Track
-            </Link>
-            <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your GymFlow Track account</CardDescription>
-          </CardHeader>
-          <CardContent>
+    <main className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="w-full max-w-[380px] animate-fade-in-up">
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-glow mb-4">
+            <span className="text-base font-bold text-primary-foreground">G</span>
+          </div>
+          <h1 className="text-lg font-semibold tracking-tight">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to your GymFlow Track account</p>
+        </div>
+        <Card className="shadow-soft-md">
+          <CardContent className="p-6">
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
@@ -122,7 +122,7 @@ export default function LoginPage() {
               {formError && (
                 <div
                   role="alert"
-                  className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                  className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
                 >
                   {formError}
                 </div>
@@ -212,6 +212,9 @@ export default function LoginPage() {
             </p>
           </CardContent>
         </Card>
+        <p className="text-center text-2xs text-muted-foreground/60 mt-6">
+          GymFlow Track — Gym Management Made Simple
+        </p>
       </div>
     </main>
   );
