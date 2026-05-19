@@ -247,12 +247,19 @@ test.describe("09. UX — Stress Tests", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
+    // Open mobile sidebar first if on mobile
+    const menuBtn = page.locator("button[aria-label='Open menu']");
+    if (await menuBtn.isVisible().catch(() => false)) {
+      await menuBtn.click();
+      await page.waitForTimeout(500);
+    }
+
     // Rapidly click sidebar links
     const links = page.locator("aside a, nav a");
     const linkCount = await links.count();
 
     for (let i = 0; i < Math.min(linkCount, 5); i++) {
-      await links.nth(i).click().catch(() => {});
+      await links.nth(i).click({ force: true }).catch(() => {});
       // Don't wait between clicks — simulate rapid navigation
     }
 

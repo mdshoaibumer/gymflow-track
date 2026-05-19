@@ -153,6 +153,13 @@ test.describe("06. STAFF — RBAC", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
+    // Open mobile sidebar first if on mobile
+    const menuBtn = page.locator("button[aria-label='Open menu']");
+    if (await menuBtn.isVisible().catch(() => false)) {
+      await menuBtn.click();
+      await page.waitForTimeout(500);
+    }
+
     // Owner should see Staff link
     const staffLink = page.getByRole("link", { name: /staff/i });
     const hasStaffLink = await staffLink.isVisible().catch(() => false);

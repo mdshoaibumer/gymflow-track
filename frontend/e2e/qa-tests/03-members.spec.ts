@@ -450,7 +450,7 @@ test.describe("03. MEMBERS — Detail View", () => {
     const memberLink = page.locator("table a, [role='table'] a, a[href*='/members/']").first();
     if (await memberLink.isVisible().catch(() => false)) {
       await memberLink.click();
-      await page.waitForTimeout(2000);
+      await page.waitForURL(/\/members\/.+/, { timeout: 10000 });
       expect(page.url()).toMatch(/\/members\/.+/);
     }
   });
