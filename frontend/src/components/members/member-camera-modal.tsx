@@ -17,6 +17,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Start webcam stream when modal opens
   useEffect(() => {
@@ -29,6 +30,25 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
 
     async function startCamera() {
       try {
+        // Check if mediaDevices is available (requires HTTPS on mobile)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          if (active) setPermissionState("denied");
+          return;
+        }
+
+        // On supported browsers, check permission state first
+        if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const result = await navigator.permissions.query({ name: "camera" as PermissionName });
+            if (result.state === "denied" && active) {
+              setPermissionState("denied");
+              return;
+            }
+          } catch {
+            // permissions.query may not support 'camera' on all browsers, continue normally
+          }
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 480 },
@@ -48,7 +68,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
           videoRef.current.srcObject = stream;
         }
         setPermissionState("granted");
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Camera access failed:", err);
         if (active) setPermissionState("denied");
       }
@@ -220,8 +240,32 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
             <div className="text-center p-4 space-y-3">
               <p className="text-sm text-destructive font-medium">Camera Access Blocked</p>
               <p className="text-xs text-muted-foreground max-w-[240px] mx-auto">
-                Please grant this browser camera permissions in your settings, or upload an image file instead.
+                Camera permission was denied. On mobile, check your browser settings &gt; Site Settings &gt; Camera and allow access for this site.
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-2"
+              >
+                <Camera className="mr-1.5 h-3.5 w-3.5" />
+                Use Device Camera (Fallback)
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    onCapture(file);
+                    onClose();
+                  }
+                }}
+                className="hidden"
+              />
             </div>
           )}
         </div>

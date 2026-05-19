@@ -531,10 +531,7 @@ function formValuesToPayload(values: MemberFormValues & { custom_fields?: Record
   if (gender === "male" || gender === "female" || gender === "other") {
     payload.gender = gender;
   }
-  if (values.membership_plan) payload.membership_plan = values.membership_plan;
-  if (values.membership_start) payload.membership_start = values.membership_start;
-  if (values.membership_end) payload.membership_end = values.membership_end;
-  if (values.amount_paid != null) payload.amount_paid = Math.round(values.amount_paid * 100);
+
   if (values.father_name) payload.father_name = values.father_name;
   const batch = values.batch;
   if (batch === "morning" || batch === "afternoon" || batch === "evening") {

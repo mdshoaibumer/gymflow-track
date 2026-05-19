@@ -41,10 +41,6 @@ export const memberFormSchema = z.object({
   gender: z.enum(["male", "female", "other", ""]).optional(),
   father_name: z.string().max(200).optional().or(z.literal("")),
   batch: z.enum(["morning", "evening", "afternoon", ""]).optional(),
-  membership_plan: z.string().max(100).optional().or(z.literal("")),
-  membership_start: z.string().optional().or(z.literal("")),
-  membership_end: z.string().optional().or(z.literal("")),
-  amount_paid: z.number().min(0, "Amount cannot be negative").optional().default(0),
 });
 
 export type MemberFormValues = z.infer<typeof memberFormSchema>;

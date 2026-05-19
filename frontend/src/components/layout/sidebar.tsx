@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -107,24 +107,18 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                "before:absolute before:inset-0 before:rounded-lg before:transition-all before:duration-200",
                 isActive
-                  ? "bg-primary/8 text-primary"
+                  ? "text-primary before:bg-primary/8 dark:before:bg-primary/10"
                   : isLocked
-                    ? "text-muted-foreground/50 hover:bg-accent/50"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "text-muted-foreground/50 hover:before:bg-accent/50 before:bg-transparent"
+                    : "text-muted-foreground hover:text-foreground hover:before:bg-accent before:bg-transparent"
               )}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active-bg"
-                  className="absolute inset-0 rounded-lg bg-primary/8 dark:bg-primary/10"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
-                />
-              )}
-              <item.icon className={cn("relative h-4 w-4 shrink-0", isActive && "text-primary")} />
-              <span className="relative">{item.label}</span>
+              <item.icon className={cn("relative z-[1] h-4 w-4 shrink-0", isActive && "text-primary")} />
+              <span className="relative z-[1]">{item.label}</span>
               {isLocked && (
-                <Lock className="relative ml-auto h-3 w-3 text-muted-foreground/40" />
+                <Lock className="relative z-[1] ml-auto h-3 w-3 text-muted-foreground/40" />
               )}
             </Link>
           );
@@ -132,7 +126,7 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
       </nav>
       <div className="border-t px-4 py-3">
         <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-2xs text-muted-foreground text-center font-medium">
+          <p className="text-[11px] text-muted-foreground text-center font-medium">
             GymFlow Track v1.0
           </p>
         </div>

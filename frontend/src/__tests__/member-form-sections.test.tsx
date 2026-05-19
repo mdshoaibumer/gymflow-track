@@ -17,6 +17,16 @@ vi.mock("@/components/members/member-camera-modal", () => ({
   MemberCameraModal: () => null,
 }));
 
+// Mock photo preview modal
+vi.mock("@/components/members/photo-preview-modal", () => ({
+  PhotoPreviewModal: () => null,
+}));
+
+// Mock compress-image
+vi.mock("@/lib/compress-image", () => ({
+  compressImage: vi.fn((file: File) => Promise.resolve(file)),
+}));
+
 describe("MemberForm", () => {
   const defaultProps = {
     onSubmit: vi.fn(),
@@ -35,18 +45,11 @@ describe("MemberForm", () => {
     expect(screen.getByText("Personal Details")).toBeInTheDocument();
   });
 
-  it("renders 'Membership & Initial Payment' section header", () => {
+  it("does NOT render membership payment section header", () => {
     render(<MemberForm {...defaultProps} />);
     expect(
-      screen.getByText(/membership & initial payment/i)
-    ).toBeInTheDocument();
-  });
-
-  it("indicates payment section is optional", () => {
-    render(<MemberForm {...defaultProps} />);
-    expect(
-      screen.getByText(/can also be added later from payments/i)
-    ).toBeInTheDocument();
+      screen.queryByText(/membership & initial payment/i)
+    ).not.toBeInTheDocument();
   });
 
   it("renders member personal fields (name, phone, email, gender)", () => {
@@ -57,22 +60,51 @@ describe("MemberForm", () => {
     expect(screen.getByLabelText(/gender/i)).toBeInTheDocument();
   });
 
-  it("renders membership/payment fields (plan, amount, dates)", () => {
+  it("does NOT render membership/payment fields in the form", () => {
     render(<MemberForm {...defaultProps} />);
-    expect(screen.getByLabelText(/plan/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/amount paid/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/amount paid/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
   });
 
-  it("personal details section appears before payment section in DOM order", () => {
+  it("personal details section is present in the form", () => {
     render(<MemberForm {...defaultProps} />);
     const personalHeader = screen.getByText("Personal Details");
-    const paymentHeader = screen.getByText(/membership & initial payment/i);
+    expect(personalHeader).toBeInTheDocument();
+  });
 
-    // Compare document position
-    const position = personalHeader.compareDocumentPosition(paymentHeader);
-    // DOCUMENT_POSITION_FOLLOWING = 4
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  it("renders 'Member Photo' label", () => {
+    render(<MemberForm {...defaultProps} />);
+    expect(screen.getByText("Member Photo")).toBeInTheDocument();
+  });
+
+  it("renders Upload Photo and Take Snap buttons", () => {
+    render(<MemberForm {...defaultProps} />);
+    expect(screen.getByText("Upload Photo")).toBeInTheDocument();
+    expect(screen.getByText("Take Snap")).toBeInTheDocument();
+  });
+
+  it("shows auto-compression info text", () => {
+    render(<MemberForm {...defaultProps} />);
+    expect(
+      screen.getByText(/auto-compressed/i)
+    ).toBeInTheDocument();
+  });
+
+  it("renders a hidden file input with capture attribute", () => {
+    const { container } = render(<MemberForm {...defaultProps} />);
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+    expect(fileInput).toHaveAttribute("accept", ".jpg,.jpeg,.png,.webp");
+    expect(fileInput).toHaveAttribute("capture", "environment");
+    expect(fileInput).toHaveClass("hidden");
+  });
+
+  it("shows clickable photo avatar placeholder", () => {
+    render(<MemberForm {...defaultProps} />);
+    // The photo container should have cursor-pointer class
+    const photoContainer = screen.getByText("Upload Photo").closest(".sm\\:col-span-2")?.querySelector(".cursor-pointer");
+    expect(photoContainer).toBeInTheDocument();
   });
 });

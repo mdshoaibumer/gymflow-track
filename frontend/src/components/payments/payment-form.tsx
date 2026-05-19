@@ -9,6 +9,8 @@ import {
 } from "@/lib/validations/payment";
 import type { Member } from "@/services/member.service";
 import { useMembers } from "@/hooks/use-members";
+import { useGym } from "@/hooks/use-gym";
+import { getPlans, calculateEndDate, type MembershipPlan } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,27 @@ export function PaymentForm({
   });
 
   const showRenewal = watch("payment_status") === "completed";
+
+  // --- Membership plans from settings ---
+  const { data: gym } = useGym();
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+
+  useEffect(() => {
+    setPlans(getPlans(gym?.id));
+  }, [gym?.id]);
+
+  const handlePlanSelect = (planId: string) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (plan) {
+      setValue("membership_plan", plan.name);
+      setValue("amount", plan.amount);
+      // Auto-calculate dates
+      const today = new Date().toISOString().split("T")[0];
+      const start = watch("membership_start") || today;
+      setValue("membership_start", start);
+      setValue("membership_end", calculateEndDate(start, plan.duration_months));
+    }
+  };
 
   // --- Member search combobox state ---
   const [memberSearch, setMemberSearch] = useState("");
@@ -221,8 +244,38 @@ export function PaymentForm({
                 Membership Renewal (optional — auto-extends membership)
               </p>
             </div>
+
+            {/* Plan selection from configured plans */}
+            {plans.length > 0 && (
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label>Select Plan</Label>
+                <div className="flex flex-wrap gap-2">
+                  {plans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => handlePlanSelect(plan.id)}
+                      className={`rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent ${
+                        watch("membership_plan") === plan.name
+                          ? "border-primary bg-primary/5 font-medium"
+                          : "border-input"
+                      }`}
+                    >
+                      <span className="font-medium">{plan.name}</span>
+                      <span className="ml-1.5 text-muted-foreground">
+                        ₹{plan.amount.toLocaleString("en-IN")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecting a plan auto-fills the amount and dates. You can still edit them below.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-1.5">
-              <Label>Plan</Label>
+              <Label>Plan Name</Label>
               <Input
                 type="text"
                 {...register("membership_plan")}

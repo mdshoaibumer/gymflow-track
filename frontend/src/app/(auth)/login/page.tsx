@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -100,7 +100,21 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6">
+    <main className="flex min-h-screen bg-background">
+      {/* Left decorative panel — visible on large screens */}
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent border-r">
+        <div className="relative z-10 max-w-md px-12">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-6">
+            <span className="text-2xl font-bold text-primary">G</span>
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">Manage your gym,<br />effortlessly.</h2>
+          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">Track members, automate billing, monitor attendance — all in one powerful dashboard built for Indian gym owners.</p>
+        </div>
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border)/0.4)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.4)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
+      </div>
+      {/* Right form panel */}
+      <div className="flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-[380px] animate-fade-in-up">
         <div className="flex flex-col items-center mb-8">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-glow mb-4">
@@ -212,9 +226,10 @@ export default function LoginPage() {
             </p>
           </CardContent>
         </Card>
-        <p className="text-center text-2xs text-muted-foreground/60 mt-6">
+        <p className="text-center text-[11px] text-muted-foreground/60 mt-6">
           GymFlow Track — Gym Management Made Simple
         </p>
+      </div>
       </div>
     </main>
   );

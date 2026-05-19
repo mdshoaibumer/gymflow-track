@@ -9,6 +9,7 @@ import { useGym, useUpdateGym } from "@/hooks/use-gym";
 import type { GymUpdatePayload } from "@/services/gym.service";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CustomFieldsManager } from "@/components/settings/custom-fields-manager";
+import { MembershipPlansManager } from "@/components/settings/membership-plans-manager";
 import { GymLogoUpload } from "@/components/settings/gym-logo-upload";
 import { WhatsAppConfigCard } from "@/components/settings/whatsapp-config-card";
 import { Button } from "@/components/ui/button";
@@ -313,6 +314,9 @@ export default function SettingsPage() {
 
       {/* Custom Member Fields */}
       {isOwner && <CustomFieldsManager />}
+
+      {/* Membership Plans */}
+      {isOwner && <MembershipPlansManager />}
     </motion.div>
   );
 }

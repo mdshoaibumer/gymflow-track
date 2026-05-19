@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useUploadMemberPhoto, useDeleteMemberPhoto } from "@/hooks/use-members";
 import { API_URL } from "@/lib/api";
 import { MemberCameraModal } from "./member-camera-modal";
+import { PhotoPreviewModal } from "./photo-preview-modal";
+import { compressImage } from "@/lib/compress-image";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_MB = 5;
@@ -19,6 +21,7 @@ interface MemberPhotoUploadProps {
 export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState(false);
   const uploadMutation = useUploadMemberPhoto();
   const deleteMutation = useDeleteMemberPhoto();
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -31,7 +34,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
   const displayUrl = previewUrl || fullPhotoUrl;
 
   const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
@@ -40,18 +43,21 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         alert("Please select a JPEG, PNG, or WebP image.");
         return;
       }
-      if (file.size > MAX_SIZE_BYTES) {
-        alert(`Photo must be under ${MAX_SIZE_MB}MB.`);
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Photo must be under 10MB.");
         return;
       }
 
+      // Compress image before upload
+      const compressed = await compressImage(file);
+
       // Show local preview immediately
-      const objectUrl = URL.createObjectURL(file);
+      const objectUrl = URL.createObjectURL(compressed);
       setPreviewUrl(objectUrl);
 
       // Upload
       uploadMutation.mutate(
-        { id: memberId, file },
+        { id: memberId, file: compressed },
         {
           onSuccess: () => {
             setCacheBust((prev) => prev + 1);
@@ -72,12 +78,13 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
   );
 
   const handleCameraCapture = useCallback(
-    (file: File) => {
-      const objectUrl = URL.createObjectURL(file);
+    async (file: File) => {
+      const compressed = await compressImage(file);
+      const objectUrl = URL.createObjectURL(compressed);
       setPreviewUrl(objectUrl);
 
       uploadMutation.mutate(
-        { id: memberId, file },
+        { id: memberId, file: compressed },
         {
           onSuccess: () => {
             setCacheBust((prev) => prev + 1);
@@ -109,7 +116,13 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Photo display */}
-      <div className="relative h-24 w-24 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center">
+      <div
+        className="relative h-24 w-24 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+        onClick={() => {
+          if (displayUrl) setIsPhotoPreviewOpen(true);
+        }}
+        title={displayUrl ? "Click to view full photo" : undefined}
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -170,6 +183,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         ref={fileInputRef}
         type="file"
         accept=".jpg,.jpeg,.png,.webp"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         aria-label="Upload member photo"
@@ -179,6 +193,12 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         isOpen={isCameraOpen}
         onClose={() => setIsCameraOpen(false)}
         onCapture={handleCameraCapture}
+      />
+
+      <PhotoPreviewModal
+        isOpen={isPhotoPreviewOpen}
+        imageUrl={displayUrl}
+        onClose={() => setIsPhotoPreviewOpen(false)}
       />
     </div>
   );

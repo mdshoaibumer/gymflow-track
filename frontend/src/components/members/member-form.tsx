@@ -13,6 +13,8 @@ import type { Member } from "@/services/member.service";
 import type { CustomField } from "@/services/custom-field.service";
 import { useState, useRef } from "react";
 import { MemberCameraModal } from "./member-camera-modal";
+import { PhotoPreviewModal } from "./photo-preview-modal";
+import { compressImage } from "@/lib/compress-image";
 import { API_URL } from "@/lib/api";
 
 const getFullAssetUrl = (url: string | null) => {
@@ -60,9 +62,10 @@ export function MemberForm({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -70,18 +73,20 @@ export function MemberForm({
       alert("Please select a JPEG, PNG, or WebP image.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Photo must be under 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Photo must be under 10MB.");
       return;
     }
 
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    const compressed = await compressImage(file);
+    setPhotoFile(compressed);
+    setPhotoPreview(URL.createObjectURL(compressed));
   };
 
-  const handleCameraCapture = (file: File) => {
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  const handleCameraCapture = async (file: File) => {
+    const compressed = await compressImage(file);
+    setPhotoFile(compressed);
+    setPhotoPreview(URL.createObjectURL(compressed));
   };
 
   const handleRemovePhoto = () => {
@@ -106,10 +111,6 @@ export function MemberForm({
       gender: "" as const,
       father_name: "",
       batch: "" as const,
-      membership_plan: "",
-      membership_start: "",
-      membership_end: "",
-      amount_paid: 0,
       ...defaultValues,
     },
   });
@@ -149,7 +150,14 @@ export function MemberForm({
         <div className="sm:col-span-2 flex flex-col items-start gap-3 pb-4 border-b">
           <Label className="text-sm font-medium">Member Photo</Label>
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-            <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-dashed border-muted bg-muted/50 flex items-center justify-center flex-shrink-0">
+            <div
+              className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-dashed border-muted bg-muted/50 flex items-center justify-center flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => {
+                const url = photoPreview || getFullAssetUrl(initialPhotoUrl ?? null);
+                if (url) setIsPhotoPreviewOpen(true);
+              }}
+              title={photoPreview || initialPhotoUrl ? "Click to view full photo" : undefined}
+            >
               {photoPreview ? (
                 <img
                   src={photoPreview}
@@ -200,7 +208,7 @@ export function MemberForm({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Capture live with your device camera or select a JPEG/PNG/WebP under 5MB.
+                Capture live with your device camera or select a JPEG/PNG/WebP image (auto-compressed).
               </p>
             </div>
           </div>
@@ -209,6 +217,7 @@ export function MemberForm({
             ref={fileInputRef}
             type="file"
             accept=".jpg,.jpeg,.png,.webp"
+            capture="environment"
             onChange={handlePhotoSelect}
             className="hidden"
           />
@@ -217,6 +226,12 @@ export function MemberForm({
             isOpen={isCameraOpen}
             onClose={() => setIsCameraOpen(false)}
             onCapture={handleCameraCapture}
+          />
+
+          <PhotoPreviewModal
+            isOpen={isPhotoPreviewOpen}
+            imageUrl={photoPreview || getFullAssetUrl(initialPhotoUrl ?? null)}
+            onClose={() => setIsPhotoPreviewOpen(false)}
           />
         </div>
 
@@ -301,54 +316,6 @@ export function MemberForm({
           </select>
         </div>
 
-        {/* Membership & Payment Section — visually separated */}
-        <div className="sm:col-span-2 mt-2 border-t pt-4">
-          <p className="text-sm font-medium text-muted-foreground">
-            Membership &amp; Initial Payment (optional — can also be added later from Payments)
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="membership_plan">Plan</Label>
-          <Input
-            id="membership_plan"
-            {...register("membership_plan")}
-            placeholder="Monthly / Quarterly / Annual"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="amount_paid">Amount Paid (₹)</Label>
-          <Input
-            id="amount_paid"
-            type="number"
-            min="0"
-            {...register("amount_paid", { valueAsNumber: true })}
-            placeholder="2000"
-          />
-          {errors.amount_paid && (
-            <p className="text-xs text-destructive">{errors.amount_paid.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="membership_start">Start Date</Label>
-          <Input
-            id="membership_start"
-            type="date"
-            {...register("membership_start")}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="membership_end">End Date</Label>
-          <Input
-            id="membership_end"
-            type="date"
-            {...register("membership_end")}
-          />
-        </div>
-
         {/* Dynamic Custom Fields */}
         {customFields.map((cf) => (
           <div key={cf.id} className="space-y-1.5">
@@ -415,7 +382,7 @@ export function MemberForm({
   );
 }
 
-/** Convert a Member to form default values (handles paise→rupees conversion). */
+/** Convert a Member to form default values. */
 export function memberToFormValues(member: Member): {
   formValues: Partial<MemberFormValues>;
   customFieldValues: Record<string, string | number | null>;
@@ -428,10 +395,6 @@ export function memberToFormValues(member: Member): {
       gender: member.gender || "",
       father_name: member.father_name || "",
       batch: member.batch || "",
-      membership_plan: member.membership_plan || "",
-      membership_start: member.membership_start || "",
-      membership_end: member.membership_end || "",
-      amount_paid: member.amount_paid / 100,
     },
     customFieldValues: member.custom_fields ?? {},
   };
