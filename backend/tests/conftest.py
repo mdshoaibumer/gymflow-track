@@ -15,6 +15,10 @@ Architecture:
     - Each test gets a fresh transaction that is rolled back after the test.
     - This means tests are isolated without needing to recreate tables every time.
     - The schema is created once per test session using create_all().
+
+Note:
+    Unit tests in tests/unit/ can run WITHOUT PostgreSQL. The session-scoped
+    database fixture gracefully skips when the database is unavailable.
 """
 
 from uuid import uuid4
@@ -51,6 +55,9 @@ TEST_DATABASE_URL = f"{_base_url}/gymflowtrack_test"
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
+# Track whether DB is available (set during session setup)
+_db_available = False
+
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database():
@@ -60,45 +67,62 @@ async def setup_database():
     migrations 011/012 so the test schema matches production.
     ORM models no longer carry these constraints (they are partial
     indexes which SQLAlchemy's MetaData.create_all cannot express).
-    """
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        # Partial unique indexes matching migration 011
-        await conn.execute(
-            sa.text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_gym_member_date "
-                "ON attendance (gym_id, member_id, check_in_date) "
-                "WHERE status != 'cancelled'"
-            )
-        )
-        await conn.execute(
-            sa.text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS uq_members_gym_phone "
-                "ON members (gym_id, phone) "
-                "WHERE is_deleted = false"
-            )
-        )
-        # Partial unique index matching migration 012
-        await conn.execute(
-            sa.text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS ix_payments_idempotency "
-                "ON payments (gym_id, idempotency_key) "
-                "WHERE idempotency_key IS NOT NULL"
-            )
-        )
-        # Indexes matching migration 017 (production hardening)
-        await conn.execute(
-            sa.text(
-                "CREATE INDEX IF NOT EXISTS ix_refresh_tokens_user_revoked "
-                "ON refresh_tokens (user_id, revoked)"
-            )
-        )
 
-    # Seed default subscription plans so registration and feature-gating work
-    async with TestSessionFactory() as session:
-        async with session.begin():
-            from app.services.billing_service import seed_default_plans
-            await seed_default_plans(session)
+    If PostgreSQL is unreachable, the fixture yields gracefully so that
+    unit tests (tests/unit/) can still run without a database.
+    """
+    global _db_available
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            # Partial unique indexes matching migration 011
+            await conn.execute(
+                sa.text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_gym_member_date "
+                    "ON attendance (gym_id, member_id, check_in_date) "
+                    "WHERE status != 'cancelled'"
+                )
+            )
+            await conn.execute(
+                sa.text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_members_gym_phone "
+                    "ON members (gym_id, phone) "
+                    "WHERE is_deleted = false"
+                )
+            )
+            # Partial unique index matching migration 012
+            await conn.execute(
+                sa.text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_payments_idempotency "
+                    "ON payments (gym_id, idempotency_key) "
+                    "WHERE idempotency_key IS NOT NULL"
+                )
+            )
+            # Indexes matching migration 017 (production hardening)
+            await conn.execute(
+                sa.text(
+                    "CREATE INDEX IF NOT EXISTS ix_refresh_tokens_user_revoked "
+                    "ON refresh_tokens (user_id, revoked)"
+                )
+            )
+
+        # Seed default subscription plans so registration and feature-gating work
+        async with TestSessionFactory() as session:
+            async with session.begin():
+                from app.services.billing_service import seed_default_plans
+                await seed_default_plans(session)
+
+        _db_available = True
+    except (ConnectionRefusedError, OSError, sa.exc.OperationalError) as exc:
+        import warnings
+        warnings.warn(
+            f"PostgreSQL unavailable ({exc.__class__.__name__}). "
+            "Integration tests will be skipped. Unit tests will still run.",
+            stacklevel=1,
+        )
+        _db_available = False
+        yield
+        return
 
     yield
     async with engine.begin() as conn:
@@ -112,6 +136,8 @@ async def db_session() -> AsyncSession:
     Provide a transactional database session for each test.
     Rolls back after the test — ensures test isolation.
     """
+    if not _db_available:
+        pytest.skip("PostgreSQL not available")
     async with TestSessionFactory() as session:
         await session.begin()
         try:
