@@ -41,6 +41,7 @@ interface QRDisplayData {
   gym_name: string;
   code: string;
   whatsapp_url: string;
+  checkin_url: string;
   refresh_in_seconds: number;
   message: string;
 }
@@ -111,7 +112,7 @@ function AttendanceQRDialog() {
           ) : (
             <>
               <div className="rounded-lg border bg-white p-4">
-                <QRCodeSVG value={data.whatsapp_url} size={200} level="M" />
+                <QRCodeSVG value={`${window.location.origin}${data.checkin_url}`} size={200} level="M" />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-2xl font-mono font-bold tracking-widest">{data.code}</p>
@@ -119,7 +120,7 @@ function AttendanceQRDialog() {
                   Code refreshes in {timeLeft}s
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Members scan this QR to check in via WhatsApp
+                  Members scan this QR to check in
                 </p>
               </div>
               <div className="w-full rounded-md bg-muted p-3">
