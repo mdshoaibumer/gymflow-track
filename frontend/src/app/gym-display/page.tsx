@@ -25,7 +25,7 @@ interface QRDisplayData {
   gym_name: string;
   code: string;
   whatsapp_url: string;
-  checkin_url: string;
+  checkin_url?: string;
   refresh_in_seconds: number;
   message: string;
 }
@@ -128,7 +128,7 @@ export default function GymDisplayPage() {
       {/* QR Code — encodes the self-service check-in URL */}
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl mb-8">
         <QRCodeSVG
-          value={`${window.location.origin}${data.checkin_url}`}
+          value={`${window.location.origin}/check-in/${gymId}?code=${data.code}`}
           size={280}
           level="M"
           includeMargin={false}

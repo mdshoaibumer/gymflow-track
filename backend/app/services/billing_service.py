@@ -51,7 +51,7 @@ logger = logging.getLogger("gymflow.billing")
 
 # === Constants ===
 
-TRIAL_DAYS = 30
+TRIAL_DAYS = 3650  # ~10 years — effectively unlimited
 GRACE_PERIOD_DAYS = 7
 MAX_PAYMENT_RETRIES = 3
 RETRY_INTERVAL_DAYS = 2  # Retry every 2 days (3 retries = 6 days within 7-day grace)
@@ -223,13 +223,13 @@ async def get_subscription(db: AsyncSession, gym_id: UUID) -> GymSubscription | 
 async def create_trial_subscription(
     db: AsyncSession,
     gym_id: UUID,
-    plan_tier: str = "starter",
+    plan_tier: str = "elite",
 ) -> GymSubscription:
     """
     Create a free trial subscription for a newly registered gym.
 
-    Called during gym registration. Every gym starts on a trial.
-    Default to Starter plan — they can upgrade during or after trial.
+    Called during gym registration. Every gym starts on Elite plan
+    with unlimited access — no restrictions, no locking.
     """
     plan = await get_plan_by_tier(db, plan_tier)
     today = today_ist()

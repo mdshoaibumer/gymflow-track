@@ -122,9 +122,18 @@ class SubscriptionEnforcementMiddleware(BaseHTTPMiddleware):
     - full: All operations allowed
     - read_only: Only GET/HEAD/OPTIONS allowed
     - locked: Only exempt routes allowed (auth, billing, health)
+
+    NOTE: Currently disabled — all accounts get Elite plan with no restrictions.
     """
 
+    # Set to True to re-enable subscription enforcement
+    ENABLE_ENFORCEMENT = False
+
     async def dispatch(self, request: Request, call_next: Callable):
+        # Enforcement disabled — all accounts have full access
+        if not self.ENABLE_ENFORCEMENT:
+            return await call_next(request)
+
         # Skip OPTIONS requests (CORS preflight)
         if request.method == "OPTIONS":
             return await call_next(request)
