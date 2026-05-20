@@ -50,10 +50,6 @@ app.gymflowtrack.in {
 
 	import security_headers
 
-	# Cache static assets aggressively
-	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
-	header @static Cache-Control "public, max-age=31536000, immutable"
-
 	# Serve member photos directly from backend (bypasses frontend)
 	handle /uploads/* {
 		reverse_proxy backend:8000 {
@@ -63,6 +59,10 @@ app.gymflowtrack.in {
 
 	# Everything else goes to frontend
 	handle {
+		# Cache Next.js static build assets aggressively (NOT uploads)
+		@static path /_next/static/* /static/* *.ico *.woff2
+		header @static Cache-Control "public, max-age=31536000, immutable"
+
 		reverse_proxy frontend:3000 {
 			health_uri /
 			health_interval 30s
@@ -81,9 +81,6 @@ admin.gymflowtrack.in {
 
 	import security_headers
 
-	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
-	header @static Cache-Control "public, max-age=31536000, immutable"
-
 	# Serve member photos directly from backend (bypasses frontend)
 	handle /uploads/* {
 		reverse_proxy backend:8000 {
@@ -93,6 +90,9 @@ admin.gymflowtrack.in {
 
 	# Everything else goes to frontend
 	handle {
+		@static path /_next/static/* /static/* *.ico *.woff2
+		header @static Cache-Control "public, max-age=31536000, immutable"
+
 		reverse_proxy frontend:3000 {
 			health_uri /
 			health_interval 30s
