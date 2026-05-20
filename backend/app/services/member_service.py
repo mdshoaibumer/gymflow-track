@@ -25,6 +25,7 @@ _PROTECTED_FIELDS = frozenset({"membership_status", "membership_start", "members
 # Validated against actual file bytes (not the user-supplied Content-Type header).
 _ALLOWED_PHOTO_TYPES: dict[str, list[bytes]] = {
     ".jpg": [b"\xff\xd8\xff"],
+    ".jpeg": [b"\xff\xd8\xff"],
     ".png": [b"\x89PNG\r\n\x1a\n"],
     ".webp": [b"RIFF"],  # WebP starts with RIFF....WEBP (verified at offset 8)
 }

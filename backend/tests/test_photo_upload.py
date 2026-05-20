@@ -131,6 +131,23 @@ class TestUploadPhoto:
         assert data["photo_url"].endswith(".jpg")
         assert sample_member_id in data["photo_url"]
 
+    async def test_upload_jpeg_alternative_extension_success(
+        self, client: AsyncClient, auth_headers: dict, sample_member_id: str
+    ):
+        """Upload a valid JPEG photo with .jpeg extension."""
+        content = _make_jpeg(1024)
+        response = await client.post(
+            f"/api/v1/members/{sample_member_id}/photo",
+            headers=auth_headers,
+            files={"file": ("photo.jpeg", io.BytesIO(content), "image/jpeg")},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["photo_url"] is not None
+        assert data["photo_url"].endswith(".jpg")
+        assert sample_member_id in data["photo_url"]
+
     async def test_upload_png_success(
         self, client: AsyncClient, auth_headers: dict, sample_member_id: str
     ):
