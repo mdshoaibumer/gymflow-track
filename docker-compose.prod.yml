@@ -274,6 +274,8 @@ services:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.gymflowtrack.in/api/v1}
     image: gymflowtrack-frontend:latest
     restart: unless-stopped
+    environment:
+      - BACKEND_INTERNAL_URL=http://backend:8000
     networks:
       - internal
     depends_on:
