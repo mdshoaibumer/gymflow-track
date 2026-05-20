@@ -375,11 +375,14 @@ def import_into_postgres(members, gym_name, owner_email, excel_path, dry_run=Fal
                     image_bytes = z.read(image_zip_path)
                     if not dry_run:
                         for uploads_dir in UPLOADS_PATHS:
-                            target_dir = os.path.join(uploads_dir, "members", str(gym_id))
-                            os.makedirs(target_dir, exist_ok=True)
-                            target_file = os.path.join(target_dir, f"{member_id}{ext}")
-                            with open(target_file, "wb") as img_file:
-                                img_file.write(image_bytes)
+                            try:
+                                target_dir = os.path.join(uploads_dir, "members", str(gym_id))
+                                os.makedirs(target_dir, exist_ok=True)
+                                target_file = os.path.join(target_dir, f"{member_id}{ext}")
+                                with open(target_file, "wb") as img_file:
+                                    img_file.write(image_bytes)
+                            except OSError:
+                                pass  # Skip read-only filesystem paths
                     photo_url = f"/uploads/members/{gym_id}/{member_id}{ext}"
                     photo_count += 1
                 except KeyError:
@@ -502,11 +505,14 @@ def import_into_sqlite(members, gym_name, owner_email, excel_path, sqlite_path, 
                     image_bytes = z.read(image_zip_path)
                     if not dry_run:
                         for uploads_dir in UPLOADS_PATHS:
-                            target_dir = os.path.join(uploads_dir, "members", gym_id)
-                            os.makedirs(target_dir, exist_ok=True)
-                            target_file = os.path.join(target_dir, f"{member_id}{ext}")
-                            with open(target_file, "wb") as img_file:
-                                img_file.write(image_bytes)
+                            try:
+                                target_dir = os.path.join(uploads_dir, "members", gym_id)
+                                os.makedirs(target_dir, exist_ok=True)
+                                target_file = os.path.join(target_dir, f"{member_id}{ext}")
+                                with open(target_file, "wb") as img_file:
+                                    img_file.write(image_bytes)
+                            except OSError:
+                                pass  # Skip read-only filesystem paths
                     photo_url = f"/uploads/members/{gym_id}/{member_id}{ext}"
                     photo_count += 1
                 except KeyError:
