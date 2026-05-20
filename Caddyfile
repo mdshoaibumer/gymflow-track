@@ -54,14 +54,22 @@ app.gymflowtrack.in {
 	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
 	header @static Cache-Control "public, max-age=31536000, immutable"
 
-	reverse_proxy frontend:3000 {
-		health_uri /
-		health_interval 30s
-		health_timeout 5s
+	# Serve member photos directly from backend (bypasses frontend)
+	handle /uploads/* {
+		reverse_proxy backend:8000
+	}
 
-		# Retry on connection failure (zero-downtime deploys)
-		lb_try_duration 5s
-		lb_try_interval 250ms
+	# Everything else goes to frontend
+	handle {
+		reverse_proxy frontend:3000 {
+			health_uri /
+			health_interval 30s
+			health_timeout 5s
+
+			# Retry on connection failure (zero-downtime deploys)
+			lb_try_duration 5s
+			lb_try_interval 250ms
+		}
 	}
 }
 
@@ -74,13 +82,21 @@ admin.gymflowtrack.in {
 	@static path /_next/static/* /static/* *.ico *.png *.jpg *.svg *.woff2
 	header @static Cache-Control "public, max-age=31536000, immutable"
 
-	reverse_proxy frontend:3000 {
-		health_uri /
-		health_interval 30s
-		health_timeout 5s
+	# Serve member photos directly from backend (bypasses frontend)
+	handle /uploads/* {
+		reverse_proxy backend:8000
+	}
 
-		lb_try_duration 5s
-		lb_try_interval 250ms
+	# Everything else goes to frontend
+	handle {
+		reverse_proxy frontend:3000 {
+			health_uri /
+			health_interval 30s
+			health_timeout 5s
+
+			lb_try_duration 5s
+			lb_try_interval 250ms
+		}
 	}
 }
 
