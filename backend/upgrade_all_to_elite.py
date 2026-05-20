@@ -15,12 +15,11 @@ Usage:
 import asyncio
 import sys
 from datetime import timedelta
-from uuid import UUID
 
 sys.path.insert(0, ".")
 
-from sqlalchemy import select, update
-from app.core.database import async_session_factory, engine
+from sqlalchemy import select
+from app.core.database import async_session_factory
 from app.models.subscription import (
     GymSubscription,
     SubscriptionPlan,
