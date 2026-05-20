@@ -40,6 +40,14 @@ export interface CreateMemberPayload {
   version?: number;
 }
 
+export interface MembershipOverridePayload {
+  membership_plan?: string;
+  membership_start?: string;
+  membership_end?: string;
+  membership_status?: "active" | "expired" | "frozen" | "pending" | "cancelled";
+  version?: number;
+}
+
 export interface ListMembersParams {
   skip?: number;
   limit?: number;
@@ -84,4 +92,7 @@ export const memberService = {
 
   deletePhoto: (id: string) =>
     request.delete<Member>(`/members/${id}/photo`),
+
+  overrideMembership: (id: string, data: MembershipOverridePayload) =>
+    request.patch<Member>(`/members/${id}/override`, data),
 };

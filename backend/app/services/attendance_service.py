@@ -102,6 +102,39 @@ class AttendanceService:
             recorded_by=recorded_by,
         )
 
+    async def check_in_self_service(
+        self, gym_id: UUID, identifier: str
+    ) -> Attendance:
+        """
+        Self-service check-in via QR scan → web page.
+
+        The member scans the gym's QR code which opens a web page.
+        They enter their name, phone, or email to identify themselves.
+
+        Flow:
+        1. Look up member by identifier (phone/email/name)
+        2. Verify active membership
+        3. Dedup check
+        4. Create attendance record
+
+        Raises:
+            NotFoundError: If no member matches the identifier
+            ValidationError: If membership is not active
+        """
+        member = await self.member_repo.find_by_identifier(identifier, gym_id)
+        if not member:
+            raise NotFoundError(
+                "No member found with that name, phone, or email. "
+                "Please check and try again."
+            )
+
+        return await self._perform_check_in(
+            gym_id=gym_id,
+            member_id=member.id,
+            source=CheckInSource.SELF_SERVICE,
+            recorded_by=None,
+        )
+
     async def check_out(
         self, gym_id: UUID, attendance_id: UUID
     ) -> Attendance:

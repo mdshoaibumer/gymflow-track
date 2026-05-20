@@ -5,23 +5,27 @@ Core responsibilities:
 - Validate member belongs to the same gym (tenant safety)
 - Record payments atomically
 - On successful payment with dates → trigger membership renewal
+- Void payments with full audit trail
+- Recompute financial totals from payment ledger
 - Never expose raw repository to routes
 """
 
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.events import emit, PaymentRecorded, MembershipRenewed
 from app.core.timezone import today_ist
 from app.models.member import Member
 from app.models.payment import Payment, PaymentStatus
+from app.models.gym_audit_log import GymAuditLog, GymAuditAction
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
-from app.schemas.payment import PaymentCreateRequest, PaymentListResponse
+from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, VoidPaymentRequest
 from app.services.membership_service import MembershipService
 from app.services.invoice_service import InvoiceService
 
@@ -162,3 +166,106 @@ class PaymentService:
         payments = await self.payment_repo.list_by_member(gym_id, member_id, skip, limit)
         total = await self.payment_repo.count_by_member(gym_id, member_id)
         return PaymentListResponse(payments=payments, total=total)
+
+    async def void_payment(
+        self, payment_id: UUID, gym_id: UUID, user_id: UUID, data: VoidPaymentRequest
+    ) -> Payment:
+        """
+        Void a completed payment.
+
+        Business rules:
+        1. Payment must exist and belong to the gym
+        2. Payment must be in COMPLETED status
+        3. Cannot void already REFUNDED or FAILED payments
+        4. Sets status to REFUNDED with full audit metadata
+        5. Recomputes member financial totals from ledger
+        6. Creates audit log entry
+        """
+        payment = await self.payment_repo.get_by_id(payment_id, gym_id)
+        if not payment:
+            raise NotFoundError("Payment not found")
+
+        if payment.payment_status == PaymentStatus.REFUNDED:
+            raise ValidationError("This payment has already been voided/refunded")
+
+        if payment.payment_status == PaymentStatus.FAILED:
+            raise ValidationError("Cannot void a failed payment")
+
+        if payment.payment_status != PaymentStatus.COMPLETED:
+            raise ValidationError(
+                f"Only completed payments can be voided. Current status: {payment.payment_status.value}"
+            )
+
+        # Capture old state for audit
+        old_status = payment.payment_status.value
+
+        # Void the payment
+        payment.payment_status = PaymentStatus.REFUNDED
+        payment.voided_at = datetime.now(timezone.utc)
+        payment.voided_by = user_id
+        payment.void_reason = data.reason
+
+        await self.db.flush()
+
+        # Recompute member financial totals from ledger
+        await self._recompute_member_financials(payment.member_id, gym_id)
+
+        # Create audit log entry
+        audit_entry = GymAuditLog(
+            gym_id=gym_id,
+            entity_type="payment",
+            entity_id=payment_id,
+            action=GymAuditAction.PAYMENT_VOIDED,
+            old_data={"payment_status": old_status, "amount_in_paise": payment.amount_in_paise},
+            new_data={
+                "payment_status": PaymentStatus.REFUNDED.value,
+                "void_reason": data.reason,
+                "voided_at": payment.voided_at.isoformat(),
+            },
+            description=f"Payment of ₹{payment.amount_in_paise / 100:.2f} voided. Reason: {data.reason}",
+            performed_by=user_id,
+        )
+        self.db.add(audit_entry)
+        await self.db.flush()
+
+        return payment
+
+    async def _recompute_member_financials(self, member_id: UUID, gym_id: UUID) -> None:
+        """
+        Recompute member.amount_paid from the payment ledger.
+
+        Logic: SUM(COMPLETED payments) — does NOT count REFUNDED/FAILED/PENDING.
+        This prevents drift from manual adjustments and ensures ledger correctness.
+        """
+        member = await self.member_repo.get_by_id(member_id, gym_id)
+        if not member:
+            return
+
+        # Compute total from ledger: only COMPLETED payments count
+        result = await self.db.execute(
+            select(func.coalesce(func.sum(Payment.amount_in_paise), 0)).where(
+                Payment.member_id == member_id,
+                Payment.gym_id == gym_id,
+                Payment.payment_status == PaymentStatus.COMPLETED,
+            )
+        )
+        total_paid = result.scalar_one()
+
+        old_amount = member.amount_paid
+        member.amount_paid = total_paid
+        await self.db.flush()
+
+        # Log recomputation if amounts changed
+        if old_amount != total_paid:
+            audit_entry = GymAuditLog(
+                gym_id=gym_id,
+                entity_type="member",
+                entity_id=member_id,
+                action=GymAuditAction.MEMBER_FINANCIAL_RECOMPUTE,
+                old_data={"amount_paid": old_amount},
+                new_data={"amount_paid": total_paid},
+                description=f"Member financials recomputed from ledger. Old: ₹{old_amount / 100:.2f}, New: ₹{total_paid / 100:.2f}",
+                performed_by=member_id,  # system-triggered, linked to member
+            )
+            self.db.add(audit_entry)
+            await self.db.flush()

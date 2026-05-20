@@ -13,6 +13,7 @@ from app.models.subscription import (
 )
 from app.models.payment import Payment, PaymentStatus
 from app.models.audit_log import AuditLog, AuditAction
+from app.models.gym_audit_log import GymAuditLog, GymAuditAction
 from app.models.platform_settings import PlatformSettings
 from app.models.attendance import Attendance
 from app.models.notification import Notification
@@ -37,6 +38,8 @@ __all__ = [
     "PaymentStatus",
     "AuditLog",
     "AuditAction",
+    "GymAuditLog",
+    "GymAuditAction",
     "PlatformSettings",
     "Attendance",
     "Notification",

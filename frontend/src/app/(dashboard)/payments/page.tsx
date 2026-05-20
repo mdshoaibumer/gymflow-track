@@ -8,12 +8,13 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Plus, Receipt, Download, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, Receipt, Download, AlertCircle, RefreshCw, MoreHorizontal, Ban } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePayments, useCreatePayment } from "@/hooks/use-payments";
 import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
+import { VoidPaymentModal } from "@/components/payments/void-payment-modal";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatPaise } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export-csv";
 import { toast } from "sonner";
@@ -35,6 +42,7 @@ export default function PaymentsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [voidTarget, setVoidTarget] = useState<Payment | null>(null);
 
   const { data: paymentsData, isLoading, isError, refetch, isFetching } = usePayments({
     skip: page * PAGE_SIZE,
@@ -107,8 +115,39 @@ export default function PaymentsPage() {
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.payment_status} />,
       },
+      ...(isAdminOrAbove
+        ? [
+            {
+              id: "actions",
+              header: "",
+              cell: ({ row }: { row: { original: Payment } }) => {
+                const payment = row.original;
+                if (payment.payment_status !== "completed") return null;
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setVoidTarget(payment)}
+                      >
+                        <Ban className="mr-2 h-4 w-4" />
+                        Void Payment
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              },
+            } as ColumnDef<Payment>,
+          ]
+        : []),
     ],
-    []
+    [isAdminOrAbove]
   );
 
   const table = useReactTable({
@@ -212,6 +251,13 @@ export default function PaymentsPage() {
         />
       )}
 
+      {/* Void Modal */}
+      <VoidPaymentModal
+        payment={voidTarget}
+        open={!!voidTarget}
+        onOpenChange={(open) => { if (!open) setVoidTarget(null); }}
+      />
+
       {/* Table */}
       {isError ? (
         <Card>
@@ -283,7 +329,12 @@ export default function PaymentsPage() {
                   </thead>
                   <tbody className="divide-y">
                     {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={row.id}
+                        className={`hover:bg-muted/30 transition-colors ${
+                          row.original.payment_status === "refunded" ? "opacity-60" : ""
+                        }`}
+                      >
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id} className="px-4 py-3">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -300,7 +351,12 @@ export default function PaymentsPage() {
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">
             {payments.map((payment) => (
-              <Card key={payment.id} className="transition-shadow hover:shadow-md">
+              <Card
+                key={payment.id}
+                className={`transition-shadow hover:shadow-md ${
+                  payment.payment_status === "refunded" ? "opacity-60" : ""
+                }`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
@@ -311,12 +367,30 @@ export default function PaymentsPage() {
                     </div>
                     <span className="text-lg font-bold">{formatPaise(payment.amount_in_paise)}</span>
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Badge variant="secondary" className="capitalize text-xs">
-                      {payment.payment_method.replace("_", " ")}
-                    </Badge>
-                    <StatusBadge status={payment.payment_status} />
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="capitalize text-xs">
+                        {payment.payment_method.replace("_", " ")}
+                      </Badge>
+                      <StatusBadge status={payment.payment_status} />
+                    </div>
+                    {isAdminOrAbove && payment.payment_status === "completed" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive h-7 px-2 text-xs"
+                        onClick={() => setVoidTarget(payment)}
+                      >
+                        <Ban className="mr-1 h-3 w-3" />
+                        Void
+                      </Button>
+                    )}
                   </div>
+                  {payment.payment_status === "refunded" && payment.void_reason && (
+                    <p className="mt-2 text-xs text-muted-foreground italic">
+                      Voided: {payment.void_reason}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}

@@ -7,6 +7,7 @@ import {
   paymentService,
   type ListPaymentsParams,
   type CreatePaymentPayload,
+  type VoidPaymentPayload,
 } from "@/services/payment.service";
 import { toast } from "sonner";
 
@@ -77,6 +78,23 @@ export function useCreatePayment() {
     },
     onError: (err: Error) => {
       toast.error(err.message);
+    },
+  });
+}
+
+export function useVoidPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, payload }: { paymentId: string; payload: VoidPaymentPayload }) =>
+      paymentService.voidPayment(paymentId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Payment successfully voided and ledger updated.");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to void payment");
     },
   });
 }

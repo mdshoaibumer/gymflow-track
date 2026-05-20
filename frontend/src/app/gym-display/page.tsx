@@ -25,6 +25,7 @@ interface QRDisplayData {
   gym_name: string;
   code: string;
   whatsapp_url: string;
+  checkin_url: string;
   refresh_in_seconds: number;
   message: string;
 }
@@ -124,10 +125,10 @@ export default function GymDisplayPage() {
         Scan this QR code with your phone to mark attendance
       </p>
 
-      {/* QR Code */}
+      {/* QR Code — encodes the self-service check-in URL */}
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl mb-8">
         <QRCodeSVG
-          value={data.whatsapp_url}
+          value={`${window.location.origin}${data.checkin_url}`}
           size={280}
           level="M"
           includeMargin={false}
@@ -141,7 +142,7 @@ export default function GymDisplayPage() {
           {data.code}
         </p>
         <p className="text-gray-500 text-xs mt-2">
-          Send &quot;CHECKIN {data.code}&quot; on WhatsApp if QR scan doesn&apos;t work
+          Scan QR &rarr; Enter your registered phone/name/email &rarr; Done!
         </p>
       </div>
 
@@ -158,15 +159,15 @@ export default function GymDisplayPage() {
         <div className="grid grid-cols-3 gap-4 text-gray-400 text-sm">
           <div className="flex flex-col items-center">
             <span className="text-2xl mb-1">📱</span>
-            <span>Open Camera</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-2xl mb-1">📷</span>
             <span>Scan QR</span>
           </div>
           <div className="flex flex-col items-center">
+            <span className="text-2xl mb-1">✍️</span>
+            <span>Enter Details</span>
+          </div>
+          <div className="flex flex-col items-center">
             <span className="text-2xl mb-1">✅</span>
-            <span>Tap Send</span>
+            <span>Checked In!</span>
           </div>
         </div>
       </div>

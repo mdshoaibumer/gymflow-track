@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -24,6 +24,11 @@ class PaymentCreateRequest(BaseModel):
     membership_plan: str | None = None
 
 
+class VoidPaymentRequest(BaseModel):
+    """Request body for voiding a payment."""
+    reason: str = Field(..., min_length=5, max_length=500, description="Reason for voiding this payment")
+
+
 class PaymentResponse(BaseModel):
     id: UUID
     gym_id: UUID
@@ -36,6 +41,9 @@ class PaymentResponse(BaseModel):
     idempotency_key: str | None = None
     created_by: UUID | None
     member_name: str | None = None
+    voided_at: datetime | None = None
+    voided_by: UUID | None = None
+    void_reason: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -71,6 +79,9 @@ class PaymentResponse(BaseModel):
                 idempotency_key=data.idempotency_key,
                 created_by=data.created_by,
                 member_name=member.name,
+                voided_at=data.voided_at,
+                voided_by=data.voided_by,
+                void_reason=data.void_reason,
             )
         return data
 

@@ -48,6 +48,7 @@ class CheckInSource(str, PyEnum):
     QR = "qr"
     MANUAL = "manual"
     WHATSAPP_QR = "whatsapp_qr"
+    SELF_SERVICE = "self_service"
 
 
 class Attendance(BaseModel):

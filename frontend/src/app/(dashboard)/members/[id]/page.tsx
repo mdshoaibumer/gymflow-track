@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { useMember } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
@@ -14,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { MemberPhotoUpload } from "@/components/members/member-photo-upload";
+import { MembershipOverrideForm } from "@/components/members/membership-override-form";
+import { RoleGate } from "@/components/role-gate";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
   active: "success",
@@ -25,6 +28,7 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { isAdminOrAbove } = useAuth();
   const { data: member, isLoading } = useMember(id);
   const { data: paymentData } = useMemberPayments(id);
   const { data: invoiceData } = useMemberInvoices(id);
@@ -294,6 +298,11 @@ export default function MemberDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Membership Override (Admin Only) */}
+      <RoleGate allowed={["owner", "admin"]}>
+        <MembershipOverrideForm member={member} />
+      </RoleGate>
     </motion.div>
   );
 }

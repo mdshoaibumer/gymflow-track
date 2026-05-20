@@ -31,7 +31,9 @@ from app.services.gym_qr_service import (
     generate_gym_code,
     generate_whatsapp_checkin_url,
     get_code_ttl_seconds,
+    validate_gym_code,
 )
+from app.services.attendance_service import AttendanceService
 
 logger = logging.getLogger("gymflow.gym_display")
 
@@ -45,6 +47,7 @@ class GymQRDisplayResponse(BaseModel):
     gym_name: str
     code: str
     whatsapp_url: str
+    checkin_url: str
     refresh_in_seconds: int
     message: str
 
@@ -54,6 +57,19 @@ class WebhookVerification(BaseModel):
     hub_mode: str | None = None
     hub_verify_token: str | None = None
     hub_challenge: str | None = None
+
+
+class SelfCheckInRequest(BaseModel):
+    """Self-service check-in request from the web check-in page."""
+    identifier: str  # name, phone, or email
+    code: str  # rotating 6-char code (proves physical presence)
+
+
+class SelfCheckInResponse(BaseModel):
+    """Response after successful self-service check-in."""
+    success: bool
+    member_name: str
+    message: str
 
 
 # --- Display Endpoint (Public) ---
@@ -89,13 +105,86 @@ async def get_gym_qr_display(
     whatsapp_url = generate_whatsapp_checkin_url(gym_phone, gym_id)
     ttl = get_code_ttl_seconds()
 
+    # Build the self-service check-in URL
+    # Frontend is expected to be at the same origin or NEXT_PUBLIC_APP_URL
+    checkin_url = f"/check-in/{gym_id}?code={code}"
+
     return GymQRDisplayResponse(
         gym_name=gym.name,
         code=code,
         whatsapp_url=whatsapp_url,
+        checkin_url=checkin_url,
         refresh_in_seconds=ttl,
         message=f"Scan this QR to mark your attendance at {gym.name}",
     )
+
+
+# --- Self-Service Check-In Endpoint (Public) ---
+
+@router.post("/gym-display/{gym_id}/self-check-in", response_model=SelfCheckInResponse)
+async def self_service_check_in(
+    gym_id: UUID,
+    body: SelfCheckInRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Self-service check-in via the QR scan web page.
+
+    Flow:
+    1. Member scans QR displayed at gym → opens /check-in/{gymId}?code={code}
+    2. Member enters their name, phone, or email
+    3. This endpoint validates the rotating code (proves physical presence)
+    4. Looks up the member and records attendance
+
+    Security:
+    - Rotating code must be valid (±2 min window) — prevents remote check-ins
+    - gym_id is a UUID (unguessable)
+    - No auth required (member doesn't have a GymFlow account)
+    """
+    # 1. Validate rotating code
+    code = body.code.strip().upper()
+    if not code or not validate_gym_code(gym_id, code):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired code. Please scan the QR code again.",
+        )
+
+    # 2. Validate gym exists
+    gym_repo = GymRepository(db)
+    gym = await gym_repo.get_by_id(gym_id)
+    if not gym or not gym.is_active:
+        raise HTTPException(status_code=404, detail="Gym not found")
+
+    # 3. Find member and check in
+    identifier = body.identifier.strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Please enter your name, phone number, or email.")
+
+    attendance_service = AttendanceService(db)
+
+    try:
+        attendance = await attendance_service.check_in_self_service(gym_id, identifier)
+        await db.commit()
+
+        member_name = attendance.member.name if attendance.member else "Member"
+
+        return SelfCheckInResponse(
+            success=True,
+            member_name=member_name,
+            message=f"Welcome, {member_name}! Your attendance has been marked.",
+        )
+    except Exception as e:
+        await db.rollback()
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=404,
+                detail="No member found with that name, phone, or email. Please check and try again.",
+            )
+        elif "expired" in error_msg.lower() or "not active" in error_msg.lower():
+            raise HTTPException(status_code=400, detail=error_msg)
+        else:
+            raise HTTPException(status_code=400, detail=error_msg)
 
 
 # --- WhatsApp Webhook ---

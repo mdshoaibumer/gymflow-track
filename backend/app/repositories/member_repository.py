@@ -92,6 +92,65 @@ class MemberRepository:
         )
         return result.scalar_one_or_none()
 
+    async def find_by_identifier(self, identifier: str, gym_id: UUID) -> Member | None:
+        """
+        Find a member by name, phone, or email within a gym.
+
+        Tries exact phone match first (most common), then email, then exact name.
+        Phone matching includes normalized variants (with/without +91, leading 0).
+        """
+        identifier = identifier.strip()
+        if not identifier:
+            return None
+
+        # Normalize phone: strip non-digits for phone matching
+        digits_only = "".join(c for c in identifier if c.isdigit())
+
+        # Try exact phone match first (most reliable)
+        if digits_only and len(digits_only) >= 10:
+            # Normalize to 10-digit Indian mobile
+            phone_10 = digits_only
+            if len(phone_10) == 12 and phone_10.startswith("91"):
+                phone_10 = phone_10[2:]
+            elif len(phone_10) == 11 and phone_10.startswith("0"):
+                phone_10 = phone_10[1:]
+
+            if len(phone_10) == 10:
+                result = await self.db.execute(
+                    select(Member).where(
+                        Member.phone == phone_10,
+                        Member.gym_id == gym_id,
+                        Member.is_deleted == False,  # noqa: E712
+                    )
+                )
+                member = result.scalar_one_or_none()
+                if member:
+                    return member
+
+        # Try email match (case-insensitive)
+        if "@" in identifier:
+            result = await self.db.execute(
+                select(Member).where(
+                    Member.email.ilike(identifier),
+                    Member.gym_id == gym_id,
+                    Member.is_deleted == False,  # noqa: E712
+                )
+            )
+            member = result.scalar_one_or_none()
+            if member:
+                return member
+
+        # Try exact name match (case-insensitive)
+        result = await self.db.execute(
+            select(Member).where(
+                Member.name.ilike(identifier),
+                Member.gym_id == gym_id,
+                Member.is_deleted == False,  # noqa: E712
+            )
+        )
+        member = result.scalar_one_or_none()
+        return member
+
     async def delete(self, member: Member) -> None:
         await self.db.delete(member)
         await self.db.flush()

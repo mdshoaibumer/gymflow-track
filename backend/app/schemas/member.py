@@ -115,3 +115,17 @@ class MemberResponse(BaseModel):
 class MemberListResponse(BaseModel):
     members: list[MemberResponse]
     total: int
+
+
+class MembershipOverrideRequest(BaseModel):
+    """Admin-only request to override protected membership fields."""
+    membership_plan: str | None = None
+    membership_start: date | None = None
+    membership_end: date | None = None
+    membership_status: MembershipStatus | None = None
+    version: int | None = None  # Optimistic locking
+
+    @field_validator("membership_plan")
+    @classmethod
+    def sanitize_plan(cls, v: str | None) -> str | None:
+        return strip_html_tags(v) if v else v

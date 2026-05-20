@@ -16,6 +16,9 @@ export interface Payment {
   notes: string | null;
   created_by: string | null;
   member_name: string | null;
+  voided_at: string | null;
+  voided_by: string | null;
+  void_reason: string | null;
 }
 
 export interface PaymentListResponse {
@@ -42,6 +45,10 @@ export interface ListPaymentsParams {
   status?: PaymentStatus;
   date_from?: string;
   date_to?: string;
+}
+
+export interface VoidPaymentPayload {
+  reason: string;
 }
 
 // --- Dashboard types ---
@@ -103,6 +110,10 @@ export const paymentService = {
   ): Promise<PaymentListResponse> {
     const query = buildQuery(params as Record<string, string | number | undefined>);
     return request.get<PaymentListResponse>(`/members/${memberId}/payments${query}`);
+  },
+
+  async voidPayment(paymentId: string, payload: VoidPaymentPayload): Promise<Payment> {
+    return request.post<Payment>(`/payments/${paymentId}/void`, payload);
   },
 };
 

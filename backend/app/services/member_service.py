@@ -2,6 +2,7 @@
 
 import logging
 import os
+from datetime import date
 from pathlib import Path
 from uuid import UUID
 
@@ -11,9 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, ConflictError, NotFoundError, ValidationError
-from app.models.member import Member
+from app.models.member import Member, MembershipStatus
+from app.models.gym_audit_log import GymAuditLog, GymAuditAction
 from app.repositories.member_repository import MemberRepository
-from app.schemas.member import MemberCreateRequest, MemberListResponse, MemberUpdateRequest
+from app.schemas.member import MemberCreateRequest, MemberListResponse, MemberUpdateRequest, MembershipOverrideRequest
 
 logger = logging.getLogger("gymflow.members")
 
@@ -133,6 +135,83 @@ class MemberService:
         member = await self.get_member(member_id, gym_id)
         member.is_deleted = True
         await self.member_repo.update(member)
+
+    async def override_membership(
+        self, member_id: UUID, gym_id: UUID, user_id: UUID, data: MembershipOverrideRequest
+    ) -> Member:
+        """
+        Admin-only override of protected membership fields.
+
+        Validates date ranges and creates full audit trail.
+        Automatically computes membership_status if not explicitly provided.
+        """
+        member = await self.get_member(member_id, gym_id)
+
+        update_data = data.model_dump(exclude_unset=True)
+
+        # Optimistic locking
+        client_version = update_data.pop("version", None)
+        if client_version is not None and client_version != member.version:
+            raise ConflictError(
+                "This member was modified by another user. "
+                "Please refresh and try again."
+            )
+
+        if not update_data:
+            raise ValidationError("No fields provided for override")
+
+        # Validate date range if both dates are being set
+        new_start = update_data.get("membership_start", member.membership_start)
+        new_end = update_data.get("membership_end", member.membership_end)
+        if new_start and new_end and new_start > new_end:
+            raise ValidationError("Membership start date cannot be after end date")
+
+        # Capture old values for audit
+        old_data = {}
+        for field in ("membership_plan", "membership_start", "membership_end", "membership_status"):
+            if field in update_data:
+                val = getattr(member, field)
+                old_data[field] = val.value if isinstance(val, MembershipStatus) else str(val) if val else None
+
+        # Apply the override
+        for field, value in update_data.items():
+            setattr(member, field, value)
+
+        # Auto-compute status if not explicitly set
+        if "membership_status" not in update_data:
+            effective_end = member.membership_end
+            if member.membership_status not in (MembershipStatus.FROZEN, MembershipStatus.CANCELLED):
+                if effective_end is None:
+                    member.membership_status = MembershipStatus.PENDING
+                elif effective_end >= date.today():
+                    member.membership_status = MembershipStatus.ACTIVE
+                else:
+                    member.membership_status = MembershipStatus.EXPIRED
+
+        # Bump version
+        member.version = (member.version or 0) + 1
+
+        # Build new_data for audit
+        new_data = {}
+        for field in ("membership_plan", "membership_start", "membership_end", "membership_status"):
+            if field in update_data or field == "membership_status":
+                val = getattr(member, field)
+                new_data[field] = val.value if isinstance(val, MembershipStatus) else str(val) if val else None
+
+        # Create audit log entry
+        audit_entry = GymAuditLog(
+            gym_id=gym_id,
+            entity_type="member",
+            entity_id=member_id,
+            action=GymAuditAction.MEMBERSHIP_OVERRIDE,
+            old_data=old_data,
+            new_data=new_data,
+            description=f"Membership override applied to member",
+            performed_by=user_id,
+        )
+        self.db.add(audit_entry)
+
+        return await self.member_repo.update(member)
 
     async def upload_photo(self, member_id: UUID, gym_id: UUID, file: UploadFile) -> Member:
         """Upload or replace a member's photo.

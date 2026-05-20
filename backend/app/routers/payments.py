@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
 from app.models.payment import PaymentStatus
-from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse
+from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse, VoidPaymentRequest
 from app.services.payment_service import PaymentService
 
 router = APIRouter()
@@ -75,3 +75,26 @@ async def get_payment(
     """Get a specific payment by ID. All roles can view."""
     service = PaymentService(db)
     return await service.get_payment(payment_id, current_user.gym_id)
+
+
+@router.post("/{payment_id}/void", response_model=PaymentResponse)
+async def void_payment(
+    payment_id: UUID,
+    data: VoidPaymentRequest,
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Void a completed payment. OWNER and ADMIN only.
+
+    This marks the payment as REFUNDED (never deletes it),
+    recomputes the member's financial totals from the payment ledger,
+    and creates an audit log entry for compliance.
+    """
+    service = PaymentService(db)
+    return await service.void_payment(
+        payment_id=payment_id,
+        gym_id=current_user.gym_id,
+        user_id=current_user.user_id,
+        data=data,
+    )

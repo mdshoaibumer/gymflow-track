@@ -12,6 +12,7 @@ from app.schemas.member import (
     MemberListResponse,
     MemberResponse,
     MemberUpdateRequest,
+    MembershipOverrideRequest,
 )
 from app.schemas.payment import PaymentListResponse
 from app.services.member_service import MemberService
@@ -113,6 +114,33 @@ async def delete_member(
         "member_deleted gym_id=%s member_id=%s by_user=%s",
         current_user.gym_id, member_id, current_user.user_id,
     )
+
+
+@router.patch("/{member_id}/override", response_model=MemberResponse)
+async def override_membership(
+    member_id: UUID,
+    data: MembershipOverrideRequest,
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Override protected membership fields. OWNER and ADMIN only.
+
+    Allows direct manipulation of membership_plan, membership_start,
+    membership_end, and membership_status. Creates an audit trail.
+    """
+    service = MemberService(db)
+    result = await service.override_membership(
+        member_id=member_id,
+        gym_id=current_user.gym_id,
+        user_id=current_user.user_id,
+        data=data,
+    )
+    logger.info(
+        "membership_override gym_id=%s member_id=%s by_user=%s",
+        current_user.gym_id, member_id, current_user.user_id,
+    )
+    return result
 
 
 @router.get("/{member_id}/payments", response_model=PaymentListResponse)

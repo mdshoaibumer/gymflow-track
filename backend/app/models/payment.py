@@ -1,8 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey, Date, Integer, Text, Index
+from sqlalchemy import String, ForeignKey, Date, DateTime, Integer, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -69,6 +69,13 @@ class Payment(BaseModel):
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+
+    # Void/Refund tracking fields
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    voided_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    void_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
     gym = relationship("Gym", lazy="raise")
