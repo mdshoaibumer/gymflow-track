@@ -448,3 +448,85 @@ async def test_api_qr_generation_requires_admin(
         headers=staff_headers,
     )
     assert resp.status_code == 403
+
+
+# === Self-Service Check-In Tests ===
+
+
+@pytest.mark.asyncio
+async def test_self_service_check_in_by_phone(
+    db_session: AsyncSession, sample_gym: Gym, active_member: Member
+):
+    """Self-service check-in by phone number creates attendance with correct source."""
+    service = AttendanceService(db_session)
+    attendance = await service.check_in_self_service(
+        gym_id=sample_gym.id,
+        identifier=active_member.phone,
+    )
+    assert attendance.member_id == active_member.id
+    assert attendance.gym_id == sample_gym.id
+    assert attendance.source == CheckInSource.SELF_SERVICE
+    assert attendance.status == AttendanceStatus.CHECKED_IN
+
+
+@pytest.mark.asyncio
+async def test_self_service_check_in_by_name(
+    db_session: AsyncSession, sample_gym: Gym, active_member: Member
+):
+    """Self-service check-in by name finds the member."""
+    service = AttendanceService(db_session)
+    attendance = await service.check_in_self_service(
+        gym_id=sample_gym.id,
+        identifier=active_member.name,
+    )
+    assert attendance.member_id == active_member.id
+    assert attendance.source == CheckInSource.SELF_SERVICE
+
+
+@pytest.mark.asyncio
+async def test_self_service_check_in_not_found(
+    db_session: AsyncSession, sample_gym: Gym
+):
+    """Self-service check-in with unknown identifier raises NotFoundError."""
+    from app.core.exceptions import NotFoundError
+
+    service = AttendanceService(db_session)
+    with pytest.raises(NotFoundError, match="No member found"):
+        await service.check_in_self_service(
+            gym_id=sample_gym.id,
+            identifier="nonexistent_person_12345",
+        )
+
+
+@pytest.mark.asyncio
+async def test_self_service_check_in_expired_membership(
+    db_session: AsyncSession, sample_gym: Gym, expired_member: Member
+):
+    """Self-service check-in with expired membership is rejected."""
+    from app.core.exceptions import ValidationError
+
+    service = AttendanceService(db_session)
+    with pytest.raises(ValidationError, match="expired"):
+        await service.check_in_self_service(
+            gym_id=sample_gym.id,
+            identifier=expired_member.phone,
+        )
+
+
+@pytest.mark.asyncio
+async def test_self_service_duplicate_same_day(
+    db_session: AsyncSession, sample_gym: Gym, active_member: Member
+):
+    """Self-service check-in twice same day returns existing record (idempotent)."""
+    service = AttendanceService(db_session)
+    first = await service.check_in_self_service(sample_gym.id, active_member.phone)
+    second = await service.check_in_self_service(sample_gym.id, active_member.phone)
+    assert first.id == second.id
+
+
+@pytest.mark.asyncio
+async def test_all_checkin_sources_are_valid_enum_values():
+    """All CheckInSource values are valid — ensures enum sync between Python and DB."""
+    expected = {"qr", "manual", "whatsapp_qr", "self_service"}
+    actual = {s.value for s in CheckInSource}
+    assert expected == actual
