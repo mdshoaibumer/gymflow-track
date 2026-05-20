@@ -157,7 +157,7 @@ export default function MembersPage() {
             <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">
               <span className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                 {photoUrl ? (
-                  <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+                  <img src={photoUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                 ) : (
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
