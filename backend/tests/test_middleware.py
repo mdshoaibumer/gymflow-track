@@ -18,8 +18,17 @@ from httpx import AsyncClient
 
 from app.core.cache import get_cache_backend
 from app.core.security import create_access_token
+from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.models.gym import Gym
 from app.models.user import User
+
+
+@pytest.fixture(autouse=True)
+def enable_enforcement():
+    """Enable subscription enforcement for middleware tests."""
+    SubscriptionEnforcementMiddleware.ENABLE_ENFORCEMENT = True
+    yield
+    SubscriptionEnforcementMiddleware.ENABLE_ENFORCEMENT = False
 
 
 # === Full Access Tests ===
@@ -27,6 +36,12 @@ from app.models.user import User
 
 class TestFullAccess:
     """Verify that active subscriptions allow all operations."""
+
+    @pytest.fixture(autouse=True)
+    def _set_full_access(self, sample_gym: Gym):
+        """Set cache to 'full' so middleware allows all ops."""
+        cache = get_cache_backend()
+        cache.set(f"sub:{sample_gym.id}", "full", 99999)
 
     async def test_active_sub_allows_get(
         self, client: AsyncClient, auth_headers: dict
