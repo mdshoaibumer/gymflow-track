@@ -131,7 +131,7 @@ describe("AttendanceQRDialog", () => {
     );
   });
 
-  it("shows the WhatsApp instruction text", async () => {
+  it("shows the check-in instruction text", async () => {
     const user = userEvent.setup();
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
@@ -144,7 +144,7 @@ describe("AttendanceQRDialog", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/members scan this qr to check in via whatsapp/i)
+        screen.getByText(/members scan this qr to check in/i)
       ).toBeInTheDocument();
     });
   });

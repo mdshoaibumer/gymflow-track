@@ -40,8 +40,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1
 interface QRDisplayData {
   gym_name: string;
   code: string;
-  whatsapp_url: string;
-  checkin_url: string;
+  whatsapp_url?: string;
+  checkin_url?: string;
   refresh_in_seconds: number;
   message: string;
 }
@@ -112,7 +112,7 @@ function AttendanceQRDialog() {
           ) : (
             <>
               <div className="rounded-lg border bg-white p-4">
-                <QRCodeSVG value={`${window.location.origin}${data.checkin_url}`} size={200} level="M" />
+                <QRCodeSVG value={`${window.location.origin}/check-in/${gymId}?code=${data.code}`} size={200} level="M" />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-2xl font-mono font-bold tracking-widest">{data.code}</p>

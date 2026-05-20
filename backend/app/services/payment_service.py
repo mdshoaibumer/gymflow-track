@@ -208,7 +208,7 @@ class PaymentService:
         await self.db.flush()
 
         # Recompute member financial totals from ledger
-        await self._recompute_member_financials(payment.member_id, gym_id)
+        await self._recompute_member_financials(payment.member_id, gym_id, user_id)
 
         # Create audit log entry
         audit_entry = GymAuditLog(
@@ -230,7 +230,7 @@ class PaymentService:
 
         return payment
 
-    async def _recompute_member_financials(self, member_id: UUID, gym_id: UUID) -> None:
+    async def _recompute_member_financials(self, member_id: UUID, gym_id: UUID, user_id: UUID | None = None) -> None:
         """
         Recompute member.amount_paid from the payment ledger.
 
@@ -265,7 +265,7 @@ class PaymentService:
                 old_data={"amount_paid": old_amount},
                 new_data={"amount_paid": total_paid},
                 description=f"Member financials recomputed from ledger. Old: ₹{old_amount / 100:.2f}, New: ₹{total_paid / 100:.2f}",
-                performed_by=member_id,  # system-triggered, linked to member
+                performed_by=user_id or member_id,
             )
             self.db.add(audit_entry)
             await self.db.flush()
