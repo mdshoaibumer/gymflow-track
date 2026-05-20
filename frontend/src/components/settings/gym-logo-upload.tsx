@@ -7,6 +7,7 @@ import { gymService } from "@/services/gym.service";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { compressImage } from "@/lib/compress-image";
 
 interface GymLogoUploadProps {
   logoUrl: string | null;
@@ -53,7 +54,7 @@ export function GymLogoUpload({ logoUrl, disabled }: GymLogoUploadProps) {
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -63,20 +64,29 @@ export function GymLogoUpload({ logoUrl, disabled }: GymLogoUploadProps) {
       toast.error("Please select a JPEG, PNG, or WebP image");
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo must be under 2MB");
-      return;
+
+    try {
+      // Compress the image before uploading
+      const compressed = await compressImage(file);
+
+      if (compressed.size > 2 * 1024 * 1024) {
+        toast.error("Logo must be under 2MB");
+        return;
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(compressed);
+
+      uploadMutation.mutate(compressed);
+    } catch (error) {
+      console.error("Failed to compress logo:", error);
+      toast.error("Error processing image file");
+    } finally {
+      // Reset input so same file can be re-selected
+      e.target.value = "";
     }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
-
-    uploadMutation.mutate(file);
-
-    // Reset input so same file can be re-selected
-    e.target.value = "";
   };
 
   const currentImage = preview || getFullAssetUrl(logoUrl);
