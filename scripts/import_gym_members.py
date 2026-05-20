@@ -37,6 +37,7 @@ import uuid
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime, timezone
+from io import BytesIO
 
 try:
     import openpyxl
@@ -49,6 +50,14 @@ try:
 except ImportError:
     psycopg2 = None
 
+try:
+    from PIL import Image
+    HAS_PILLOW = True
+except ImportError:
+    HAS_PILLOW = False
+    print("WARNING: Pillow not installed. Photos will NOT be compressed.")
+    print("         Install with: pip install Pillow")
+
 # ── Constants ────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -58,7 +67,53 @@ UPLOADS_PATHS = [
     os.path.join(PROJECT_ROOT, "uploads"),
 ]
 
+MAX_IMAGE_SIZE = 800       # Max width/height in pixels
+JPEG_QUALITY = 85          # JPEG compression quality (1-100)
 dummy_phone_counter = 9900000001
+
+
+def compress_image(image_bytes, original_ext):
+    """Compress and resize an image. Returns (compressed_bytes, final_extension)."""
+    if not HAS_PILLOW:
+        return image_bytes, original_ext
+
+    try:
+        img = Image.open(BytesIO(image_bytes))
+    except Exception:
+        return image_bytes, original_ext  # Not a valid image, return as-is
+
+    # Determine output format: keep PNG only if it has transparency
+    has_alpha = img.mode in ("RGBA", "LA") or (
+        img.mode == "P" and "transparency" in img.info
+    )
+
+    if has_alpha:
+        output_format = "PNG"
+        final_ext = ".png"
+    else:
+        output_format = "JPEG"
+        final_ext = ".jpeg"
+        # Convert to RGB for JPEG (removes alpha channel)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
+    # Resize if larger than MAX_IMAGE_SIZE
+    if img.width > MAX_IMAGE_SIZE or img.height > MAX_IMAGE_SIZE:
+        img.thumbnail((MAX_IMAGE_SIZE, MAX_IMAGE_SIZE), Image.LANCZOS)
+
+    # Compress
+    buffer = BytesIO()
+    if output_format == "JPEG":
+        img.save(buffer, format="JPEG", quality=JPEG_QUALITY, optimize=True)
+    else:
+        img.save(buffer, format="PNG", optimize=True)
+
+    compressed = buffer.getvalue()
+
+    # Only use compressed if it's actually smaller
+    if len(compressed) < len(image_bytes):
+        return compressed, final_ext
+    return image_bytes, original_ext
 
 
 # ── Utility Functions ────────────────────────────────────────
@@ -363,7 +418,7 @@ def import_into_postgres(members, gym_name, owner_email, excel_path, dry_run=Fal
             member_id = str(uuid.uuid4())
             photo_url = None
 
-            # Extract photo
+            # Extract and compress photo
             if m["image_filename"]:
                 _, ext = os.path.splitext(m["image_filename"])
                 ext = ext.lower()
@@ -373,6 +428,8 @@ def import_into_postgres(members, gym_name, owner_email, excel_path, dry_run=Fal
                 image_zip_path = f"xl/media/{m['image_filename']}"
                 try:
                     image_bytes = z.read(image_zip_path)
+                    # Compress and resize the image
+                    image_bytes, ext = compress_image(image_bytes, ext)
                     if not dry_run:
                         for uploads_dir in UPLOADS_PATHS:
                             try:
@@ -503,6 +560,8 @@ def import_into_sqlite(members, gym_name, owner_email, excel_path, sqlite_path, 
                 image_zip_path = f"xl/media/{m['image_filename']}"
                 try:
                     image_bytes = z.read(image_zip_path)
+                    # Compress and resize the image
+                    image_bytes, ext = compress_image(image_bytes, ext)
                     if not dry_run:
                         for uploads_dir in UPLOADS_PATHS:
                             try:
