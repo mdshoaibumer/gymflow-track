@@ -206,7 +206,7 @@ class MemberService:
             action=GymAuditAction.MEMBERSHIP_OVERRIDE,
             old_data=old_data,
             new_data=new_data,
-            description=f"Membership override applied to member",
+            description="Membership override applied to member",
             performed_by=user_id,
         )
         self.db.add(audit_entry)
