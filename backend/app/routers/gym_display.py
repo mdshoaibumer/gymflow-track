@@ -173,6 +173,9 @@ async def self_service_check_in(
             member_name=member_name,
             message=f"Welcome, {member_name}! Your attendance has been marked.",
         )
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
         await db.rollback()
         error_msg = str(e)
@@ -184,7 +187,13 @@ async def self_service_check_in(
         elif "expired" in error_msg.lower() or "not active" in error_msg.lower():
             raise HTTPException(status_code=400, detail=error_msg)
         else:
-            raise HTTPException(status_code=400, detail=error_msg)
+            # Never expose raw DB/SQLAlchemy errors to the client
+            import logging
+            logging.getLogger(__name__).exception("Self check-in failed unexpectedly")
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to mark attendance right now. Please try again.",
+            )
 
 
 # --- WhatsApp Webhook ---
