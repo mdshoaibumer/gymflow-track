@@ -239,11 +239,7 @@ export function PaymentForm({
         {/* Membership Renewal Section */}
         {showRenewal && (
           <>
-            <div className="sm:col-span-2 mt-2 border-t pt-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Membership Renewal (optional — auto-extends membership)
-              </p>
-            </div>
+            <div className="sm:col-span-2 mt-2 border-t" />
 
             {/* Plan selection from configured plans */}
             {plans.length > 0 && (

@@ -236,11 +236,11 @@ export function MembershipPlansManager() {
                   onChange={(e) => setNewDuration(Number(e.target.value))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value={1}>1 Month</option>
-                  <option value={2}>2 Months</option>
-                  <option value={3}>3 Months</option>
-                  <option value={6}>6 Months</option>
-                  <option value={12}>1 Year</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>
+                      {m === 12 ? "1 Year" : `${m} Month${m > 1 ? "s" : ""}`}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-1">
