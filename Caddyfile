@@ -56,7 +56,9 @@ app.gymflowtrack.in {
 
 	# Serve member photos directly from backend (bypasses frontend)
 	handle /uploads/* {
-		reverse_proxy backend:8000
+		reverse_proxy backend:8000 {
+			header_up Host {$API_HOST:api.gymflowtrack.in}
+		}
 	}
 
 	# Everything else goes to frontend
@@ -84,7 +86,9 @@ admin.gymflowtrack.in {
 
 	# Serve member photos directly from backend (bypasses frontend)
 	handle /uploads/* {
-		reverse_proxy backend:8000
+		reverse_proxy backend:8000 {
+			header_up Host {$API_HOST:api.gymflowtrack.in}
+		}
 	}
 
 	# Everything else goes to frontend
