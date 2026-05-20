@@ -242,6 +242,8 @@ export async function fillMemberForm(
     amount?: string;
     startDate?: string;
     endDate?: string;
+    fatherName?: string;
+    batch?: string;
   }
 ) {
   if (data.name !== undefined) {
@@ -280,6 +282,15 @@ export async function fillMemberForm(
   if (data.endDate !== undefined) {
     const field = page.locator("#membership_end, [name='membership_end']").first();
     await field.fill(data.endDate);
+  }
+  if (data.fatherName !== undefined) {
+    const field = page.locator("#father_name, [name='father_name']").first();
+    await field.clear();
+    await field.fill(data.fatherName);
+  }
+  if (data.batch !== undefined) {
+    const field = page.locator("#batch, [name='batch']").first();
+    await field.selectOption(data.batch);
   }
 }
 

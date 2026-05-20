@@ -150,8 +150,6 @@ test.describe("03. MEMBERS — Create", () => {
 
   test("create member with all fields populated", async ({ page }) => {
     const fullMemberName = uniqueMemberName("Full");
-    const today = new Date().toISOString().split("T")[0];
-    const endDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     await loginViaUI(page, ownerEmail);
     await page.goto("/members");
@@ -170,10 +168,9 @@ test.describe("03. MEMBERS — Create", () => {
       name: fullMemberName,
       phone: uniquePhone(),
       email: uniqueEmail("fullmember"),
-      plan: "3 Months",
-      amount: "5000",
-      startDate: today,
-      endDate: endDate,
+      gender: "male",
+      fatherName: "QA Father",
+      batch: "morning",
     });
 
     // Submit — target the submit button INSIDE the form (not the toolbar "Add Member" button)
