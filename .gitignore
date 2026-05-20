@@ -73,3 +73,13 @@ backend/list_users.py
 
 # Copilot runtime bridge (auto-generated, session-specific)
 .copilot-bridge.json
+
+# Data files (gym imports)
+*.xlsx
+*.csv
+
+# Root-level uploads (import script output)
+/uploads/
+
+# Stray assets
+1.webp

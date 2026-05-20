@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from "react";
 import { Camera, Trash2, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadMemberPhoto, useDeleteMemberPhoto } from "@/hooks/use-members";
-import { API_URL } from "@/lib/api";
 import { MemberCameraModal } from "./member-camera-modal";
 import { PhotoPreviewModal } from "./photo-preview-modal";
 import { compressImage } from "@/lib/compress-image";
@@ -28,7 +27,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
   const [cacheBust, setCacheBust] = useState(0);
 
   const fullPhotoUrl = photoUrl
-    ? `${API_URL.replace("/api/v1", "")}${photoUrl}?cb=${cacheBust}`
+    ? `${photoUrl}?cb=${cacheBust}`
     : null;
 
   const displayUrl = previewUrl || fullPhotoUrl;

@@ -25,7 +25,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { formatPaise } from "@/lib/utils";
-import { API_URL } from "@/lib/api";
 import { downloadCsv } from "@/lib/export-csv";
 import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
@@ -152,7 +151,7 @@ export default function MembersPage() {
         header: "Name",
         cell: ({ row }) => {
           const photoUrl = row.original.photo_url
-            ? `${API_URL.replace("/api/v1", "")}${row.original.photo_url}?v=${row.original.version || 0}`
+            ? `${row.original.photo_url}?v=${row.original.version || 0}`
             : null;
           return (
             <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">

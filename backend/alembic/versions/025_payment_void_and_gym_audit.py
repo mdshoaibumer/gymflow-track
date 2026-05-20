@@ -6,7 +6,7 @@ Create Date: 2026-05-20
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ENUM
 
 # revision identifiers
 revision = "025"
@@ -30,7 +30,14 @@ def upgrade() -> None:
     )
 
     # Create gym_audit_logs table
-    op.execute("CREATE TYPE gymauditaction AS ENUM ('payment_voided', 'membership_override', 'member_financial_recompute')")
+    gymauditaction_enum = ENUM(
+        "payment_voided",
+        "membership_override",
+        "member_financial_recompute",
+        name="gymauditaction",
+        create_type=False,
+    )
+    gymauditaction_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "gym_audit_logs",
@@ -38,7 +45,7 @@ def upgrade() -> None:
         sa.Column("gym_id", UUID(as_uuid=True), sa.ForeignKey("gyms.id", ondelete="CASCADE"), nullable=False),
         sa.Column("entity_type", sa.String(50), nullable=False),
         sa.Column("entity_id", UUID(as_uuid=True), nullable=False),
-        sa.Column("action", sa.Enum("payment_voided", "membership_override", "member_financial_recompute", name="gymauditaction", create_type=False), nullable=False),
+        sa.Column("action", gymauditaction_enum, nullable=False),
         sa.Column("old_data", JSONB, nullable=True),
         sa.Column("new_data", JSONB, nullable=True),
         sa.Column("description", sa.Text(), nullable=False),
@@ -62,7 +69,7 @@ def downgrade() -> None:
     op.drop_index("ix_gym_audit_logs_entity", table_name="gym_audit_logs")
     op.drop_index("ix_gym_audit_logs_gym", table_name="gym_audit_logs")
     op.drop_table("gym_audit_logs")
-    op.execute("DROP TYPE gymauditaction")
+    op.execute("DROP TYPE IF EXISTS gymauditaction")
 
     op.drop_constraint("fk_payments_voided_by_users", "payments", type_="foreignkey")
     op.drop_column("payments", "void_reason")

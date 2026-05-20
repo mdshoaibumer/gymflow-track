@@ -3,9 +3,12 @@ const nextConfig = {
   output: "standalone",
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
-    const apiOrigin = process.env.NEXT_PUBLIC_API_URL 
-      ? new URL(process.env.NEXT_PUBLIC_API_URL).origin 
-      : "http://localhost:8000";
+    let apiOrigin = "http://localhost:8000";
+    try {
+      if (process.env.NEXT_PUBLIC_API_URL) {
+        apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL, "http://localhost:3000").origin;
+      }
+    } catch (e) {}
 
     return [
       {
@@ -51,9 +54,12 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const apiOrigin = process.env.NEXT_PUBLIC_API_URL 
-      ? new URL(process.env.NEXT_PUBLIC_API_URL).origin 
-      : "http://localhost:8000";
+    let apiOrigin = "http://localhost:8000";
+    try {
+      if (process.env.NEXT_PUBLIC_API_URL) {
+        apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL, "http://localhost:3000").origin;
+      }
+    } catch (e) {}
     
     const destinationHost = process.env.BACKEND_INTERNAL_URL || apiOrigin;
 
@@ -61,6 +67,10 @@ const nextConfig = {
       {
         source: "/api/v1/:path*",
         destination: `${destinationHost}/api/v1/:path*`,
+      },
+      {
+        source: "/uploads/:path*",
+        destination: `${destinationHost}/uploads/:path*`,
       },
     ];
   },
