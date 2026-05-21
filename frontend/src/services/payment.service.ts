@@ -10,6 +10,7 @@ export interface Payment {
   gym_id: string;
   member_id: string;
   amount_in_paise: number;
+  discount_in_paise: number;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   payment_date: string;
@@ -29,6 +30,7 @@ export interface PaymentListResponse {
 export interface CreatePaymentPayload {
   member_id: string;
   amount_in_paise: number;
+  discount_in_paise?: number;
   payment_method: PaymentMethod;
   payment_status?: PaymentStatus;
   payment_date?: string;

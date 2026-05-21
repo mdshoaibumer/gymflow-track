@@ -9,6 +9,7 @@ from app.models.payment import PaymentMethod, PaymentStatus
 class PaymentCreateRequest(BaseModel):
     member_id: UUID
     amount_in_paise: int = Field(..., gt=0, description="Amount in paise (₹1 = 100)")
+    discount_in_paise: int = Field(0, ge=0, description="Discount in paise")
     payment_method: PaymentMethod
     payment_status: PaymentStatus | None = None  # defaults to COMPLETED
     payment_date: date | None = None  # defaults to today
@@ -36,6 +37,7 @@ class PaymentUpdateRequest(BaseModel):
     Completed payments: only notes and payment_method editable.
     """
     amount_in_paise: int | None = Field(None, gt=0)
+    discount_in_paise: int | None = Field(None, ge=0)
     payment_method: PaymentMethod | None = None
     payment_status: PaymentStatus | None = None
     payment_date: date | None = None
@@ -50,6 +52,7 @@ class PaymentResponse(BaseModel):
     gym_id: UUID
     member_id: UUID
     amount_in_paise: int
+    discount_in_paise: int = 0
     payment_method: PaymentMethod
     payment_status: PaymentStatus
     payment_date: date

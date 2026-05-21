@@ -15,6 +15,7 @@ from app.core.exceptions import (
     AccountDisabledError,
     AlreadyExistsError,
     AuthenticationError,
+    ValidationError,
 )
 from app.core.security import (
     create_access_token,
@@ -500,6 +501,44 @@ class AuthService:
 
         logger.info(f"Password reset completed for user {user.id}")
         return "Password has been reset. Please log in with your new password."
+
+    async def change_password(
+        self, user_id: UUID, current_password: str, new_password: str
+    ) -> str:
+        """
+        Change password for an authenticated user.
+
+        Requires current password verification. On success, revokes all other
+        sessions to ensure security after password change.
+        """
+        result = await self.db.execute(
+            select(User).where(User.id == user_id, User.is_active.is_(True))
+        )
+        user = result.scalar_one_or_none()
+        if not user:
+            raise AuthenticationError("User not found")
+
+        # Verify current password
+        if not verify_password(current_password, user.password_hash):
+            raise AuthenticationError("Current password is incorrect")
+
+        # Ensure new password is different
+        if verify_password(new_password, user.password_hash):
+            raise ValidationError("New password must be different from the current password")
+
+        # Update password
+        user.password_hash = hash_password(new_password)
+
+        # Revoke all sessions for security
+        user.sessions_revoked_at = datetime.now(timezone.utc)
+        await self.db.flush()
+
+        # Invalidate cache
+        cache = get_cache_backend()
+        cache.delete(f"user_revoked_at:{user.id}")
+
+        logger.info(f"Password changed for user {user.id}")
+        return "Password changed successfully. Please log in again."
 
     async def _store_refresh_token(self, user_id: UUID, raw_token: str) -> None:
         """Store a hashed refresh token for revocation tracking."""

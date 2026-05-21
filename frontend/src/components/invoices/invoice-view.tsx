@@ -118,10 +118,18 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
             </tr>
           </tbody>
           <tfoot>
+            {invoice.discount_in_paise > 0 && (
+              <tr className="border-t">
+                <td className="py-2 px-3 text-sm text-muted-foreground">Discount</td>
+                <td className="py-2 px-3 text-right text-sm text-green-600">
+                  -{formatAmount(invoice.discount_in_paise)}
+                </td>
+              </tr>
+            )}
             <tr className="border-t-2 border-black">
               <td className="py-3 px-3 font-bold">Total</td>
               <td className="py-3 px-3 text-right font-bold text-lg">
-                {formatAmount(invoice.amount_in_paise)}
+                {formatAmount(invoice.amount_in_paise - (invoice.discount_in_paise || 0))}
               </td>
             </tr>
           </tfoot>

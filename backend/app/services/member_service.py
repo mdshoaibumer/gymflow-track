@@ -137,6 +137,13 @@ class MemberService:
         member.is_deleted = True
         await self.member_repo.update(member)
 
+    async def bulk_change_status(
+        self, gym_id: UUID, member_ids: list[UUID], new_status: MembershipStatus
+    ) -> int:
+        """Change membership_status for multiple members at once. Returns count of updated."""
+        count = await self.member_repo.bulk_update_status(gym_id, member_ids, new_status)
+        return count
+
     async def override_membership(
         self, member_id: UUID, gym_id: UUID, user_id: UUID, data: MembershipOverrideRequest
     ) -> Member:
@@ -305,3 +312,82 @@ class MemberService:
 
         logger.info("photo_deleted member_id=%s gym_id=%s", member_id, gym_id)
         return member
+
+    async def get_member_timeline(
+        self, gym_id: UUID, member_id: UUID, limit: int = 50
+    ) -> dict:
+        """
+        Aggregate activity timeline for a member from multiple sources:
+        payments, attendance, and audit logs (status changes).
+        """
+        import sqlalchemy as sa
+        from app.models.payment import Payment
+        from app.models.attendance import Attendance
+        from app.models.gym_audit_log import GymAuditLog as AuditLog
+
+        # Verify member belongs to this gym
+        await self.get_member(member_id, gym_id)
+
+        events: list[dict] = []
+
+        # 1. Payments
+        result = await self.db.execute(
+            sa.select(Payment)
+            .where(Payment.gym_id == gym_id, Payment.member_id == member_id)
+            .order_by(Payment.created_at.desc())
+            .limit(limit)
+        )
+        for p in result.scalars().all():
+            amount = (p.amount_in_paise or 0) / 100
+            events.append({
+                "id": f"pay_{p.id}",
+                "event_type": "payment",
+                "title": f"Payment of ₹{amount:,.0f} ({p.payment_method})",
+                "description": p.notes,
+                "timestamp": p.created_at,
+                "metadata": {"payment_id": str(p.id), "status": p.payment_status.value if p.payment_status else None},
+            })
+
+        # 2. Attendance
+        result = await self.db.execute(
+            sa.select(Attendance)
+            .where(Attendance.gym_id == gym_id, Attendance.member_id == member_id)
+            .order_by(Attendance.check_in_at.desc())
+            .limit(limit)
+        )
+        for a in result.scalars().all():
+            events.append({
+                "id": f"att_{a.id}",
+                "event_type": "attendance",
+                "title": f"Checked in ({a.source})",
+                "description": None,
+                "timestamp": a.check_in_at,
+                "metadata": {"check_out": str(a.check_out_at) if a.check_out_at else None},
+            })
+
+        # 3. Audit log entries for this member
+        result = await self.db.execute(
+            sa.select(AuditLog)
+            .where(
+                AuditLog.gym_id == gym_id,
+                AuditLog.entity_type == "member",
+                AuditLog.entity_id == member_id,
+            )
+            .order_by(AuditLog.created_at.desc())
+            .limit(limit)
+        )
+        for log in result.scalars().all():
+            events.append({
+                "id": f"audit_{log.id}",
+                "event_type": "status_change",
+                "title": log.description or log.action.value,
+                "description": None,
+                "timestamp": log.created_at,
+                "metadata": {"old_data": log.old_data, "new_data": log.new_data},
+            })
+
+        # Sort all events by timestamp descending and trim to limit
+        events.sort(key=lambda e: e["timestamp"], reverse=True)
+        events = events[:limit]
+
+        return {"events": events, "total": len(events)}

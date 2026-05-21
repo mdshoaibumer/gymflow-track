@@ -39,6 +39,7 @@ export function PaymentForm({
     defaultValues: {
       member_id: defaultMemberId || "",
       amount: undefined as unknown as number,
+      discount: 0,
       payment_method: "cash" as const,
       payment_status: "completed" as const,
       payment_date: new Date().toISOString().split("T")[0],
@@ -186,6 +187,23 @@ export function PaymentForm({
           {errors.amount && (
             <p className="text-xs text-destructive">
               {errors.amount.message}
+            </p>
+          )}
+        </div>
+
+        {/* Discount */}
+        <div className="space-y-1.5">
+          <Label>Discount (₹)</Label>
+          <Input
+            type="number"
+            step="1"
+            min="0"
+            {...register("discount", { valueAsNumber: true })}
+            placeholder="0"
+          />
+          {errors.discount && (
+            <p className="text-xs text-destructive">
+              {errors.discount.message}
             </p>
           )}
         </div>

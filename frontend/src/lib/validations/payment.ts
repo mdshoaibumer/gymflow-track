@@ -5,6 +5,11 @@ export const paymentFormSchema = z.object({
   amount: z
     .number({ message: "Enter a valid amount" })
     .positive("Amount must be greater than 0"),
+  discount: z
+    .number()
+    .min(0, "Discount cannot be negative")
+    .optional()
+    .default(0),
   payment_method: z.enum(["cash", "upi", "card", "bank_transfer", "other"], {
     message: "Select a payment method",
   }),

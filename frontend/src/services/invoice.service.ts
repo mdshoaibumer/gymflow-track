@@ -11,6 +11,7 @@ export interface MemberInvoice {
   member_name: string;
   member_phone: string;
   amount_in_paise: number;
+  discount_in_paise: number;
   payment_method: string;
   payment_date: string;
   plan_name: string | null;

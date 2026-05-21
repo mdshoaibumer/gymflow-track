@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Menu, LogOut, User, Search } from "lucide-react";
+import { Menu, LogOut, User, Search, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUIStore } from "@/store/ui-store";
 import { authService } from "@/services/auth.service";
@@ -108,6 +108,10 @@ export function Header() {
             <DropdownMenuItem onSelect={() => router.push("/settings")}>
               <User className="mr-2 h-4 w-4" />
               Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => router.push("/change-password")}>
+              <Lock className="mr-2 h-4 w-4" />
+              Change Password
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={handleLogout} className="text-destructive">

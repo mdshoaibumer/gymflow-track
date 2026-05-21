@@ -1,12 +1,15 @@
 from uuid import UUID
 import logging
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, UploadFile, File
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
 from app.core.billing_dependencies import require_active_subscription, require_member_capacity
+from app.models.member import MembershipStatus
 from app.schemas.member import (
     MemberCreateRequest,
     MemberListResponse,
@@ -57,6 +60,37 @@ async def create_member(
     """Add a new member to the gym. OWNER and ADMIN only. Requires active subscription and capacity."""
     service = MemberService(db)
     return await service.create_member(current_user.gym_id, data)
+
+
+class BulkStatusChangeRequest(BaseModel):
+    member_ids: list[UUID] = Field(..., min_length=1, max_length=100)
+    status: MembershipStatus
+
+
+class BulkStatusChangeResponse(BaseModel):
+    updated_count: int
+
+
+@router.patch("/bulk/status", response_model=BulkStatusChangeResponse)
+async def bulk_change_status(
+    data: BulkStatusChangeRequest,
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Bulk change membership status for multiple members. OWNER and ADMIN only.
+    """
+    service = MemberService(db)
+    count = await service.bulk_change_status(
+        gym_id=current_user.gym_id,
+        member_ids=data.member_ids,
+        new_status=data.status,
+    )
+    logger.info(
+        "bulk_status_change gym_id=%s count=%d status=%s by_user=%s",
+        current_user.gym_id, count, data.status, current_user.user_id,
+    )
+    return BulkStatusChangeResponse(updated_count=count)
 
 
 @router.get("/{member_id}", response_model=MemberResponse)
@@ -169,6 +203,36 @@ async def list_member_payments(
         gym_id=current_user.gym_id,
         member_id=member_id,
         skip=skip,
+        limit=limit,
+    )
+
+
+class TimelineEvent(BaseModel):
+    id: str
+    event_type: str  # "payment", "attendance", "status_change", "joined"
+    title: str
+    description: str | None = None
+    timestamp: datetime
+    metadata: dict | None = None
+
+
+class TimelineResponse(BaseModel):
+    events: list[TimelineEvent]
+    total: int
+
+
+@router.get("/{member_id}/timeline", response_model=TimelineResponse)
+async def get_member_timeline(
+    member_id: UUID,
+    limit: int = Query(50, ge=1, le=200),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get activity timeline for a member — aggregates payments, attendance, and status changes."""
+    service = MemberService(db)
+    return await service.get_member_timeline(
+        gym_id=current_user.gym_id,
+        member_id=member_id,
         limit=limit,
     )
 

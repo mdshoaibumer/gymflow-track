@@ -84,6 +84,16 @@ export function useMember(id: string) {
   });
 }
 
+export function useMemberTimeline(id: string) {
+  const token = useAuthStore((s) => s.token);
+  return useQuery({
+    queryKey: ["members", id, "timeline"],
+    queryFn: () => memberService.getTimeline(id),
+    enabled: !!token && !!id,
+    staleTime: 60_000,
+  });
+}
+
 export function useCreateMember() {
   const queryClient = useQueryClient();
   return useMutation({

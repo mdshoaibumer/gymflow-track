@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,7 +10,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Search, Pencil, Trash2, Plus, UserPlus, Download, User } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import { memberService, type Member, type CreateMemberPayload } from "@/services/member.service";
@@ -32,6 +32,7 @@ import { useUsageInfo } from "@/hooks/use-feature-access";
 import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import { useGym } from "@/hooks/use-gym";
 import { getPlans } from "@/lib/membership-plans";
+import { useQueryClient } from "@tanstack/react-query";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
@@ -58,6 +59,21 @@ export default function MembersPage() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const editFormRef = useRef<HTMLDivElement>(null);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("active");
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   // Auto-scroll to edit form when it opens
   useEffect(() => {
@@ -86,6 +102,29 @@ export default function MembersPage() {
 
   const members = data?.members ?? [];
   const total = data?.total ?? 0;
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === members.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(members.map((m) => m.id)));
+    }
+  }, [members, selectedIds.size]);
+
+  const handleBulkStatusChange = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      const result = await memberService.bulkChangeStatus(Array.from(selectedIds), bulkStatus);
+      toast.success(`Updated ${result.updated_count} member(s) to "${bulkStatus}"`);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    } catch {
+      toast.error("Bulk status change failed");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
@@ -185,6 +224,31 @@ export default function MembersPage() {
 
   const columns = useMemo<ColumnDef<Member>[]>(
     () => [
+      ...(isAdminOrAbove
+        ? [
+            {
+              id: "select",
+              header: () => (
+                <input
+                  type="checkbox"
+                  checked={members.length > 0 && selectedIds.size === members.length}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 rounded border-gray-300"
+                  aria-label="Select all"
+                />
+              ),
+              cell: ({ row }: { row: { original: Member } }) => (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(row.original.id)}
+                  onChange={() => toggleSelect(row.original.id)}
+                  className="h-4 w-4 rounded border-gray-300"
+                  aria-label={`Select ${row.original.name}`}
+                />
+              ),
+            } as ColumnDef<Member>,
+          ]
+        : []),
       {
         accessorKey: "name",
         header: "Name",
@@ -284,7 +348,7 @@ export default function MembersPage() {
           ]
         : []),
     ],
-    [isAdminOrAbove]
+    [isAdminOrAbove, selectedIds, members, toggleSelect, toggleSelectAll]
   );
 
   const table = useReactTable({
@@ -411,6 +475,39 @@ export default function MembersPage() {
           max={usage.maxMembers}
           isUnlimited={usage.isUnlimitedMembers}
         />
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-2">
+          <CheckSquare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+            <option value="frozen">Frozen</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <Button
+            size="sm"
+            disabled={bulkLoading}
+            onClick={handleBulkStatusChange}
+          >
+            {bulkLoading ? "Updating..." : "Change Status"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
       )}
 
       {/* Create Form */}
@@ -614,11 +711,13 @@ function formValuesToPayload(values: MemberFormValues & { custom_fields?: Record
     payload.gender = gender;
   }
 
+  if (values.date_of_birth) payload.date_of_birth = values.date_of_birth;
   if (values.father_name) payload.father_name = values.father_name;
   const batch = values.batch;
   if (batch === "morning" || batch === "afternoon" || batch === "evening") {
     payload.batch = batch;
   }
+  if (values.emergency_contact) payload.emergency_contact = values.emergency_contact;
   if (values.custom_fields && Object.keys(values.custom_fields).length > 0) {
     payload.custom_fields = values.custom_fields;
   }

@@ -97,3 +97,18 @@ class CurrentUserResponse(BaseModel):
     is_active: bool
 
     model_config = {"from_attributes": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change password for the currently authenticated user."""
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
+
+class ChangePasswordResponse(BaseModel):
+    message: str

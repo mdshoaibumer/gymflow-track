@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import timedelta
 
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.timezone import today_ist
 
@@ -97,6 +97,23 @@ class MemberRepository:
     async def update(self, member: Member) -> Member:
         await self.db.flush()
         return member
+
+    async def bulk_update_status(
+        self, gym_id: UUID, member_ids: list[UUID], new_status: MembershipStatus
+    ) -> int:
+        """Bulk update membership_status for multiple members. Returns rows affected."""
+        stmt = (
+            update(Member)
+            .where(
+                Member.gym_id == gym_id,
+                Member.id.in_(member_ids),
+                Member.is_deleted == False,  # noqa: E712
+            )
+            .values(membership_status=new_status)
+        )
+        result = await self.db.execute(stmt)
+        await self.db.flush()
+        return result.rowcount
 
     async def get_by_phone_and_gym(self, phone: str, gym_id: UUID) -> Member | None:
         result = await self.db.execute(

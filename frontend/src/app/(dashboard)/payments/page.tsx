@@ -66,6 +66,7 @@ export default function PaymentsPage() {
     const payload: CreatePaymentPayload = {
       member_id: values.member_id,
       amount_in_paise: Math.round(values.amount * 100),
+      discount_in_paise: values.discount ? Math.round(values.discount * 100) : undefined,
       payment_method: values.payment_method,
       payment_status: values.payment_status,
       payment_date: values.payment_date || undefined,

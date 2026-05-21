@@ -123,14 +123,29 @@ export function MemberForm({
       phone: "",
       email: "",
       gender: "" as const,
+      date_of_birth: "",
       father_name: "",
       batch: "" as const,
+      emergency_contact: "",
       membership_plan: "",
       membership_start: "",
       membership_end: "",
       ...defaultValues,
     },
   });
+
+  // Auto-calculate end date when plan or start date changes
+  const watchedPlan = watch("membership_plan");
+  const watchedStart = watch("membership_start");
+
+  useEffect(() => {
+    if (!watchedPlan || !watchedStart || plans.length === 0) return;
+    const matchedPlan = plans.find((p) => p.name === watchedPlan);
+    if (matchedPlan) {
+      const calculated = calculateEndDate(watchedStart, matchedPlan.duration_months);
+      setValue("membership_end", calculated, { shouldDirty: true });
+    }
+  }, [watchedPlan, watchedStart, plans, setValue]);
 
   useUnsavedChanges(isDirty);
 
@@ -333,14 +348,31 @@ export function MemberForm({
           </select>
         </div>
 
-        {/* Membership Details Section (shown when editing) */}
-        {isEditing && (
-          <>
-            <div className="sm:col-span-2 pt-4 border-t">
-              <p className="text-sm font-medium text-muted-foreground">
-                Membership Details
-              </p>
-            </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="date_of_birth">Date of Birth</Label>
+          <Input
+            id="date_of_birth"
+            type="date"
+            {...register("date_of_birth")}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="emergency_contact">Emergency Contact</Label>
+          <Input
+            id="emergency_contact"
+            {...register("emergency_contact")}
+            placeholder="Emergency phone number"
+          />
+        </div>
+
+        {/* Membership Details Section */}
+        <>
+          <div className="sm:col-span-2 pt-4 border-t">
+            <p className="text-sm font-medium text-muted-foreground">
+              Membership Details
+            </p>
+          </div>
 
             {/* Plan quick-select buttons from settings */}
             {plans.length > 0 && (
@@ -414,9 +446,9 @@ export function MemberForm({
                 type="date"
                 {...register("membership_end")}
               />
+              <p className="text-xs text-muted-foreground">Auto-calculated from plan. You can override manually.</p>
             </div>
           </>
-        )}
 
         {/* Dynamic Custom Fields */}
         {customFields.map((cf) => (
@@ -495,8 +527,10 @@ export function memberToFormValues(member: Member): {
       phone: member.phone,
       email: member.email || "",
       gender: member.gender || "",
+      date_of_birth: member.date_of_birth || "",
       father_name: member.father_name || "",
       batch: member.batch || "",
+      emergency_contact: member.emergency_contact || "",
       membership_plan: member.membership_plan || "",
       membership_start: member.membership_start || "",
       membership_end: member.membership_end || "",

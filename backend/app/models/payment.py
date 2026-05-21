@@ -51,6 +51,7 @@ class Payment(BaseModel):
         UUID(as_uuid=True), ForeignKey("members.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     amount_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    discount_in_paise: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     payment_method: Mapped[PaymentMethod] = mapped_column(
         PgEnum(PaymentMethod, name="paymentmethod"), nullable=False
     )

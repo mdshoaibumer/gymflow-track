@@ -85,4 +85,10 @@ export const authService = {
    */
   resetPassword: (token: string, new_password: string) =>
     request.post<{ message: string }>("/auth/reset-password", { token, new_password }),
+
+  /**
+   * Changes the current user's password. Requires current password for verification.
+   */
+  changePassword: (current_password: string, new_password: string) =>
+    request.post<{ message: string }>("/auth/change-password", { current_password, new_password }),
 };

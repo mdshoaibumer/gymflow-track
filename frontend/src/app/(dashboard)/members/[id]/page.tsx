@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download } from "lucide-react";
+import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download, Snowflake, Play, RefreshCw, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useMember } from "@/hooks/use-members";
+import { useMember, useMemberTimeline } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
 import { useMemberInvoices } from "@/hooks/use-invoices";
+import { useMemberAttendance } from "@/hooks/use-attendance";
+import { memberService } from "@/services/member.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { invoiceService } from "@/services/invoice.service";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +20,8 @@ import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-
 import { MemberPhotoUpload } from "@/components/members/member-photo-upload";
 import { MembershipOverrideForm } from "@/components/members/membership-override-form";
 import { RoleGate } from "@/components/role-gate";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
   active: "success",
@@ -29,9 +34,15 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isAdminOrAbove } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: member, isLoading } = useMember(id);
   const { data: paymentData } = useMemberPayments(id);
   const { data: invoiceData } = useMemberInvoices(id);
+  const { data: attendanceData } = useMemberAttendance(id, 0, 50);
+  const { data: timelineData } = useMemberTimeline(id);
+  const [freezeLoading, setFreezeLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"payments" | "attendance" | "invoices" | "timeline">("payments");
 
   if (isLoading) {
     return (
@@ -109,8 +120,16 @@ export default function MemberDetailPage() {
               {member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : "—"}
             </div>
             <div>
+              <span className="text-muted-foreground">Date of Birth: </span>
+              {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN") : "—"}
+            </div>
+            <div>
               <span className="text-muted-foreground">Batch: </span>
               {member.batch ? member.batch.charAt(0).toUpperCase() + member.batch.slice(1) : "—"}
+            </div>
+            <div>
+              <span className="text-muted-foreground">Emergency Contact: </span>
+              {member.emergency_contact || "—"}
             </div>
             <div>
               <span className="text-muted-foreground">Amount Paid: </span>
@@ -171,7 +190,79 @@ export default function MemberDetailPage() {
         </Card>
       </div>
 
+      {/* Action Buttons */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="default"
+          onClick={() => router.push(`/payments?member_id=${member.id}`)}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Renew Membership
+        </Button>
+        <RoleGate allowed={["owner", "admin"]}>
+          <Button
+            variant={member.membership_status === "frozen" ? "default" : "outline"}
+            disabled={freezeLoading}
+            onClick={async () => {
+              setFreezeLoading(true);
+              try {
+                const newStatus = member.membership_status === "frozen" ? "active" : "frozen";
+                await memberService.overrideMembership(member.id, { membership_status: newStatus });
+                queryClient.invalidateQueries({ queryKey: ["member", id] });
+                toast.success(`Member ${newStatus === "frozen" ? "frozen" : "unfrozen"} successfully`);
+              } catch {
+                toast.error("Failed to update membership status");
+              } finally {
+                setFreezeLoading(false);
+              }
+            }}
+          >
+            {member.membership_status === "frozen" ? (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Unfreeze
+              </>
+            ) : (
+              <>
+                <Snowflake className="mr-2 h-4 w-4" />
+                Freeze
+              </>
+            )}
+          </Button>
+        </RoleGate>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "payments" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("payments")}
+        >
+          Payment History
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "attendance" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("attendance")}
+        >
+          Attendance History
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "invoices" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("invoices")}
+        >
+          Invoices
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "timeline" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("timeline")}
+        >
+          <Activity className="inline-block h-3.5 w-3.5 mr-1" />
+          Timeline
+        </button>
+      </div>
+
       {/* Payment History */}
+      {activeTab === "payments" && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Payment History</CardTitle>
@@ -228,8 +319,57 @@ export default function MemberDetailPage() {
           )}
         </CardContent>
       </Card>
+      )}
+
+      {/* Attendance History */}
+      {activeTab === "attendance" && (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Attendance History</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!attendanceData?.attendance || attendanceData.attendance.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No attendance records found.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Date</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Check In</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Check Out</th>
+                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Source</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {attendanceData.attendance.map((a) => (
+                    <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-2">
+                        {new Date(a.check_in_at).toLocaleDateString("en-IN")}
+                      </td>
+                      <td className="px-4 py-2">
+                        {new Date(a.check_in_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="px-4 py-2">
+                        {a.check_out_at
+                          ? new Date(a.check_out_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-2 capitalize">{a.source || "manual"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
 
       {/* Invoices */}
+      {activeTab === "invoices" && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -298,6 +438,59 @@ export default function MemberDetailPage() {
           )}
         </CardContent>
       </Card>
+      )}
+
+      {/* Timeline */}
+      {activeTab === "timeline" && (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Activity Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!timelineData?.events || timelineData.events.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No activity recorded yet.
+            </p>
+          ) : (
+            <div className="relative space-y-0">
+              {timelineData.events.map((event, idx) => (
+                <div key={event.id} className="flex gap-3 pb-4">
+                  <div className="flex flex-col items-center">
+                    <div className={`h-3 w-3 rounded-full flex-shrink-0 mt-1.5 ${
+                      event.event_type === "payment" ? "bg-green-500" :
+                      event.event_type === "attendance" ? "bg-blue-500" :
+                      event.event_type === "status_change" ? "bg-orange-500" :
+                      "bg-gray-400"
+                    }`} />
+                    {idx < timelineData.events.length - 1 && (
+                      <div className="w-px flex-1 bg-border mt-1" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 pb-2">
+                    <p className="text-sm font-medium">{event.title}</p>
+                    {event.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(event.timestamp).toLocaleDateString("en-IN", {
+                        day: "numeric", month: "short", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="capitalize text-xs h-fit">
+                    {event.event_type.replace("_", " ")}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      )}
 
       {/* Membership Override (Admin Only) */}
       <RoleGate allowed={["owner", "admin"]}>

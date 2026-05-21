@@ -43,6 +43,7 @@ class MemberInvoice(BaseModel):
     member_phone: Mapped[str] = mapped_column(String(15), nullable=False)
 
     amount_in_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    discount_in_paise: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     payment_method: Mapped[PaymentMethod] = mapped_column(
         PgEnum(PaymentMethod, name="paymentmethod"),
         nullable=False,

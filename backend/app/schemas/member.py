@@ -61,8 +61,10 @@ class MemberUpdateRequest(BaseModel):
     phone: str | None = Field(None, min_length=1)
     email: EmailStr | None = None
     gender: Gender | None = None
+    date_of_birth: date | None = None
     father_name: str | None = Field(None, max_length=200)
     batch: Batch | None = None
+    emergency_contact: str | None = None
     # membership_status is NOT updatable directly — use membership lifecycle APIs
     membership_plan: str | None = None
     membership_start: date | None = None
@@ -96,8 +98,10 @@ class MemberResponse(BaseModel):
     phone: str
     email: str | None
     gender: Gender | None
+    date_of_birth: date | None = None
     father_name: str | None = None
     batch: Batch | None = None
+    emergency_contact: str | None = None
     membership_status: MembershipStatus
     membership_plan: str | None
     membership_start: date | None

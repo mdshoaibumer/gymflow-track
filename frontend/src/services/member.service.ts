@@ -6,8 +6,10 @@ export interface Member {
   phone: string;
   email: string | null;
   gender: "male" | "female" | "other" | null;
+  date_of_birth: string | null;
   father_name: string | null;
   batch: "morning" | "evening" | "afternoon" | null;
+  emergency_contact: string | null;
   membership_status: "active" | "expired" | "frozen" | "pending" | "cancelled";
   membership_plan: string | null;
   membership_start: string | null;
@@ -30,8 +32,10 @@ export interface CreateMemberPayload {
   phone: string;
   email?: string;
   gender?: "male" | "female" | "other";
+  date_of_birth?: string;
   father_name?: string;
   batch?: "morning" | "evening" | "afternoon";
+  emergency_contact?: string;
   membership_plan?: string;
   membership_start?: string;
   membership_end?: string;
@@ -99,4 +103,27 @@ export const memberService = {
 
   overrideMembership: (id: string, data: MembershipOverridePayload) =>
     request.patch<Member>(`/members/${id}/override`, data),
+
+  bulkChangeStatus: (memberIds: string[], status: string) =>
+    request.patch<{ updated_count: number }>("/members/bulk/status", {
+      member_ids: memberIds,
+      status,
+    }),
+
+  getTimeline: (memberId: string, limit = 50) =>
+    request.get<TimelineResponse>(`/members/${memberId}/timeline?limit=${limit}`),
 };
+
+export interface TimelineEvent {
+  id: string;
+  event_type: "payment" | "attendance" | "status_change" | "joined";
+  title: string;
+  description: string | null;
+  timestamp: string;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface TimelineResponse {
+  events: TimelineEvent[];
+  total: number;
+}

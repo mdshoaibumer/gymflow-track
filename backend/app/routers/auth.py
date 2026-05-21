@@ -9,6 +9,8 @@ from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies, set_auth_cookie
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
 from app.schemas.auth import (
+    ChangePasswordRequest,
+    ChangePasswordResponse,
     CurrentUserResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
@@ -298,3 +300,24 @@ async def get_me(
         user_id=current_user.user_id,
         gym_id=current_user.gym_id,
     )
+
+
+@router.post("/change-password", response_model=ChangePasswordResponse)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Change password for the currently authenticated user.
+
+    Requires the current password for verification (prevents session hijacking abuse).
+    On success, all other sessions are revoked for security.
+    """
+    service = AuthService(db)
+    message = await service.change_password(
+        user_id=current_user.user_id,
+        current_password=data.current_password,
+        new_password=data.new_password,
+    )
+    return ChangePasswordResponse(message=message)
