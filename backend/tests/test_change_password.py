@@ -12,7 +12,7 @@ class TestChangePassword:
     async def test_change_password_success(self, client, sample_user, auth_headers, db_session):
         """Successfully change password with valid current password."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "TestPass123",
                 "new_password": "NewSecure1Pass",
@@ -30,7 +30,7 @@ class TestChangePassword:
     async def test_change_password_wrong_current(self, client, auth_headers):
         """Reject when current_password is incorrect."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "WrongPassword1",
                 "new_password": "NewSecure1Pass",
@@ -42,7 +42,7 @@ class TestChangePassword:
     async def test_change_password_same_as_current(self, client, auth_headers):
         """Reject when new password is same as current."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "TestPass123",
                 "new_password": "TestPass123",
@@ -54,7 +54,7 @@ class TestChangePassword:
     async def test_change_password_too_short(self, client, auth_headers):
         """Reject when new password is too short."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "TestPass123",
                 "new_password": "Sh1",
@@ -66,7 +66,7 @@ class TestChangePassword:
     async def test_change_password_no_auth(self, client):
         """Require authentication."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "TestPass123",
                 "new_password": "NewSecure1Pass",
@@ -77,7 +77,7 @@ class TestChangePassword:
     async def test_change_password_revokes_sessions(self, client, sample_user, auth_headers, db_session):
         """After password change, sessions_revoked_at should be set."""
         response = await client.post(
-            "/auth/change-password",
+            "/api/v1/auth/change-password",
             json={
                 "current_password": "TestPass123",
                 "new_password": "AnotherNew1Pass",

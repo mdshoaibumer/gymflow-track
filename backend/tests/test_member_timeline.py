@@ -70,7 +70,7 @@ class TestMemberTimeline:
     async def test_timeline_empty(self, client, timeline_member, auth_headers):
         """Timeline with no activity returns empty list."""
         response = await client.get(
-            f"/members/{timeline_member.id}/timeline",
+            f"/api/v1/members/{timeline_member.id}/timeline",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -82,7 +82,7 @@ class TestMemberTimeline:
     async def test_timeline_with_activity(self, client, member_with_activity, auth_headers):
         """Timeline returns payment and attendance events."""
         response = await client.get(
-            f"/members/{member_with_activity.id}/timeline",
+            f"/api/v1/members/{member_with_activity.id}/timeline",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -105,7 +105,7 @@ class TestMemberTimeline:
     async def test_timeline_sorted_desc(self, client, member_with_activity, auth_headers):
         """Timeline events are sorted by timestamp descending (newest first)."""
         response = await client.get(
-            f"/members/{member_with_activity.id}/timeline",
+            f"/api/v1/members/{member_with_activity.id}/timeline",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -116,7 +116,7 @@ class TestMemberTimeline:
     async def test_timeline_limit(self, client, member_with_activity, auth_headers):
         """Timeline respects limit parameter."""
         response = await client.get(
-            f"/members/{member_with_activity.id}/timeline?limit=2",
+            f"/api/v1/members/{member_with_activity.id}/timeline?limit=2",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -126,7 +126,7 @@ class TestMemberTimeline:
     async def test_timeline_no_auth(self, client, timeline_member):
         """Requires authentication."""
         response = await client.get(
-            f"/members/{timeline_member.id}/timeline",
+            f"/api/v1/members/{timeline_member.id}/timeline",
         )
         assert response.status_code == 401
 
@@ -134,7 +134,7 @@ class TestMemberTimeline:
         """404 for non-existent member."""
         fake_id = uuid4()
         response = await client.get(
-            f"/members/{fake_id}/timeline",
+            f"/api/v1/members/{fake_id}/timeline",
             headers=auth_headers,
         )
         assert response.status_code in (404, 200)  # May return empty or 404
