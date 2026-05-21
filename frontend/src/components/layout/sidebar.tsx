@@ -17,6 +17,8 @@ import {
   FileSpreadsheet,
   X,
   Lock,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,7 +52,7 @@ const navItems: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 
-function SidebarContent({ showClose = false }: { showClose?: boolean }) {
+function SidebarContent({ showClose = false, collapsed = false }: { showClose?: boolean; collapsed?: boolean }) {
   const pathname = usePathname();
   const { setSidebarOpen } = useUIStore();
   const role = useAuthStore((s) => s.role);
@@ -72,14 +74,16 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
 
   return (
     <>
-      <div className="flex h-14 items-center justify-between px-5">
+      <div className={cn("flex h-14 items-center justify-between", collapsed ? "px-2" : "px-5")}>
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-glow">
             <span className="text-sm font-bold text-primary-foreground">G</span>
           </div>
-          <span className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors duration-200">
-            GymFlow
-          </span>
+          {!collapsed && (
+            <span className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors duration-200">
+              GymFlow
+            </span>
+          )}
         </Link>
         {showClose && (
           <Button
@@ -93,7 +97,7 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
           </Button>
         )}
       </div>
-      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5">
+      <nav className={cn("flex-1 py-3 overflow-y-auto space-y-0.5", collapsed ? "px-2" : "px-3")}>
         {visibleItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -105,9 +109,11 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
               key={item.href}
               href={item.href}
               onClick={() => setSidebarOpen(false)}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
                 "before:absolute before:inset-0 before:rounded-lg before:transition-all before:duration-200",
+                collapsed && "justify-center px-2",
                 isActive
                   ? "text-primary before:bg-primary/8 dark:before:bg-primary/10"
                   : isLocked
@@ -116,8 +122,8 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
               )}
             >
               <item.icon className={cn("relative z-[1] h-4 w-4 shrink-0", isActive && "text-primary")} />
-              <span className="relative z-[1]">{item.label}</span>
-              {isLocked && (
+              {!collapsed && <span className="relative z-[1]">{item.label}</span>}
+              {!collapsed && isLocked && (
                 <Lock className="relative z-[1] ml-auto h-3 w-3 text-muted-foreground/40" />
               )}
             </Link>
@@ -125,24 +131,47 @@ function SidebarContent({ showClose = false }: { showClose?: boolean }) {
         })}
       </nav>
       <div className="border-t px-4 py-3">
-        <div className="rounded-lg bg-muted/50 px-3 py-2">
-          <p className="text-[11px] text-muted-foreground text-center font-medium">
-            GymFlow Track v1.0
-          </p>
-        </div>
+        {!collapsed && (
+          <div className="rounded-lg bg-muted/50 px-3 py-2">
+            <p className="text-[11px] text-muted-foreground text-center font-medium">
+              GymFlow Track v1.0
+            </p>
+          </div>
+        )}
       </div>
     </>
   );
 }
 
 export function Sidebar() {
-  const { sidebarOpen, setSidebarOpen } = useUIStore();
+  const { sidebarOpen, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapse } = useUIStore();
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden w-[260px] flex-col border-r bg-sidebar md:flex">
-        <SidebarContent />
+      <aside
+        className={cn(
+          "hidden flex-col border-r bg-sidebar md:flex transition-[width] duration-200 ease-spring",
+          sidebarCollapsed ? "w-[60px]" : "w-[260px]"
+        )}
+      >
+        <SidebarContent collapsed={sidebarCollapsed} />
+        {/* Collapse toggle button */}
+        <div className="border-t px-2 py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebarCollapse}
+            className="h-7 w-7 w-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <ChevronsRight className="h-4 w-4" />
+            ) : (
+              <ChevronsLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </aside>
 
       {/* Mobile overlay sidebar */}

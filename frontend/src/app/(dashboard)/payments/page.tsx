@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,7 +12,7 @@ import { motion } from "framer-motion";
 import { Plus, Receipt, Download, AlertCircle, RefreshCw, MoreHorizontal, Ban, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePayments, useCreatePayment } from "@/hooks/use-payments";
-import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
+import type { Payment, CreatePaymentPayload, PaymentStatus } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
 import { VoidPaymentModal } from "@/components/payments/void-payment-modal";
@@ -39,9 +40,11 @@ const PAGE_SIZE = 20;
 
 export default function PaymentsPage() {
   const { isAdminOrAbove } = useAuth();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(0);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "");
   const [showForm, setShowForm] = useState(false);
   const [voidTarget, setVoidTarget] = useState<Payment | null>(null);
   const [editTarget, setEditTarget] = useState<Payment | null>(null);
@@ -51,6 +54,7 @@ export default function PaymentsPage() {
     limit: PAGE_SIZE,
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
+    status: (statusFilter as PaymentStatus) || undefined,
   });
 
   const payments = paymentsData?.payments ?? [];
@@ -230,11 +234,26 @@ export default function PaymentsPage() {
               aria-label="Filter payments to date"
             />
           </div>
-          {(dateFrom || dateTo) && (
+          <div>
+            <label className="text-xs text-muted-foreground">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-40"
+              aria-label="Filter by payment status"
+            >
+              <option value="">All Statuses</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+          {(dateFrom || dateTo || statusFilter) && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { setDateFrom(""); setDateTo(""); setPage(0); }}
+              onClick={() => { setDateFrom(""); setDateTo(""); setStatusFilter(""); setPage(0); }}
             >
               Clear
             </Button>

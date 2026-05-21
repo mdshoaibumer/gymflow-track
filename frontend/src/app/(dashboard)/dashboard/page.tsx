@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   TrendingUp,
@@ -327,32 +328,36 @@ export default function DashboardPage() {
 
         {/* Dues */}
         {metrics && metrics.pending_dues_count > 0 && (
-          <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20">
-            <CardContent className="p-4">
-              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">
-                <AlertCircle className="inline h-4 w-4 mr-1" />
-                {metrics.pending_dues_count} Pending Due{metrics.pending_dues_count !== 1 ? "s" : ""}
-              </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
-                Payments marked as pending — follow up for collection.
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/payments?status=pending">
+            <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20 cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">
+                  <AlertCircle className="inline h-4 w-4 mr-1" />
+                  {metrics.pending_dues_count} Pending Due{metrics.pending_dues_count !== 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
+                  Payments marked as pending — follow up for collection.
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         {/* Expired */}
         {metrics && metrics.expired_members > 0 && (
-          <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
-            <CardContent className="p-4">
-              <p className="text-sm font-semibold text-red-800 dark:text-red-400">
-                <AlertCircle className="inline h-4 w-4 mr-1" />
-                {metrics.expired_members} Expired Membership{metrics.expired_members !== 1 ? "s" : ""}
-              </p>
-              <p className="text-xs text-red-700 dark:text-red-500 mt-1">
-                Members with expired memberships — contact for renewal.
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/members?status=expired">
+            <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-red-800 dark:text-red-400">
+                  <AlertCircle className="inline h-4 w-4 mr-1" />
+                  {metrics.expired_members} Expired Membership{metrics.expired_members !== 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-500 mt-1">
+                  Members with expired memberships — contact for renewal.
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         )}
       </motion.div>
     </motion.div>

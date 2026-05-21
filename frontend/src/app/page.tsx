@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Users,
@@ -15,10 +17,13 @@ import {
   Star,
   ChevronDown,
   IndianRupee,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollReveal, StaggerContainer, staggerItemVariants } from "@/components/scroll-reveal";
 
 const features = [
   { icon: Users, title: "Member Management", desc: "Add, search, and manage all your gym members. Track plans, status, and history in one place." },
@@ -72,6 +77,8 @@ const faqs = [
 ];
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <main className="flex min-h-screen flex-col">
       {/* Navigation */}
@@ -87,21 +94,57 @@ export default function HomePage() {
             <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <Link href="/login">Login</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="hidden sm:inline-flex">
               <Link href="/register">Start Free Trial</Link>
+            </Button>
+            {/* Mobile hamburger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sm:hidden h-9 w-9"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t sm:hidden bg-background px-4 py-4 space-y-3"
+          >
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">Features</a>
+            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">Reviews</a>
+            <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-muted-foreground hover:text-foreground">FAQ</a>
+            <div className="flex gap-2 pt-2 border-t">
+              <Button variant="ghost" size="sm" asChild className="flex-1">
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button size="sm" asChild className="flex-1">
+                <Link href="/register">Start Free Trial</Link>
+              </Button>
+            </div>
+          </motion.div>
+        )}
       </nav>
 
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_50%_at_50%_40%,hsl(var(--primary)/0.12),transparent)]" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-24 sm:py-32 text-center">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
             <Badge variant="secondary" className="mb-6 text-xs">
               <Zap className="mr-1 h-3 w-3" /> 30-day free trial — no credit card required
             </Badge>
@@ -125,10 +168,15 @@ export default function HomePage() {
                 <Link href="/login">Login to Dashboard</Link>
               </Button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Product screenshot placeholder */}
-          <div className="mx-auto mt-16 max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto mt-16 max-w-4xl"
+          >
             <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-b from-muted to-background shadow-2xl overflow-hidden">
               <div className="flex items-center gap-2 border-b bg-muted px-4 py-3">
                 <div className="flex gap-1.5">
@@ -180,11 +228,12 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Trust bar */}
+      <ScrollReveal>
       <section className="border-y bg-muted/30 py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
@@ -207,23 +256,26 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Features */}
       <section id="features" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything your gym needs
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Stop juggling spreadsheets, WhatsApp groups, and paper registers.
-              GymFlow Track brings it all together.
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Everything your gym needs
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+                Stop juggling spreadsheets, WhatsApp groups, and paper registers.
+                GymFlow Track brings it all together.
+              </p>
+            </div>
+          </ScrollReveal>
 
-          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
-              <div key={f.title}>
+              <motion.div key={f.title} variants={staggerItemVariants}>
                 <Card className="h-full transition-shadow hover:shadow-md">
                   <CardContent className="p-6">
                     <div className="rounded-lg bg-primary/10 p-2.5 w-fit">
@@ -235,29 +287,31 @@ export default function HomePage() {
                     </p>
                   </CardContent>
                 </Card>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" className="border-t bg-muted/30 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Simple, transparent pricing
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              Start free. Upgrade when you grow. No hidden fees.
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Simple, transparent pricing
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Start free. Upgrade when you grow. No hidden fees.
+              </p>
+            </div>
+          </ScrollReveal>
 
-          <div className="mt-16 grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto">
+          <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto">
             {plans.map((plan) => (
+              <motion.div key={plan.name} variants={staggerItemVariants}>
               <Card
-                key={plan.name}
-                className={`relative flex flex-col ${plan.popular ? "border-primary shadow-lg ring-1 ring-primary" : ""}`}
+                className={`relative flex flex-col h-full ${plan.popular ? "border-primary shadow-lg ring-1 ring-primary" : ""}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -290,66 +344,75 @@ export default function HomePage() {
                   </Button>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* Testimonials */}
       <section id="testimonials" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Loved by gym owners
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              Here&apos;s what real gym owners have to say.
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Loved by gym owners
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Here&apos;s what real gym owners have to say.
+              </p>
+            </div>
+          </ScrollReveal>
 
-          <div className="mt-16 grid gap-6 sm:grid-cols-3">
+          <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-3">
             {testimonials.map((t) => (
-              <Card key={t.name} className="h-full">
-                <CardContent className="p-6">
-                  <div className="flex gap-0.5 mb-4">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    &ldquo;{t.text}&rdquo;
-                  </p>
-                  <div className="mt-4 border-t pt-4">
-                    <p className="text-sm font-semibold">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.gym}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div key={t.name} variants={staggerItemVariants}>
+                <Card className="h-full">
+                  <CardContent className="p-6">
+                    <div className="flex gap-0.5 mb-4">
+                      {Array.from({ length: t.rating }).map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      &ldquo;{t.text}&rdquo;
+                    </p>
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-sm font-semibold">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.gym}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* FAQ */}
       <section id="faq" className="border-t bg-muted/30 py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Frequently asked questions
-            </h2>
-          </div>
+          <ScrollReveal>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Frequently asked questions
+              </h2>
+            </div>
+          </ScrollReveal>
 
           <div className="mt-12 space-y-4">
-            {faqs.map((faq) => (
-              <details key={faq.q} className="group rounded-lg border bg-card">
-                <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium">
-                  {faq.q}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t px-4 py-3 text-sm text-muted-foreground">
-                  {faq.a}
-                </div>
-              </details>
+            {faqs.map((faq, idx) => (
+              <ScrollReveal key={faq.q} delay={idx * 0.05}>
+                <details className="group rounded-lg border bg-card">
+                  <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium">
+                    {faq.q}
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <div className="border-t px-4 py-3 text-sm text-muted-foreground">
+                    {faq.a}
+                  </div>
+                </details>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -358,7 +421,7 @@ export default function HomePage() {
       {/* CTA */}
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
-          <div>
+          <ScrollReveal>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Ready to streamline your gym?
             </h2>
@@ -377,7 +440,7 @@ export default function HomePage() {
                 <Link href="/login">Login</Link>
               </Button>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 

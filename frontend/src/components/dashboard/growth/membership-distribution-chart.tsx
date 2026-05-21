@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   PieChart,
   Pie,
@@ -25,6 +26,7 @@ const COLORS = [
 
 export function MembershipDistributionChart() {
   const { data, isLoading } = useMembershipDistribution();
+  const router = useRouter();
 
   const chartData = useMemo(() => {
     if (!data?.distributions) return [];
@@ -66,6 +68,11 @@ export function MembershipDistributionChart() {
                 dataKey="value"
                 animationDuration={800}
                 animationEasing="ease-out"
+                onClick={(_, index) => {
+                  const plan = chartData[index]?.name;
+                  if (plan) router.push(`/members?plan=${encodeURIComponent(plan)}`);
+                }}
+                style={{ cursor: "pointer" }}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
@@ -97,7 +104,8 @@ export function MembershipDistributionChart() {
           {chartData.map((d) => (
             <div
               key={d.name}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors"
+              onClick={() => router.push(`/members?plan=${encodeURIComponent(d.name)}`)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <div
                 className="h-3 w-3 rounded-full flex-shrink-0"

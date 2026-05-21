@@ -28,17 +28,22 @@ async def list_members(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     search: str | None = Query(None, min_length=1, max_length=100),
+    status: str | None = Query(None, description="Filter by membership_status"),
+    plan: str | None = Query(None, description="Filter by membership_plan"),
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    List members for the current gym with optional search.
+    List members for the current gym with optional filters.
 
-    Search filters by name or phone (case-insensitive partial match).
+    Supports:
+    - search: name or phone (case-insensitive partial match)
+    - status: active, expired, frozen, pending, cancelled
+    - plan: exact match on membership_plan name
     All authenticated roles can view members.
     """
     service = MemberService(db)
-    return await service.list_members(current_user.gym_id, skip, limit, search)
+    return await service.list_members(current_user.gym_id, skip, limit, search, status, plan)
 
 
 @router.post("", response_model=MemberResponse, status_code=201)

@@ -28,10 +28,11 @@ class MemberRepository:
         return result.scalar_one_or_none()
 
     async def list_by_gym(
-        self, gym_id: UUID, skip: int = 0, limit: int = 50, search: str | None = None
+        self, gym_id: UUID, skip: int = 0, limit: int = 50,
+        search: str | None = None, status: str | None = None, plan: str | None = None,
     ) -> list[Member]:
         """
-        List members with optional text search.
+        List members with optional text search, status, and plan filters.
 
         Search matches against name or phone using case-insensitive ILIKE.
         Every query is scoped to gym_id — this is the tenant isolation boundary.
@@ -53,13 +54,22 @@ class MemberRepository:
                 )
             )
 
+        if status:
+            query = query.where(Member.membership_status == status)
+
+        if plan:
+            query = query.where(Member.membership_plan == plan)
+
         result = await self.db.execute(
             query.order_by(Member.created_at.desc()).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 
-    async def count_by_gym(self, gym_id: UUID, search: str | None = None) -> int:
-        """Count members with optional search filter — for pagination metadata."""
+    async def count_by_gym(
+        self, gym_id: UUID, search: str | None = None,
+        status: str | None = None, plan: str | None = None,
+    ) -> int:
+        """Count members with optional search/status/plan filters — for pagination metadata."""
         query = select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
             Member.is_deleted == False,  # noqa: E712
@@ -74,6 +84,12 @@ class MemberRepository:
                     Member.phone.ilike(search_pattern),
                 )
             )
+
+        if status:
+            query = query.where(Member.membership_status == status)
+
+        if plan:
+            query = query.where(Member.membership_plan == plan)
 
         result = await self.db.execute(query)
         return result.scalar_one()

@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import {
   IndianRupee,
   Users,
@@ -14,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatPaise } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/animated-number";
 import { useDashboardKPIs } from "@/hooks/use-analytics";
 import type { KPICard } from "@/services/analytics.service";
 
@@ -101,10 +103,20 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
   };
 
   const Icon = config.icon;
-  const displayValue = formatKPIValue(kpi);
+  const numericValue = Number(kpi.value);
   const hasGrowth = kpi.growth_percent !== null && kpi.growth_percent !== undefined;
   const isPositive = hasGrowth && kpi.growth_percent! >= 0;
   const isNeutral = hasGrowth && kpi.growth_percent === 0;
+
+  // Format function for AnimatedNumber
+  const formatFn = useCallback(
+    (n: number) => {
+      if (kpi.unit === "paise") return formatPaise(Math.round(n));
+      if (kpi.unit === "percent") return `${n.toFixed(1)}%`;
+      return String(Math.round(n));
+    },
+    [kpi.unit]
+  );
 
   return (
     <Card className="group hover:shadow-soft-md transition-all duration-200">
@@ -117,7 +129,9 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
             <Icon className={cn("h-3.5 w-3.5", config.color)} />
           </div>
         </div>
-        <p className="text-2xl font-bold tracking-tight">{displayValue}</p>
+        <p className="text-2xl font-bold tracking-tight">
+          <AnimatedNumber value={numericValue} formatFn={formatFn} duration={800} />
+        </p>
         <div className="mt-2 flex items-center gap-1.5">
           {hasGrowth && !isNeutral && (
             <span

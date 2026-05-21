@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   useReactTable,
@@ -29,6 +30,8 @@ import { downloadCsv } from "@/lib/export-csv";
 import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
 import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
+import { useGym } from "@/hooks/use-gym";
+import { getPlans } from "@/lib/membership-plans";
 import type { MemberFormValues } from "@/lib/validations/member";
 
 const PAGE_SIZE = 20;
@@ -36,9 +39,15 @@ const PAGE_SIZE = 20;
 export default function MembersPage() {
   const { isAdminOrAbove } = useAuth();
   const usage = useUsageInfo();
+  const searchParams = useSearchParams();
+  const { data: gymData } = useGym();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "");
+  const [planFilter, setPlanFilter] = useState<string>(searchParams.get("plan") || "");
+
+  const plans = useMemo(() => getPlans(gymData?.id), [gymData?.id]);
 
   // Multi-tab sync: invalidates member queries when another browser tab
   // creates, updates, or deletes a member (via BroadcastChannel).
@@ -71,6 +80,8 @@ export default function MembersPage() {
     skip: page * PAGE_SIZE,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    status: statusFilter || undefined,
+    plan: planFilter || undefined,
   });
 
   const members = data?.members ?? [];
@@ -336,16 +347,59 @@ export default function MembersPage() {
         </RoleGate>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or phone..."
-          className="pl-9 h-9"
-          aria-label="Search members"
-        />
+      {/* Search & Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or phone..."
+            className="pl-9 h-9"
+            aria-label="Search members"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-40"
+            aria-label="Filter by status"
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+            <option value="frozen">Frozen</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        {plans.length > 0 && (
+          <div>
+            <label className="text-xs text-muted-foreground">Plan</label>
+            <select
+              value={planFilter}
+              onChange={(e) => { setPlanFilter(e.target.value); setPage(0); }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-44"
+              aria-label="Filter by plan"
+            >
+              <option value="">All Plans</option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {(statusFilter || planFilter) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setStatusFilter(""); setPlanFilter(""); setPage(0); }}
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
 
       {/* Usage warning */}

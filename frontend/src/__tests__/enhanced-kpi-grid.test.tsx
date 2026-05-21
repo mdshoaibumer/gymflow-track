@@ -1,5 +1,27 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+// Mock framer-motion
+vi.mock("framer-motion", () => ({
+  useInView: () => true,
+}));
+
+// Mock matchMedia
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 // Mock the hook
 vi.mock("@/hooks/use-analytics", () => ({
@@ -50,8 +72,9 @@ describe("EnhancedKPIGrid", () => {
     render(<EnhancedKPIGrid periodDays={30} />);
 
     expect(screen.getByText("Active Members")).toBeInTheDocument();
-    expect(screen.getByText("142")).toBeInTheDocument();
     expect(screen.getByText("Attendance Today")).toBeInTheDocument();
+    // AnimatedNumber renders immediately in test env
+    expect(screen.getByText("142")).toBeInTheDocument();
     expect(screen.getByText("28")).toBeInTheDocument();
   });
 

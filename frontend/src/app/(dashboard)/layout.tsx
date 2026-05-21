@@ -9,7 +9,9 @@ import { FeedbackWidget } from "@/components/feedback-widget";
 import { BillingBanner } from "@/components/billing-banner";
 import { CommandPalette } from "@/components/command-palette";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PageTransition } from "@/components/page-transition";
 import { useAuth } from "@/hooks/use-auth";
+import { useUIStore } from "@/store/ui-store";
 import { onAuthExpired } from "@/lib/api";
 import { authService } from "@/services/auth.service";
 
@@ -21,6 +23,7 @@ export default function DashboardLayout({
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { sidebarCollapsed } = useUIStore();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -62,7 +65,9 @@ export default function DashboardLayout({
         <BillingBanner />
         <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <Breadcrumbs className="mb-5" />
-          <ErrorBoundary key={pathname}>{children}</ErrorBoundary>
+          <ErrorBoundary key={pathname}>
+            <PageTransition>{children}</PageTransition>
+          </ErrorBoundary>
         </main>
       </div>
       <FeedbackWidget />
