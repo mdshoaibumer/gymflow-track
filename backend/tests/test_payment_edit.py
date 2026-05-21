@@ -145,7 +145,7 @@ class TestEditPendingPayment:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={"amount_in_paise": 100000},
             headers=admin_headers,
         )
@@ -156,7 +156,7 @@ class TestEditPendingPayment:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={"payment_method": "cash"},
             headers=admin_headers,
         )
@@ -167,7 +167,7 @@ class TestEditPendingPayment:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={"notes": "Changed to 1 month plan"},
             headers=admin_headers,
         )
@@ -178,7 +178,7 @@ class TestEditPendingPayment:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={"payment_status": "completed"},
             headers=admin_headers,
         )
@@ -189,7 +189,7 @@ class TestEditPendingPayment:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={
                 "amount_in_paise": 100000,
                 "payment_method": "cash",
@@ -214,7 +214,7 @@ class TestEditCompletedPayment:
         self, client: AsyncClient, admin_headers: dict, completed_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{completed_payment.id}",
+            f"/api/v1/payments/{completed_payment.id}",
             json={"notes": "Updated note"},
             headers=admin_headers,
         )
@@ -225,7 +225,7 @@ class TestEditCompletedPayment:
         self, client: AsyncClient, admin_headers: dict, completed_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{completed_payment.id}",
+            f"/api/v1/payments/{completed_payment.id}",
             json={"payment_method": "upi"},
             headers=admin_headers,
         )
@@ -236,7 +236,7 @@ class TestEditCompletedPayment:
         self, client: AsyncClient, admin_headers: dict, completed_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{completed_payment.id}",
+            f"/api/v1/payments/{completed_payment.id}",
             json={"amount_in_paise": 200000},
             headers=admin_headers,
         )
@@ -246,7 +246,7 @@ class TestEditCompletedPayment:
         self, client: AsyncClient, admin_headers: dict, completed_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{completed_payment.id}",
+            f"/api/v1/payments/{completed_payment.id}",
             json={"payment_status": "pending"},
             headers=admin_headers,
         )
@@ -261,7 +261,7 @@ class TestPaymentEditEdgeCases:
         self, client: AsyncClient, admin_headers: dict
     ):
         resp = await client.patch(
-            f"/payments/{uuid4()}",
+            f"/api/v1/payments/{uuid4()}",
             json={"notes": "test"},
             headers=admin_headers,
         )
@@ -271,7 +271,7 @@ class TestPaymentEditEdgeCases:
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
     ):
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={},
             headers=admin_headers,
         )
@@ -299,7 +299,7 @@ class TestPaymentEditEdgeCases:
         headers = {"Authorization": f"Bearer {token}"}
 
         resp = await client.patch(
-            f"/payments/{pending_payment.id}",
+            f"/api/v1/payments/{pending_payment.id}",
             json={"notes": "test"},
             headers=headers,
         )
