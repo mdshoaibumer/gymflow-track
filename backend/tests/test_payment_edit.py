@@ -9,7 +9,6 @@ Covers:
 - Rejecting forbidden field changes on completed payments
 """
 
-from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
