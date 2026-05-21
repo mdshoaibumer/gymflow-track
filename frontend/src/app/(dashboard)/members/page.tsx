@@ -118,8 +118,36 @@ export default function MembersPage() {
     const payload = formValuesToPayload(values);
     // Include version for optimistic locking — server returns 409 if stale
     payload.version = editingMember.version;
+
+    // Check if membership fields changed — these go through the override API
+    const membershipChanged =
+      (values.membership_plan || "") !== (editingMember.membership_plan || "") ||
+      (values.membership_start || "") !== (editingMember.membership_start || "") ||
+      (values.membership_end || "") !== (editingMember.membership_end || "");
+
     try {
-      const updatedMember = await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
+      let updatedMember: Member | undefined;
+
+      // First, update basic fields via PATCH
+      updatedMember = await updateMutation.mutateAsync({ id: editingMember.id, data: payload });
+
+      // Then, if membership fields changed, call the override API
+      if (membershipChanged) {
+        const overridePayload: Record<string, string | undefined> & { version?: number } = {
+          version: updatedMember?.version ?? editingMember.version,
+        };
+        if ((values.membership_plan || "") !== (editingMember.membership_plan || "")) {
+          overridePayload.membership_plan = values.membership_plan || undefined;
+        }
+        if ((values.membership_start || "") !== (editingMember.membership_start || "")) {
+          overridePayload.membership_start = values.membership_start || undefined;
+        }
+        if ((values.membership_end || "") !== (editingMember.membership_end || "")) {
+          overridePayload.membership_end = values.membership_end || undefined;
+        }
+        updatedMember = await memberService.overrideMembership(editingMember.id, overridePayload);
+      }
+
       if (updatedMember && values.photoFile) {
         try {
           await memberService.uploadPhoto(updatedMember.id, values.photoFile);
@@ -349,6 +377,7 @@ export default function MembersPage() {
             key={editingMember.id}
             title={`Edit: ${editingMember.name}`}
             submitLabel="Save Changes"
+            isEditing
             defaultValues={memberToFormValues(editingMember).formValues}
             defaultCustomFields={memberToFormValues(editingMember).customFieldValues}
             initialPhotoUrl={editingMember.photo_url}

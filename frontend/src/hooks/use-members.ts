@@ -105,7 +105,7 @@ export function useUpdateMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CreateMemberPayload }) =>
-      memberService.replace(id, data),
+      memberService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       broadcastMemberMutation();

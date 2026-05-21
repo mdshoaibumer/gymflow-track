@@ -6,12 +6,14 @@ import { Loader2, Camera, Upload, Trash2, User } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useCustomFields } from "@/hooks/use-custom-fields";
+import { useGym } from "@/hooks/use-gym";
+import { getPlans, calculateEndDate, type MembershipPlan } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { Member } from "@/services/member.service";
 import type { CustomField } from "@/services/custom-field.service";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MemberCameraModal } from "./member-camera-modal";
 import { PhotoPreviewModal } from "./photo-preview-modal";
 import { compressImage } from "@/lib/compress-image";
@@ -32,6 +34,7 @@ interface MemberFormProps {
   defaultValues?: Partial<MemberFormValues>;
   defaultCustomFields?: Record<string, string | number | null>;
   initialPhotoUrl?: string | null;
+  isEditing?: boolean;
   onSubmit: (data: MemberFormValues & { 
     custom_fields?: Record<string, string | number | null>;
     photoFile?: File | null;
@@ -46,6 +49,7 @@ export function MemberForm({
   defaultValues,
   defaultCustomFields,
   initialPhotoUrl,
+  isEditing = false,
   onSubmit,
   onCancel,
   submitLabel,
@@ -54,6 +58,14 @@ export function MemberForm({
 }: MemberFormProps) {
   const { data: customFieldsData } = useCustomFields();
   const customFields: CustomField[] = customFieldsData?.fields ?? [];
+  const { data: gym } = useGym();
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+
+  useEffect(() => {
+    if (gym?.id) {
+      setPlans(getPlans(gym.id));
+    }
+  }, [gym?.id]);
 
   const [cfValues, setCfValues] = useState<Record<string, string | number | null>>(
     defaultCustomFields ?? {}
@@ -102,6 +114,8 @@ export function MemberForm({
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
     setError,
+    setValue,
+    watch,
   } = useForm({
     resolver: zodResolver(memberFormSchema),
     defaultValues: {
@@ -111,6 +125,9 @@ export function MemberForm({
       gender: "" as const,
       father_name: "",
       batch: "" as const,
+      membership_plan: "",
+      membership_start: "",
+      membership_end: "",
       ...defaultValues,
     },
   });
@@ -316,6 +333,91 @@ export function MemberForm({
           </select>
         </div>
 
+        {/* Membership Details Section (shown when editing) */}
+        {isEditing && (
+          <>
+            <div className="sm:col-span-2 pt-4 border-t">
+              <p className="text-sm font-medium text-muted-foreground">
+                Membership Details
+              </p>
+            </div>
+
+            {/* Plan quick-select buttons from settings */}
+            {plans.length > 0 && (
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label>Select Plan</Label>
+                <div className="flex flex-wrap gap-2">
+                  {plans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => {
+                        setValue("membership_plan", plan.name, { shouldDirty: true });
+                        const today = new Date().toISOString().split("T")[0];
+                        const start = watch("membership_start") || today;
+                        setValue("membership_start", start, { shouldDirty: true });
+                        setValue("membership_end", calculateEndDate(start, plan.duration_months), { shouldDirty: true });
+                      }}
+                      className={`rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent ${
+                        watch("membership_plan") === plan.name
+                          ? "border-primary bg-primary/5 font-medium"
+                          : "border-input"
+                      }`}
+                    >
+                      <span className="font-medium">{plan.name}</span>
+                      <span className="ml-1.5 text-muted-foreground">
+                        ₹{plan.amount.toLocaleString("en-IN")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="membership_plan">Membership Plan</Label>
+              {plans.length > 0 ? (
+                <select
+                  id="membership_plan"
+                  {...register("membership_plan")}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Select Plan</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.name}>
+                      {plan.name} — ₹{plan.amount.toLocaleString("en-IN")}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  id="membership_plan"
+                  {...register("membership_plan")}
+                  placeholder="e.g., Monthly, Quarterly, Annual"
+                />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="membership_start">Start Date</Label>
+              <Input
+                id="membership_start"
+                type="date"
+                {...register("membership_start")}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="membership_end">End Date</Label>
+              <Input
+                id="membership_end"
+                type="date"
+                {...register("membership_end")}
+              />
+            </div>
+          </>
+        )}
+
         {/* Dynamic Custom Fields */}
         {customFields.map((cf) => (
           <div key={cf.id} className="space-y-1.5">
@@ -395,6 +497,9 @@ export function memberToFormValues(member: Member): {
       gender: member.gender || "",
       father_name: member.father_name || "",
       batch: member.batch || "",
+      membership_plan: member.membership_plan || "",
+      membership_start: member.membership_start || "",
+      membership_end: member.membership_end || "",
     },
     customFieldValues: member.custom_fields ?? {},
   };

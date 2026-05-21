@@ -79,8 +79,12 @@ async def replace_member(
     Used by edit forms that send the complete member object.
     """
     service = MemberService(db)
-    # Convert create schema to update schema (all fields set)
-    update_data = MemberUpdateRequest(**data.model_dump())
+    # Convert create schema to update schema, excluding protected membership
+    # fields that should only be changed via the membership management API.
+    # Without this exclusion, PUT sends defaults (None/0) for membership fields
+    # which triggers a false "protected field changed" rejection.
+    create_data = data.model_dump(exclude={"membership_plan", "membership_start", "membership_end"})
+    update_data = MemberUpdateRequest(**create_data)
     return await service.update_member(member_id, current_user.gym_id, update_data)
 
 

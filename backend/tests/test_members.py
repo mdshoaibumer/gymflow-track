@@ -584,3 +584,133 @@ class TestBatchField:
             "/api/v1/members", json=payload, headers=auth_headers
         )
         assert response.status_code == 422
+
+
+class TestMemberEditAfterImport:
+    """Test that members with membership data can still be edited.
+
+    Reproduces the bug where imported members (with plan/dates set)
+    could not be edited via PUT because protected fields defaulted to None.
+    """
+
+    async def test_put_does_not_reject_when_membership_fields_exist(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """PUT update of basic fields succeeds even when member has membership data."""
+        # Create a member with membership fields (simulating an import)
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={
+                "name": "Imported Member",
+                "phone": "9876500100",
+                "membership_plan": "Monthly",
+                "membership_start": "2025-01-01",
+                "membership_end": "2025-02-01",
+            },
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        member_id = create_resp.json()["id"]
+
+        # PUT with only basic fields (as the frontend edit form does)
+        # This should NOT fail due to protected field check
+        response = await client.put(
+            f"/api/v1/members/{member_id}",
+            json={"name": "Edited Member", "phone": "9876500100"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Edited Member"
+        # Membership fields should remain unchanged
+        assert data["membership_plan"] == "Monthly"
+        assert data["membership_start"] == "2025-01-01"
+        assert data["membership_end"] == "2025-02-01"
+
+    async def test_patch_does_not_send_membership_fields(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """PATCH with only basic fields succeeds on imported members."""
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={
+                "name": "CSV Imported",
+                "phone": "9876500101",
+                "membership_plan": "Quarterly",
+                "membership_start": "2025-03-01",
+                "membership_end": "2025-06-01",
+            },
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        member_id = create_resp.json()["id"]
+
+        # PATCH with only name change
+        response = await client.patch(
+            f"/api/v1/members/{member_id}",
+            json={"name": "CSV Updated"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "CSV Updated"
+        assert data["membership_plan"] == "Quarterly"
+
+    async def test_override_changes_plan_without_payment(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Override endpoint allows plan change without recording a payment."""
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={
+                "name": "Plan Change",
+                "phone": "9876500102",
+                "membership_plan": "Monthly",
+                "membership_start": "2025-01-01",
+                "membership_end": "2025-02-01",
+            },
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        member_id = create_resp.json()["id"]
+        version = create_resp.json()["version"]
+
+        # Override the plan
+        response = await client.patch(
+            f"/api/v1/members/{member_id}/override",
+            json={
+                "membership_plan": "Annual",
+                "membership_start": "2025-01-01",
+                "membership_end": "2026-01-01",
+                "version": version,
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["membership_plan"] == "Annual"
+        assert data["membership_end"] == "2026-01-01"
+
+    async def test_patch_rejects_direct_plan_change(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """PATCH with membership_plan change is rejected (must use override)."""
+        create_resp = await client.post(
+            "/api/v1/members",
+            json={
+                "name": "Protected",
+                "phone": "9876500103",
+                "membership_plan": "Monthly",
+            },
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        member_id = create_resp.json()["id"]
+
+        response = await client.patch(
+            f"/api/v1/members/{member_id}",
+            json={"membership_plan": "Annual"},
+            headers=auth_headers,
+        )
+        # Should be rejected — protected field
+        assert response.status_code == 422
