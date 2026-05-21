@@ -10,7 +10,6 @@ from app.models.attendance import AttendanceStatus, CheckInSource
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment
-from app.models.user import User
 
 
 @pytest.fixture

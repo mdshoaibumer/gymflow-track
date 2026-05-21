@@ -71,12 +71,11 @@ describe("MemberForm", () => {
     expect(screen.getByLabelText(/gender/i)).toBeInTheDocument();
   });
 
-  it("does NOT render membership/payment fields in the form", () => {
+  it("renders membership fields in the form for both create and edit", () => {
     render(<MemberForm {...defaultProps} />);
-    expect(screen.queryByLabelText(/plan/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/amount paid/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/membership plan/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/start date/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date/i)).toBeInTheDocument();
   });
 
   it("personal details section is present in the form", () => {

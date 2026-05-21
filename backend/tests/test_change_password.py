@@ -1,10 +1,8 @@
 """Tests for POST /auth/change-password endpoint."""
 
 import pytest
-from uuid import uuid4
 
-from app.core.security import hash_password, verify_password
-from app.models.user import User, UserRole
+from app.core.security import verify_password
 
 
 @pytest.mark.anyio

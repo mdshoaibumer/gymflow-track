@@ -44,6 +44,7 @@ vi.mock("@/hooks/use-members", () => ({
   useUpdateMember: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteMember: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useMemberTabSync: () => {},
+  useMemberTimeline: () => ({ data: { events: [], total: 0 } }),
 }));
 
 vi.mock("@/hooks/use-payments", () => ({
