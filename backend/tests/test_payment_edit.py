@@ -12,6 +12,7 @@ Covers:
 from uuid import uuid4
 
 import pytest
+import sqlalchemy as sa
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +22,7 @@ from app.core.timezone import today_ist
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
+from app.models.subscription import BillingStatus, GymSubscription, PlanTier, SubscriptionPlan
 from app.models.user import User, UserRole
 
 
@@ -37,6 +39,22 @@ async def payment_gym(db_session: AsyncSession) -> Gym:
     )
     db_session.add(gym)
     await db_session.flush()
+
+    # Create subscription so enforcement middleware allows requests
+    result = await db_session.execute(
+        sa.select(SubscriptionPlan).where(SubscriptionPlan.tier == PlanTier.ELITE)
+    )
+    plan = result.scalar_one()
+    sub = GymSubscription(
+        id=uuid4(),
+        gym_id=gym.id,
+        plan_id=plan.id,
+        status=BillingStatus.ACTIVE,
+    )
+    db_session.add(sub)
+    await db_session.flush()
+
+    get_cache_backend().set(f"sub:{gym.id}", "full", 99999)
     return gym
 
 
