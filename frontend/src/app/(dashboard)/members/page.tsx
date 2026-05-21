@@ -133,7 +133,7 @@ export default function MembersPage() {
 
       // Then, if membership fields changed, call the override API
       if (membershipChanged) {
-        const overridePayload: Record<string, string | undefined> & { version?: number } = {
+        const overridePayload: { membership_plan?: string; membership_start?: string; membership_end?: string; version?: number } = {
           version: updatedMember?.version ?? editingMember.version,
         };
         if ((values.membership_plan || "") !== (editingMember.membership_plan || "")) {
