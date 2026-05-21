@@ -7,6 +7,17 @@ vi.mock("@/hooks/use-custom-fields", () => ({
   useCustomFields: () => ({ data: { fields: [] } }),
 }));
 
+// Mock useGym hook (added for membership plan dropdown)
+vi.mock("@/hooks/use-gym", () => ({
+  useGym: () => ({ data: { id: "gym-1", name: "Test Gym", plans: [] } }),
+}));
+
+// Mock membership plans
+vi.mock("@/lib/membership-plans", () => ({
+  getPlans: () => [],
+  calculateEndDate: () => null,
+}));
+
 // Mock unsaved changes hook
 vi.mock("@/hooks/use-unsaved-changes", () => ({
   useUnsavedChanges: () => {},
