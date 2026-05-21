@@ -29,6 +29,22 @@ class VoidPaymentRequest(BaseModel):
     reason: str = Field(..., min_length=5, max_length=500, description="Reason for voiding this payment")
 
 
+class PaymentUpdateRequest(BaseModel):
+    """Request body for editing a payment.
+
+    Pending payments: all fields editable.
+    Completed payments: only notes and payment_method editable.
+    """
+    amount_in_paise: int | None = Field(None, gt=0)
+    payment_method: PaymentMethod | None = None
+    payment_status: PaymentStatus | None = None
+    payment_date: date | None = None
+    notes: str | None = Field(None, max_length=500)
+    membership_start: date | None = None
+    membership_end: date | None = None
+    membership_plan: str | None = None
+
+
 class PaymentResponse(BaseModel):
     id: UUID
     gym_id: UUID

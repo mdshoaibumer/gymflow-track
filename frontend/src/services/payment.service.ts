@@ -51,6 +51,17 @@ export interface VoidPaymentPayload {
   reason: string;
 }
 
+export interface UpdatePaymentPayload {
+  amount_in_paise?: number;
+  payment_method?: PaymentMethod;
+  payment_status?: PaymentStatus;
+  payment_date?: string;
+  notes?: string;
+  membership_start?: string;
+  membership_end?: string;
+  membership_plan?: string;
+}
+
 // --- Dashboard types ---
 
 export interface DashboardMetrics {
@@ -114,6 +125,10 @@ export const paymentService = {
 
   async voidPayment(paymentId: string, payload: VoidPaymentPayload): Promise<Payment> {
     return request.post<Payment>(`/payments/${paymentId}/void`, payload);
+  },
+
+  async update(paymentId: string, payload: UpdatePaymentPayload): Promise<Payment> {
+    return request.patch<Payment>(`/payments/${paymentId}`, payload);
   },
 };
 

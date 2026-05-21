@@ -18,6 +18,7 @@ from app.models.base import BaseModel, PgEnum
 
 class GymAuditAction(str, PyEnum):
     PAYMENT_VOIDED = "payment_voided"
+    PAYMENT_EDITED = "payment_edited"
     MEMBERSHIP_OVERRIDE = "membership_override"
     MEMBER_FINANCIAL_RECOMPUTE = "member_financial_recompute"
 

@@ -8,13 +8,14 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion } from "framer-motion";
-import { Plus, Receipt, Download, AlertCircle, RefreshCw, MoreHorizontal, Ban } from "lucide-react";
+import { Plus, Receipt, Download, AlertCircle, RefreshCw, MoreHorizontal, Ban, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePayments, useCreatePayment } from "@/hooks/use-payments";
 import type { Payment, CreatePaymentPayload } from "@/services/payment.service";
 import { RoleGate } from "@/components/role-gate";
 import { PaymentForm } from "@/components/payments/payment-form";
 import { VoidPaymentModal } from "@/components/payments/void-payment-modal";
+import { EditPaymentModal } from "@/components/payments/edit-payment-modal";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export default function PaymentsPage() {
   const [dateTo, setDateTo] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [voidTarget, setVoidTarget] = useState<Payment | null>(null);
+  const [editTarget, setEditTarget] = useState<Payment | null>(null);
 
   const { data: paymentsData, isLoading, isError, refetch, isFetching } = usePayments({
     skip: page * PAGE_SIZE,
@@ -122,7 +124,7 @@ export default function PaymentsPage() {
               header: "",
               cell: ({ row }: { row: { original: Payment } }) => {
                 const payment = row.original;
-                if (payment.payment_status !== "completed") return null;
+                if (payment.payment_status === "refunded" || payment.payment_status === "failed") return null;
                 return (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -133,12 +135,20 @@ export default function PaymentsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setVoidTarget(payment)}
+                        onClick={() => setEditTarget(payment)}
                       >
-                        <Ban className="mr-2 h-4 w-4" />
-                        Void Payment
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Payment
                       </DropdownMenuItem>
+                      {payment.payment_status === "completed" && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setVoidTarget(payment)}
+                        >
+                          <Ban className="mr-2 h-4 w-4" />
+                          Void Payment
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 );
@@ -257,6 +267,14 @@ export default function PaymentsPage() {
         open={!!voidTarget}
         onOpenChange={(open) => { if (!open) setVoidTarget(null); }}
       />
+
+      {/* Edit Modal */}
+      {editTarget && (
+        <EditPaymentModal
+          payment={editTarget}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
 
       {/* Table */}
       {isError ? (

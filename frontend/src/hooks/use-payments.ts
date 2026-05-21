@@ -7,6 +7,7 @@ import {
   paymentService,
   type ListPaymentsParams,
   type CreatePaymentPayload,
+  type UpdatePaymentPayload,
   type VoidPaymentPayload,
 } from "@/services/payment.service";
 import { toast } from "sonner";
@@ -95,6 +96,23 @@ export function useVoidPayment() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to void payment");
+    },
+  });
+}
+
+export function useUpdatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, payload }: { paymentId: string; payload: UpdatePaymentPayload }) =>
+      paymentService.update(paymentId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Payment updated successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update payment");
     },
   });
 }

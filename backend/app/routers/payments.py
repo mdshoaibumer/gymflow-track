@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
 from app.models.payment import PaymentStatus
-from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse, VoidPaymentRequest
+from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse, PaymentUpdateRequest, VoidPaymentRequest
 from app.services.payment_service import PaymentService
 
 router = APIRouter()
@@ -75,6 +75,32 @@ async def get_payment(
     """Get a specific payment by ID. All roles can view."""
     service = PaymentService(db)
     return await service.get_payment(payment_id, current_user.gym_id)
+
+
+@router.patch("/{payment_id}", response_model=PaymentResponse)
+async def update_payment(
+    payment_id: UUID,
+    data: PaymentUpdateRequest,
+    current_user: CurrentUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Edit a payment. OWNER and ADMIN only.
+
+    Pending payments: all fields editable (amount, method, status, dates, plan).
+    Completed payments: only notes and payment_method editable.
+    Refunded/Failed payments: cannot be edited.
+
+    When a pending payment is changed to completed, membership renewal
+    and invoice generation are triggered automatically.
+    """
+    service = PaymentService(db)
+    return await service.update_payment(
+        payment_id=payment_id,
+        gym_id=current_user.gym_id,
+        user_id=current_user.user_id,
+        data=data,
+    )
 
 
 @router.post("/{payment_id}/void", response_model=PaymentResponse)
