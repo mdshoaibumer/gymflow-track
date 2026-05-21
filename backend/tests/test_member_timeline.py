@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.attendance import AttendanceStatus, CheckInSource
 from app.models.gym import Gym
 from app.models.member import Member, MembershipStatus
-from app.models.payment import Payment
+from app.models.payment import Payment, PaymentMethod
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ async def member_with_activity(db_session: AsyncSession, sample_gym: Gym, timeli
         gym_id=sample_gym.id,
         member_id=timeline_member.id,
         amount_in_paise=100000,
-        method="cash",
+        payment_method=PaymentMethod.CASH,
         payment_date=date.today() - timedelta(days=5),
         notes="Monthly fee",
     )
