@@ -19,6 +19,7 @@ import { MemberForm, memberToFormValues } from "@/components/members/member-form
 import { DeleteConfirmDialog } from "@/components/members/delete-confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationControls } from "@/components/pagination-controls";
+import { ColumnFilters, type FilterDefinition } from "@/components/column-filters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,8 +48,57 @@ export default function MembersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "");
   const [planFilter, setPlanFilter] = useState<string>(searchParams.get("plan") || "");
+  const [batchFilter, setBatchFilter] = useState<string>("");
 
   const plans = useMemo(() => getPlans(gymData?.id), [gymData?.id]);
+
+  const filterDefinitions = useMemo<FilterDefinition[]>(() => [
+    {
+      key: "status",
+      label: "Status",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "expired", label: "Expired" },
+        { value: "frozen", label: "Frozen" },
+        { value: "pending", label: "Pending" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    {
+      key: "plan",
+      label: "Plan",
+      options: plans.map((p) => ({ value: p.name, label: p.name })),
+    },
+    {
+      key: "batch",
+      label: "Batch",
+      options: [
+        { value: "morning", label: "Morning" },
+        { value: "afternoon", label: "Afternoon" },
+        { value: "evening", label: "Evening" },
+      ],
+    },
+  ], [plans]);
+
+  const filterValues = useMemo(() => ({
+    status: statusFilter,
+    plan: planFilter,
+    batch: batchFilter,
+  }), [statusFilter, planFilter, batchFilter]);
+
+  const handleFilterChange = useCallback((key: string, value: string) => {
+    if (key === "status") setStatusFilter(value);
+    else if (key === "plan") setPlanFilter(value);
+    else if (key === "batch") setBatchFilter(value);
+    setPage(0);
+  }, []);
+
+  const handleClearAllFilters = useCallback(() => {
+    setStatusFilter("");
+    setPlanFilter("");
+    setBatchFilter("");
+    setPage(0);
+  }, []);
 
   // Multi-tab sync: invalidates member queries when another browser tab
   // creates, updates, or deletes a member (via BroadcastChannel).
@@ -98,6 +148,7 @@ export default function MembersPage() {
     search: debouncedSearch || undefined,
     status: statusFilter || undefined,
     plan: planFilter || undefined,
+    batch: batchFilter || undefined,
   });
 
   const members = data?.members ?? [];
@@ -412,7 +463,7 @@ export default function MembersPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -423,47 +474,12 @@ export default function MembersPage() {
             aria-label="Search members"
           />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-40"
-            aria-label="Filter by status"
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="expired">Expired</option>
-            <option value="frozen">Frozen</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-        {plans.length > 0 && (
-          <div>
-            <label className="text-xs text-muted-foreground">Plan</label>
-            <select
-              value={planFilter}
-              onChange={(e) => { setPlanFilter(e.target.value); setPage(0); }}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-44"
-              aria-label="Filter by plan"
-            >
-              <option value="">All Plans</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.name}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        {(statusFilter || planFilter) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStatusFilter(""); setPlanFilter(""); setPage(0); }}
-          >
-            Clear Filters
-          </Button>
-        )}
+        <ColumnFilters
+          definitions={filterDefinitions}
+          values={filterValues}
+          onChange={handleFilterChange}
+          onClear={handleClearAllFilters}
+        />
       </div>
 
       {/* Usage warning */}

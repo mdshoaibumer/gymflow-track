@@ -58,11 +58,12 @@ export interface ListMembersParams {
   search?: string;
   status?: string;
   plan?: string;
+  batch?: string;
 }
 
 export const memberService = {
   list: (params: ListMembersParams = {}) => {
-    const { skip = 0, limit = 20, search, status, plan } = params;
+    const { skip = 0, limit = 20, search, status, plan, batch } = params;
     const query = new URLSearchParams({
       skip: String(skip),
       limit: String(limit),
@@ -70,6 +71,7 @@ export const memberService = {
     if (search) query.set("search", search);
     if (status) query.set("status", status);
     if (plan) query.set("plan", plan);
+    if (batch) query.set("batch", batch);
     return request.get<MemberListResponse>(`/members?${query}`);
   },
 

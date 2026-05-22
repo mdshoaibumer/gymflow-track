@@ -30,9 +30,10 @@ class MemberRepository:
     async def list_by_gym(
         self, gym_id: UUID, skip: int = 0, limit: int = 50,
         search: str | None = None, status: str | None = None, plan: str | None = None,
+        batch: str | None = None,
     ) -> list[Member]:
         """
-        List members with optional text search, status, and plan filters.
+        List members with optional text search, status, plan, and batch filters.
 
         Search matches against name or phone using case-insensitive ILIKE.
         Every query is scoped to gym_id — this is the tenant isolation boundary.
@@ -60,6 +61,9 @@ class MemberRepository:
         if plan:
             query = query.where(Member.membership_plan == plan)
 
+        if batch:
+            query = query.where(Member.batch == batch)
+
         result = await self.db.execute(
             query.order_by(Member.created_at.desc()).offset(skip).limit(limit)
         )
@@ -68,8 +72,9 @@ class MemberRepository:
     async def count_by_gym(
         self, gym_id: UUID, search: str | None = None,
         status: str | None = None, plan: str | None = None,
+        batch: str | None = None,
     ) -> int:
-        """Count members with optional search/status/plan filters — for pagination metadata."""
+        """Count members with optional search/status/plan/batch filters — for pagination metadata."""
         query = select(func.count()).select_from(Member).where(
             Member.gym_id == gym_id,
             Member.is_deleted == False,  # noqa: E712
@@ -90,6 +95,9 @@ class MemberRepository:
 
         if plan:
             query = query.where(Member.membership_plan == plan)
+
+        if batch:
+            query = query.where(Member.batch == batch)
 
         result = await self.db.execute(query)
         return result.scalar_one()

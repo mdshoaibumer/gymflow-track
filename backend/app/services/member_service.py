@@ -71,9 +71,10 @@ class MemberService:
     async def list_members(
         self, gym_id: UUID, skip: int = 0, limit: int = 50,
         search: str | None = None, status: str | None = None, plan: str | None = None,
+        batch: str | None = None,
     ) -> MemberListResponse:
-        members = await self.member_repo.list_by_gym(gym_id, skip, limit, search, status, plan)
-        total = await self.member_repo.count_by_gym(gym_id, search, status, plan)
+        members = await self.member_repo.list_by_gym(gym_id, skip, limit, search, status, plan, batch)
+        total = await self.member_repo.count_by_gym(gym_id, search, status, plan, batch)
         return MemberListResponse(members=members, total=total)
 
     async def update_member(

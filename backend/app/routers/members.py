@@ -33,6 +33,7 @@ async def list_members(
     search: str | None = Query(None, min_length=1, max_length=100),
     status: str | None = Query(None, description="Filter by membership_status"),
     plan: str | None = Query(None, description="Filter by membership_plan"),
+    batch: str | None = Query(None, description="Filter by batch (morning/afternoon/evening)"),
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -43,10 +44,11 @@ async def list_members(
     - search: name or phone (case-insensitive partial match)
     - status: active, expired, frozen, pending, cancelled
     - plan: exact match on membership_plan name
+    - batch: morning, afternoon, evening
     All authenticated roles can view members.
     """
     service = MemberService(db)
-    return await service.list_members(current_user.gym_id, skip, limit, search, status, plan)
+    return await service.list_members(current_user.gym_id, skip, limit, search, status, plan, batch)
 
 
 @router.post("", response_model=MemberResponse, status_code=201)
