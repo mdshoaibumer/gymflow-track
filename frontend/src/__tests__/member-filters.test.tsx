@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Mock next/navigation
@@ -82,31 +83,41 @@ function renderWithProviders(ui: React.ReactElement) {
 describe("MembersPage Filters", () => {
   it("initializes status filter from URL search params", () => {
     renderWithProviders(<MembersPage />);
-    const statusSelect = screen.getByLabelText("Filter by status") as HTMLSelectElement;
-    expect(statusSelect.value).toBe("expired");
+    // The active filter chip shows the status from URL params
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove Status filter")).toBeInTheDocument();
   });
 
-  it("renders status filter dropdown with all options", () => {
+  it("renders status filter dropdown with all options", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<MembersPage />);
-    const statusSelect = screen.getByLabelText("Filter by status");
-    expect(statusSelect).toBeInTheDocument();
-    expect(screen.getByText("All Statuses")).toBeInTheDocument();
+    // Open the filters panel
+    await user.click(screen.getByRole("button", { name: /filters/i }));
+    // Click the Status column
+    await user.click(screen.getByText("Status"));
+    // Check all status options are shown
     expect(screen.getByText("Active")).toBeInTheDocument();
-    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(screen.getAllByText("Expired").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Frozen")).toBeInTheDocument();
   });
 
-  it("renders plan filter dropdown with configured plans", () => {
+  it("renders plan filter dropdown with configured plans", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<MembersPage />);
-    const planSelect = screen.getByLabelText("Filter by plan");
-    expect(planSelect).toBeInTheDocument();
-    expect(screen.getByText("All Plans")).toBeInTheDocument();
+    // Open the filters panel
+    await user.click(screen.getByRole("button", { name: /filters/i }));
+    // Click the Plan column
+    await user.click(screen.getByText("Plan"));
+    // Check plan options
     expect(screen.getByText("Monthly")).toBeInTheDocument();
     expect(screen.getByText("Quarterly")).toBeInTheDocument();
   });
 
-  it("shows Clear Filters button when a filter is active", () => {
+  it("shows Clear Filters button when a filter is active", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<MembersPage />);
-    expect(screen.getByText("Clear Filters")).toBeInTheDocument();
+    // Open the filters panel - "Clear all filters" shows inside dropdown when filters are active
+    await user.click(screen.getByRole("button", { name: /filters/i }));
+    expect(screen.getByText("Clear all filters")).toBeInTheDocument();
   });
 });
