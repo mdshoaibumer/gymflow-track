@@ -24,6 +24,7 @@ import { FeatureGate } from "@/components/subscription/feature-gate";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -94,6 +95,7 @@ function AttendanceQRDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Attendance QR Code</DialogTitle>
+          <DialogDescription>Members scan this QR to check in</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 py-4">
           {error ? (
@@ -118,9 +120,6 @@ function AttendanceQRDialog() {
                 <p className="text-2xl font-mono font-bold tracking-widest">{data.code}</p>
                 <p className="text-xs text-muted-foreground">
                   Code refreshes in {timeLeft}s
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Members scan this QR to check in
                 </p>
               </div>
               <div className="w-full rounded-md bg-muted p-3">

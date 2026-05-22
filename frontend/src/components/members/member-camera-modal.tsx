@@ -304,12 +304,12 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
         </div>
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes flash {
           0% { opacity: 0.9; }
           100% { opacity: 0; }
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }

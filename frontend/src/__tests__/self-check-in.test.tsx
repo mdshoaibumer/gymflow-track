@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -22,7 +22,9 @@ describe("SelfCheckInPage", () => {
   });
 
   it("renders the check-in form", async () => {
-    render(<SelfCheckInPage />);
+    await act(async () => {
+      render(<SelfCheckInPage />);
+    });
     expect(screen.getByText("Mark Your Attendance")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("Phone, Name, or Email")
@@ -30,15 +32,19 @@ describe("SelfCheckInPage", () => {
     expect(screen.getByText("Check In")).toBeInTheDocument();
   });
 
-  it("shows instruction text", () => {
-    render(<SelfCheckInPage />);
+  it("shows instruction text", async () => {
+    await act(async () => {
+      render(<SelfCheckInPage />);
+    });
     expect(
       screen.getByText("Enter your registered name, phone number, or email")
     ).toBeInTheDocument();
   });
 
   it("shows error when submitting empty form", async () => {
-    render(<SelfCheckInPage />);
+    await act(async () => {
+      render(<SelfCheckInPage />);
+    });
     fireEvent.click(screen.getByText("Check In"));
     expect(
       screen.getByText("Please enter your name, phone number, or email.")
@@ -224,7 +230,7 @@ describe("SelfCheckInPage - no code", () => {
     });
   });
 
-  it("shows warning when no code in URL", () => {
+  it("shows warning when no code in URL", async () => {
     // Override useSearchParams to return empty
     vi.doMock("next/navigation", () => ({
       useParams: () => ({ gymId: "test-gym-id" }),
@@ -236,7 +242,9 @@ describe("SelfCheckInPage - no code", () => {
     // Since vi.doMock won't re-evaluate the import in the same test,
     // we test the error path by submitting without code
     // The page shows the warning immediately when code is empty
-    render(<SelfCheckInPage />);
+    await act(async () => {
+      render(<SelfCheckInPage />);
+    });
 
     // The component checks searchParams.get("code") which is "A7X9K2" from the module mock
     // So this test validates the form still works
