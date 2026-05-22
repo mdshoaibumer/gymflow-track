@@ -45,6 +45,7 @@ export interface ListPaymentsParams {
   limit?: number;
   member_id?: string;
   status?: PaymentStatus;
+  method?: PaymentMethod;
   date_from?: string;
   date_to?: string;
 }

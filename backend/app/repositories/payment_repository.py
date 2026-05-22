@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.payment import Payment, PaymentStatus
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
 
 
 class PaymentRepository:
@@ -42,6 +42,7 @@ class PaymentRepository:
         limit: int = 50,
         member_id: UUID | None = None,
         status: PaymentStatus | None = None,
+        method: PaymentMethod | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> list[Payment]:
@@ -55,6 +56,8 @@ class PaymentRepository:
             query = query.where(Payment.member_id == member_id)
         if status:
             query = query.where(Payment.payment_status == status)
+        if method:
+            query = query.where(Payment.payment_method == method)
         if date_from:
             query = query.where(Payment.payment_date >= date_from)
         if date_to:
@@ -73,6 +76,7 @@ class PaymentRepository:
         gym_id: UUID,
         member_id: UUID | None = None,
         status: PaymentStatus | None = None,
+        method: PaymentMethod | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> int:
@@ -83,6 +87,8 @@ class PaymentRepository:
             query = query.where(Payment.member_id == member_id)
         if status:
             query = query.where(Payment.payment_status == status)
+        if method:
+            query = query.where(Payment.payment_method == method)
         if date_from:
             query = query.where(Payment.payment_date >= date_from)
         if date_to:

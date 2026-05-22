@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
-from app.models.payment import PaymentStatus
+from app.models.payment import PaymentMethod, PaymentStatus
 from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse, PaymentUpdateRequest, VoidPaymentRequest
 from app.services.payment_service import PaymentService
 
@@ -39,6 +39,7 @@ async def list_payments(
     limit: int = Query(50, ge=1, le=100),
     member_id: UUID | None = Query(None),
     status: PaymentStatus | None = Query(None),
+    method: PaymentMethod | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     current_user: CurrentUser = Depends(get_current_user),
@@ -50,6 +51,7 @@ async def list_payments(
     Supports filtering by:
     - member_id: payments for a specific member
     - status: completed, pending, failed, refunded
+    - method: cash, upi, card, bank_transfer, other
     - date_from/date_to: date range
 
     All roles can view payments (read access).
@@ -61,6 +63,7 @@ async def list_payments(
         limit=limit,
         member_id=member_id,
         status=status,
+        method=method,
         date_from=date_from,
         date_to=date_to,
     )

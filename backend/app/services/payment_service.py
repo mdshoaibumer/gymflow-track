@@ -21,7 +21,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.core.events import emit, PaymentRecorded, MembershipRenewed
 from app.core.timezone import today_ist
 from app.models.member import Member
-from app.models.payment import Payment, PaymentStatus
+from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.gym_audit_log import GymAuditLog, GymAuditAction
 from app.repositories.member_repository import MemberRepository
 from app.repositories.payment_repository import PaymentRepository
@@ -266,14 +266,15 @@ class PaymentService:
         limit: int = 50,
         member_id: UUID | None = None,
         status: PaymentStatus | None = None,
+        method: PaymentMethod | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> PaymentListResponse:
         payments = await self.payment_repo.list_by_gym(
-            gym_id, skip, limit, member_id, status, date_from, date_to
+            gym_id, skip, limit, member_id, status, method, date_from, date_to
         )
         total = await self.payment_repo.count_by_gym(
-            gym_id, member_id, status, date_from, date_to
+            gym_id, member_id, status, method, date_from, date_to
         )
         return PaymentListResponse(payments=payments, total=total)
 
