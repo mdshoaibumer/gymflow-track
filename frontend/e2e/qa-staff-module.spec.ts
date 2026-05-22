@@ -223,17 +223,17 @@ test.describe("Staff Management", () => {
 
   test.describe("Non-Owner Access (RBAC)", () => {
     test("non-owner is redirected away from /staff", async ({ page }) => {
-      // Login as owner first to create admin user
+      // Login as owner first to create staff user
       await loginViaUI(page, OWNER_EMAIL);
 
-      const adminEmail = `admin_rbac_${RUN_ID}@testgym.com`;
+      const staffEmail = `staff_rbac_${RUN_ID}@testgym.com`;
       const resp = await page.request.post(`${API_BASE}/users`, {
         data: {
-          name: "Admin RBAC Test",
-          email: adminEmail,
+          name: "Staff RBAC Test",
+          email: staffEmail,
           phone: "9876505678",
           password: TEST_PASSWORD,
-          role: "admin",
+          role: "staff",
         },
       });
 
@@ -242,8 +242,8 @@ test.describe("Staff Management", () => {
         return;
       }
 
-      // Logout and login as admin
-      await loginViaUI(page, adminEmail);
+      // Logout and login as staff
+      await loginViaUI(page, staffEmail);
 
       // Navigate to /staff — should redirect to dashboard
       await page.goto("/staff");
@@ -254,17 +254,17 @@ test.describe("Staff Management", () => {
     test("sidebar does not show Staff link for non-owner", async ({
       page,
     }) => {
-      // Login as owner first to create admin user
+      // Login as owner first to create staff user
       await loginViaUI(page, OWNER_EMAIL);
 
-      const adminEmail = `admin_sidebar_${RUN_ID}@testgym.com`;
+      const staffEmail = `staff_sidebar_${RUN_ID}@testgym.com`;
       const resp = await page.request.post(`${API_BASE}/users`, {
         data: {
-          name: "Admin Sidebar Test",
-          email: adminEmail,
+          name: "Staff Sidebar Test",
+          email: staffEmail,
           phone: "9876506789",
           password: TEST_PASSWORD,
-          role: "admin",
+          role: "staff",
         },
       });
 
@@ -273,7 +273,7 @@ test.describe("Staff Management", () => {
         return;
       }
 
-      await loginViaUI(page, adminEmail);
+      await loginViaUI(page, staffEmail);
 
       const staffLink = page.locator("aside a", { hasText: "Staff" });
       await page.waitForTimeout(2000);

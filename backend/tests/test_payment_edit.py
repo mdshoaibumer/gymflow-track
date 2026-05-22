@@ -24,6 +24,7 @@ from app.models.member import Member, MembershipStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.subscription import BillingStatus, GymSubscription, PlanTier, SubscriptionPlan
 from app.models.user import User, UserRole
+from app.models.gym_audit_log import GymAuditLog, GymAuditAction
 
 
 pytestmark = pytest.mark.anyio
@@ -142,7 +143,7 @@ async def completed_payment(
 
 class TestEditPendingPayment:
     async def test_edit_amount(
-        self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
+        self, client: AsyncClient, db_session: AsyncSession, admin_headers: dict, pending_payment: Payment, payment_gym: Gym
     ):
         resp = await client.patch(
             f"/api/v1/payments/{pending_payment.id}",
@@ -151,6 +152,20 @@ class TestEditPendingPayment:
         )
         assert resp.status_code == 200
         assert resp.json()["amount_in_paise"] == 100000
+
+        # Check audit log
+        result = await db_session.execute(
+            sa.select(GymAuditLog).where(
+                GymAuditLog.gym_id == payment_gym.id,
+                GymAuditLog.entity_type == "payment",
+                GymAuditLog.entity_id == pending_payment.id,
+                GymAuditLog.action == GymAuditAction.PAYMENT_EDITED,
+            )
+        )
+        audit = result.scalar_one_or_none()
+        assert audit is not None
+        assert audit.old_data["amount_in_paise"] == 300000
+        assert audit.new_data["amount_in_paise"] == 100000
 
     async def test_edit_method(
         self, client: AsyncClient, admin_headers: dict, pending_payment: Payment
@@ -211,7 +226,7 @@ class TestEditPendingPayment:
 
 class TestEditCompletedPayment:
     async def test_edit_notes_allowed(
-        self, client: AsyncClient, admin_headers: dict, completed_payment: Payment
+        self, client: AsyncClient, db_session: AsyncSession, admin_headers: dict, completed_payment: Payment, payment_gym: Gym
     ):
         resp = await client.patch(
             f"/api/v1/payments/{completed_payment.id}",
@@ -220,6 +235,20 @@ class TestEditCompletedPayment:
         )
         assert resp.status_code == 200
         assert resp.json()["notes"] == "Updated note"
+
+        # Check audit log
+        result = await db_session.execute(
+            sa.select(GymAuditLog).where(
+                GymAuditLog.gym_id == payment_gym.id,
+                GymAuditLog.entity_type == "payment",
+                GymAuditLog.entity_id == completed_payment.id,
+                GymAuditLog.action == GymAuditAction.PAYMENT_EDITED,
+            )
+        )
+        audit = result.scalar_one_or_none()
+        assert audit is not None
+        assert audit.old_data["notes"] == "1 month plan"
+        assert audit.new_data["notes"] == "Updated note"
 
     async def test_edit_method_allowed(
         self, client: AsyncClient, admin_headers: dict, completed_payment: Payment

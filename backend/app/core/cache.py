@@ -176,7 +176,7 @@ def get_cache_backend() -> CacheBackend:
     global _cache
     if _cache is None:
         from app.core.config import settings
-        if settings.REDIS_URL and not settings.is_development:
+        if settings.REDIS_URL:
             try:
                 _cache = RedisCacheBackend(settings.REDIS_URL)
                 import logging

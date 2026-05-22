@@ -52,6 +52,9 @@ from app.models.user import User, UserRole
 _base_url, _db_name = settings.DATABASE_URL.rsplit("/", 1)
 TEST_DATABASE_URL = f"{_base_url}/gymflowtrack_test"
 
+# Force in-memory cache for all tests to match test assumptions and keep isolation
+settings.REDIS_URL = ""
+
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 

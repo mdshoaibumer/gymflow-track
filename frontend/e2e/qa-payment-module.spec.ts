@@ -1870,3 +1870,128 @@ test.describe("10. Payment After Auth Operations", () => {
     console.log(`Unauthenticated billing access: URL = ${url}`);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// 11. PAYMENT EDITING & AUDIT TRAILS E2E TESTS
+// ══════════════════════════════════════════════════════════════════════
+
+test.describe("11. Payment Editing & Audit Trails E2E Tests", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginUser(page, OWNER_EMAIL);
+  });
+
+  test("11.1 — Edit Pending Payment", async ({ page }) => {
+    await navigateToPayments(page);
+
+    // Record a pending payment
+    await page.getByRole("button", { name: /record payment/i }).click();
+    await expect(page.getByText("Record Payment").first()).toBeVisible({ timeout: 5000 });
+
+    const memberSearch = page.getByPlaceholder(/search by name or phone/i);
+    await memberSearch.fill(testMemberName.substring(0, 10));
+    await page.waitForTimeout(1000); // debounce
+
+    const memberOption = page.locator("button").filter({ hasText: testMemberName });
+    if (await memberOption.isVisible({ timeout: 5000 })) {
+      await memberOption.click();
+    }
+
+    await page.locator('input[type="number"]').fill("1255");
+    
+    // Status select is the second select element
+    const statusSelect = page.locator("select").nth(1);
+    await statusSelect.selectOption("pending");
+
+    await page.getByRole("button", { name: /record payment/i }).last().click();
+    await page.waitForTimeout(3000);
+    await takeScreenshot(page, "110-pending-payment-created");
+
+    // Locate the row with "1,255" and "Pending"
+    const row = page.locator("tr", { hasText: "Pending" }).filter({ hasText: "1,255" }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+
+    // Open action dropdown
+    await row.getByRole("button", { name: /actions/i }).click();
+    await page.waitForTimeout(500);
+
+    // Click Edit Payment
+    await page.getByRole("menuitem", { name: /edit payment/i }).click();
+    await expect(page.getByText("Edit Payment (Pending)").first()).toBeVisible({ timeout: 5000 });
+    await takeScreenshot(page, "111-edit-pending-modal-open");
+
+    // Modify fields
+    await page.locator("#edit-amount").fill("1355");
+    await page.locator("#edit-method").selectOption("upi");
+    await page.locator("#edit-notes").fill("Updated pending payment notes");
+
+    await page.getByRole("button", { name: /save changes/i }).click();
+    await page.waitForTimeout(3000);
+    await takeScreenshot(page, "112-pending-payment-edited");
+
+    // Verify row updates
+    const updatedRow = page.locator("tr", { hasText: "Pending" }).filter({ hasText: "1,355" }).first();
+    await expect(updatedRow).toBeVisible({ timeout: 10000 });
+    await expect(updatedRow.getByText(/upi/i)).toBeVisible();
+  });
+
+  test("11.2 — Edit Completed Payment", async ({ page }) => {
+    await navigateToPayments(page);
+
+    // Record a completed payment
+    await page.getByRole("button", { name: /record payment/i }).click();
+    await expect(page.getByText("Record Payment").first()).toBeVisible({ timeout: 5000 });
+
+    const memberSearch = page.getByPlaceholder(/search by name or phone/i);
+    await memberSearch.fill(testMemberName.substring(0, 10));
+    await page.waitForTimeout(1000); // debounce
+
+    const memberOption = page.locator("button").filter({ hasText: testMemberName });
+    if (await memberOption.isVisible({ timeout: 5000 })) {
+      await memberOption.click();
+    }
+
+    await page.locator('input[type="number"]').fill("1455");
+    
+    // Status select is the second select element
+    const statusSelect = page.locator("select").nth(1);
+    await statusSelect.selectOption("completed");
+
+    await page.getByRole("button", { name: /record payment/i }).last().click();
+    await page.waitForTimeout(3000);
+    await takeScreenshot(page, "113-completed-payment-created");
+
+    // Locate the row with "1,455" and "Completed"
+    const row = page.locator("tr", { hasText: "Completed" }).filter({ hasText: "1,455" }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+
+    // Open action dropdown
+    await row.getByRole("button", { name: /actions/i }).click();
+    await page.waitForTimeout(500);
+
+    // Click Edit Payment
+    await page.getByRole("menuitem", { name: /edit payment/i }).click();
+    await expect(page.getByText("Edit Payment (Completed)").first()).toBeVisible({ timeout: 5000 });
+    await takeScreenshot(page, "114-edit-completed-modal-open");
+
+    // Assert that the amount input field is disabled
+    const amountInput = page.locator("#edit-amount");
+    await expect(amountInput).toBeDisabled();
+
+    // Assert that edit-status is not visible
+    await expect(page.locator("#edit-status")).not.toBeVisible();
+
+    // Modify fields (only method and notes are editable)
+    await page.locator("#edit-method").selectOption("card");
+    await page.locator("#edit-notes").fill("Updated completed payment notes");
+
+    await page.getByRole("button", { name: /save changes/i }).click();
+    await page.waitForTimeout(3000);
+    await takeScreenshot(page, "115-completed-payment-edited");
+
+    // Verify row updates
+    const updatedRow = page.locator("tr", { hasText: "Completed" }).filter({ hasText: "1,455" }).first();
+    await expect(updatedRow).toBeVisible({ timeout: 10000 });
+    await expect(updatedRow.getByText(/card/i)).toBeVisible();
+  });
+});
+

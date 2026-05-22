@@ -66,7 +66,7 @@ export function CommandPalette() {
     { id: "reports", label: "Reports", icon: FileSpreadsheet, action: () => navigate("/reports"), group: "Navigation", keywords: "report export csv", roles: ["owner", "admin"] },
     { id: "equipment", label: "Equipment", icon: Wrench, action: () => navigate("/equipment"), group: "Navigation", keywords: "asset maintenance" },
     { id: "notifications", label: "Reminders", icon: Bell, action: () => navigate("/notifications"), group: "Navigation", keywords: "notification whatsapp sms" },
-    { id: "staff", label: "Staff Management", icon: ShieldCheck, action: () => navigate("/staff"), group: "Navigation", keywords: "user role admin", roles: ["owner"] },
+    { id: "staff", label: "Staff Management", icon: ShieldCheck, action: () => navigate("/staff"), group: "Navigation", keywords: "user role admin", roles: ["owner", "admin"] },
     { id: "billing", label: "Billing", icon: Receipt, action: () => navigate("/billing/manage"), group: "Navigation", keywords: "subscription plan", roles: ["owner"] },
     { id: "settings", label: "Settings", icon: Settings, action: () => navigate("/settings"), group: "Navigation", keywords: "gym config profile", roles: ["owner", "admin"] },
     { id: "setup", label: "Setup Wizard", icon: Rocket, action: () => navigate("/setup"), group: "Navigation", keywords: "onboard import", roles: ["owner", "admin"] },

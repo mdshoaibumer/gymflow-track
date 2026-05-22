@@ -426,7 +426,7 @@ class TestAuthenticationBypass:
             "/api/v1/attendance/today",
             "/api/v1/assets",
             "/api/v1/dashboard/metrics",
-            "/api/v1/users/",
+            "/api/v1/users",
         ]
         for url in endpoints:
             resp = await client.get(url)
@@ -498,7 +498,7 @@ class TestSensitiveDataExposure:
         self, client: AsyncClient, auth_headers: dict
     ):
         """User listing should not expose password hashes."""
-        resp = await client.get("/api/v1/users/", headers=auth_headers)
+        resp = await client.get("/api/v1/users", headers=auth_headers)
         assert resp.status_code == 200
         data_str = str(resp.json())
         assert "password_hash" not in data_str

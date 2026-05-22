@@ -23,9 +23,9 @@ export default function StaffPage() {
   const { user, isOwner, role, isLoading: authLoading } = useAuth();
   const usage = useUsageInfo();
 
-  // RBAC: Only owner can access this page
+  // RBAC: Only owner and admin can access this page
   useEffect(() => {
-    if (!authLoading && role && role !== "owner") {
+    if (!authLoading && role && role !== "owner" && role !== "admin") {
       router.replace("/dashboard");
     }
   }, [authLoading, role, router]);
@@ -143,7 +143,7 @@ export default function StaffPage() {
     );
   }
 
-  if (role !== "owner") {
+  if (role !== "owner" && role !== "admin") {
     return null;
   }
 
@@ -166,13 +166,15 @@ export default function StaffPage() {
             )}
           </p>
         </div>
-        <Button
-          onClick={() => setAddOpen(true)}
-          disabled={usage.isAtStaffLimit && !usage.isUnlimitedStaff}
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add Staff
-        </Button>
+        {isOwner && (
+          <Button
+            onClick={() => setAddOpen(true)}
+            disabled={usage.isAtStaffLimit && !usage.isUnlimitedStaff}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Staff
+          </Button>
+        )}
       </div>
 
       {/* Staff usage warning */}
@@ -226,7 +228,7 @@ export default function StaffPage() {
         <StaffEmptyState
           hasFilters={hasActiveFilters}
           onClearFilters={clearFilters}
-          onAddStaff={() => setAddOpen(true)}
+          onAddStaff={isOwner ? () => setAddOpen(true) : undefined}
         />
       ) : !isError ? (
         <StaffTable

@@ -14,13 +14,13 @@ import json
 import os
 
 # ── Environment setup (BEFORE any app imports) ─────────────────────────
-os.environ["APP_ENV"] = "development"
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///gymflow_dev.db"
-os.environ["DATABASE_URL_SYNC"] = "sqlite:///gymflow_dev.db"
-os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-manual-testing-only-32chars!"
-os.environ["RAZORPAY_KEY_ID"] = "mock"
-os.environ["RATE_LIMIT_AUTH"] = "1000"
-os.environ["RATE_LIMIT_API"] = "10000"
+os.environ.setdefault("APP_ENV", "development")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///gymflow_dev.db")
+os.environ.setdefault("DATABASE_URL_SYNC", "sqlite:///gymflow_dev.db")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-manual-testing-only-32chars!")
+os.environ.setdefault("RAZORPAY_KEY_ID", "mock")
+os.environ.setdefault("RATE_LIMIT_AUTH", "1000")
+os.environ.setdefault("RATE_LIMIT_API", "10000")
 
 # ── Monkey-patch PostgreSQL types for SQLite compatibility ─────────────
 import sqlalchemy

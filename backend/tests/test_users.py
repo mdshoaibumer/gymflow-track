@@ -22,12 +22,12 @@ from app.models.user import User, UserRole
 
 
 class TestListUsers:
-    """Test GET /api/v1/users/."""
+    """Test GET /api/v1/users."""
 
     async def test_owner_can_list_users(
         self, client: AsyncClient, auth_headers: dict
     ):
-        response = await client.get("/api/v1/users/", headers=auth_headers)
+        response = await client.get("/api/v1/users", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -35,22 +35,22 @@ class TestListUsers:
     async def test_admin_can_list_users(
         self, client: AsyncClient, admin_headers: dict
     ):
-        response = await client.get("/api/v1/users/", headers=admin_headers)
+        response = await client.get("/api/v1/users", headers=admin_headers)
         assert response.status_code == 200
 
     async def test_staff_cannot_list_users(
         self, client: AsyncClient, staff_headers: dict
     ):
-        response = await client.get("/api/v1/users/", headers=staff_headers)
+        response = await client.get("/api/v1/users", headers=staff_headers)
         assert response.status_code == 403
 
     async def test_unauthenticated_returns_401(self, client: AsyncClient):
-        response = await client.get("/api/v1/users/")
+        response = await client.get("/api/v1/users")
         assert response.status_code in (401, 403)
 
 
 class TestCreateUser:
-    """Test POST /api/v1/users/."""
+    """Test POST /api/v1/users."""
 
     async def test_owner_can_create_staff(
         self, client: AsyncClient, auth_headers: dict
@@ -63,7 +63,7 @@ class TestCreateUser:
             "role": "staff",
         }
         response = await client.post(
-            "/api/v1/users/", json=payload, headers=auth_headers
+            "/api/v1/users", json=payload, headers=auth_headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -83,7 +83,7 @@ class TestCreateUser:
             "role": "admin",
         }
         response = await client.post(
-            "/api/v1/users/", json=payload, headers=auth_headers
+            "/api/v1/users", json=payload, headers=auth_headers
         )
         assert response.status_code == 201
         assert response.json()["role"] == "admin"
@@ -100,7 +100,7 @@ class TestCreateUser:
             "role": "staff",
         }
         resp1 = await client.post(
-            "/api/v1/users/", json=payload, headers=auth_headers
+            "/api/v1/users", json=payload, headers=auth_headers
         )
         assert resp1.status_code == 201
 
@@ -112,7 +112,7 @@ class TestCreateUser:
             "role": "staff",
         }
         resp2 = await client.post(
-            "/api/v1/users/", json=payload2, headers=auth_headers
+            "/api/v1/users", json=payload2, headers=auth_headers
         )
         assert resp2.status_code == 409
 
@@ -127,7 +127,7 @@ class TestCreateUser:
             "role": "staff",
         }
         response = await client.post(
-            "/api/v1/users/", json=payload, headers=admin_headers
+            "/api/v1/users", json=payload, headers=admin_headers
         )
         assert response.status_code == 403
 
@@ -142,7 +142,7 @@ class TestCreateUser:
             "role": "staff",
         }
         response = await client.post(
-            "/api/v1/users/", json=payload, headers=staff_headers
+            "/api/v1/users", json=payload, headers=staff_headers
         )
         assert response.status_code == 403
 

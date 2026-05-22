@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
   { href: "/reports", label: "Reports", icon: FileSpreadsheet, roles: ["owner", "admin"], requiredFeature: "export_reports" },
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/notifications", label: "Reminders", icon: Bell },
-  { href: "/staff", label: "Staff", icon: ShieldCheck, roles: ["owner"] },
+  { href: "/staff", label: "Staff", icon: ShieldCheck, roles: ["owner", "admin"] },
   { href: "/billing/manage", label: "Billing", icon: Receipt, roles: ["owner"] },
   { href: "/setup", label: "Setup Wizard", icon: Rocket, roles: ["owner", "admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },

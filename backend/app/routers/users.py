@@ -18,7 +18,7 @@ from app.services.user_service import UserService
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("", response_model=list[UserResponse])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -30,7 +30,7 @@ async def list_users(
     return await service.list_users(current_user.gym_id, skip=skip, limit=limit)
 
 
-@router.post("/", response_model=UserResponse, status_code=201)
+@router.post("", response_model=UserResponse, status_code=201)
 async def create_user(
     data: CreateUserRequest,
     current_user: CurrentUser = Depends(require_owner),
