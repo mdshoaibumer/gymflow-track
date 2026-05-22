@@ -19,10 +19,12 @@ export function useAuth() {
 
     const state = useAuthStore.getState();
 
-    // Skip /auth/me if profile was already fetched AND user data exists.
-    // This prevents duplicate calls when multiple components mount useAuth,
-    // but allows re-fetch after login (where _profileFetched was reset).
-    if (state._profileFetched && state.user) return;
+    // Skip /auth/me if auth state has already been determined this session.
+    // This prevents: 1) duplicate calls when multiple components mount useAuth,
+    // 2) race condition where logout clears cookies but useAuth re-validates
+    //    before the browser fully processes the Set-Cookie deletion.
+    // Re-fetch is allowed after login (where _profileFetched is reset to false).
+    if (state._profileFetched) return;
     store.markProfileFetched();
 
     // Validate session with server — the HttpOnly cookie is sent automatically.

@@ -182,23 +182,32 @@ async def logout(
     """
     Revoke refresh tokens and terminate sessions.
 
-    If refresh_token is provided (body or cookie), revokes only that token
-    (single-device logout). Otherwise, revokes ALL refresh tokens
-    (logout all devices).
-    """
-    # Prefer body token, then cookie, then None (revoke all)
-    refresh_tok = None
-    if data and data.refresh_token:
-        refresh_tok = data.refresh_token
-    elif request.cookies.get(REFRESH_COOKIE):
-        refresh_tok = request.cookies.get(REFRESH_COOKIE)
+    Normal logout (default): revokes the current device's refresh token.
+    The short-lived access token expires naturally. Client-side guards
+    prevent re-validation race conditions.
 
+    Logout all devices (all_devices=true): revokes ALL refresh tokens and
+    sets sessions_revoked_at to immediately invalidate access tokens on
+    every device.
+    """
     service = AuthService(db)
-    await service.logout(
-        user_id=current_user.user_id,
-        refresh_token=refresh_tok,
-    )
-    # Clear HttpOnly cookies from browser
+
+    if data and data.all_devices:
+        # Explicit "logout everywhere" — revoke all tokens + invalidate sessions
+        await service.logout(user_id=current_user.user_id, refresh_token=None)
+    else:
+        # Single-device logout: prefer body token, then cookie
+        refresh_tok = None
+        if data and data.refresh_token:
+            refresh_tok = data.refresh_token
+        elif request.cookies.get(REFRESH_COOKIE):
+            refresh_tok = request.cookies.get(REFRESH_COOKIE)
+        await service.logout(
+            user_id=current_user.user_id,
+            refresh_token=refresh_tok,
+        )
+
+    # Clear HttpOnly cookies from this browser
     clear_auth_cookies(response)
     return {"message": "Logged out successfully"}
 

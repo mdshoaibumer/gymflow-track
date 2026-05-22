@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             isOwner: false,
             isAdminOrAbove: false,
             isSuperAdmin: false,
-            _profileFetched: false,
+            _profileFetched: true,  // Prevent useAuth from re-calling /auth/me
             isLoading: false,
           });
         } else if (msg.type === "login" && msg.user) {
@@ -188,7 +188,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       isOwner: false,
       isAdminOrAbove: false,
       isSuperAdmin: false,
-      _profileFetched: false,
+      _profileFetched: true,  // Prevent useAuth from re-calling /auth/me after logout
       isLoading: false,
     });
   },

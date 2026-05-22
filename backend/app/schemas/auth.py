@@ -52,6 +52,7 @@ class RefreshRequest(BaseModel):
 class LogoutRequest(BaseModel):
     """Optional: specific refresh token to revoke. If omitted, revokes all."""
     refresh_token: str | None = None
+    all_devices: bool = False
 
 
 class ForgotPasswordRequest(BaseModel):

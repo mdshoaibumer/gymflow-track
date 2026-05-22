@@ -380,8 +380,17 @@ class AuthService:
     async def logout(self, user_id: UUID, refresh_token: str | None = None) -> None:
         """
         Revoke refresh tokens for the user.
-        If refresh_token is provided, revoke only that token.
-        Otherwise, revoke ALL refresh tokens (logout all devices).
+        If refresh_token is provided, revoke only that token (single-device logout).
+        Otherwise, revoke ALL refresh tokens and invalidate all access tokens
+        (logout all devices).
+
+        Single-device logout: revokes only the given refresh token. The access
+        token expires naturally (short-lived). The frontend prevents re-validation
+        race conditions client-side via _profileFetched guard.
+
+        All-device logout: revokes all refresh tokens AND sets sessions_revoked_at
+        in DB so that _check_user_active immediately rejects any in-flight access
+        tokens on other devices.
         """
         if refresh_token:
             token_hash = _hash_token(refresh_token)
@@ -395,6 +404,7 @@ class AuthService:
             )
             logger.info(f"Revoked refresh token for user {user_id}")
         else:
+            # Revoke ALL refresh tokens
             await self.db.execute(
                 update(RefreshToken)
                 .where(
@@ -403,12 +413,20 @@ class AuthService:
                 )
                 .values(revoked=True)
             )
-            logger.info(f"Revoked ALL refresh tokens for user {user_id}")
-            
-            # Invalidate cache
+            # Set sessions_revoked_at in DB so _check_user_active rejects
+            # access tokens issued before this moment on ALL devices.
+            now = datetime.now(timezone.utc)
+            await self.db.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(sessions_revoked_at=now)
+            )
+            # Update cache immediately for fast enforcement
+            now_ts = int(now.timestamp())
             cache = get_cache_backend()
-            cache.delete(f"user_active:{user_id}")
-            cache.delete(f"user_revoked_at:{user_id}")
+            cache.set(f"user_active:{user_id}", "1", 120)
+            cache.set(f"user_revoked_at:{user_id}", str(now_ts), 120)
+            logger.info(f"Revoked ALL refresh tokens and sessions for user {user_id}")
 
     async def forgot_password(self, email: str) -> str:
         """
