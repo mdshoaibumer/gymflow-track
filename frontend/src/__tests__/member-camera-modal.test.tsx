@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemberCameraModal } from "@/components/members/member-camera-modal";
 
 // Mock getUserMedia
@@ -44,8 +44,10 @@ describe("MemberCameraModal", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders modal with header when open", () => {
-    render(<MemberCameraModal {...defaultProps} />);
+  it("renders modal with header when open", async () => {
+    await act(async () => {
+      render(<MemberCameraModal {...defaultProps} />);
+    });
     expect(screen.getByText("Capture Member Photo")).toBeInTheDocument();
   });
 
@@ -103,8 +105,10 @@ describe("MemberCameraModal", () => {
     });
   });
 
-  it("renders close button and calls onClose", () => {
-    render(<MemberCameraModal {...defaultProps} />);
+  it("renders close button and calls onClose", async () => {
+    await act(async () => {
+      render(<MemberCameraModal {...defaultProps} />);
+    });
     const closeBtn = screen.getByLabelText("Close modal");
     fireEvent.click(closeBtn);
     expect(defaultProps.onClose).toHaveBeenCalled();
