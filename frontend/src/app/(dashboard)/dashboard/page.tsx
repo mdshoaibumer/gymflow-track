@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   TrendingUp,
   AlertCircle,
@@ -23,6 +23,8 @@ import { DashboardCard } from "@/components/layout/dashboard-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChartTooltipContent } from "@/components/dashboard/charts/chart-tooltip";
+import { LiveIndicator } from "@/components/live-indicator";
 import { formatPaise } from "@/lib/utils";
 import {
   useDashboardMetrics,
@@ -44,19 +46,20 @@ const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 },
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
   },
 };
 
 const item = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 28 } },
 };
 
 export default function DashboardPage() {
   const [filters, setFilters] = useState<DashboardFilterState>(() =>
     getFilterState("30d"),
   );
+  const prefersReducedMotion = useReducedMotion();
 
   const handleFilterChange = useCallback((state: DashboardFilterState) => {
     setFilters(state);
@@ -87,7 +90,7 @@ export default function DashboardPage() {
       {/* Header + Filters */}
       <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight font-display">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight font-display text-gradient-subtle">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Welcome back! Here&apos;s your gym analytics overview.
           </p>
@@ -122,7 +125,7 @@ export default function DashboardPage() {
           <DashboardCard
             title="In Gym Now"
             value={String(attendanceStats.currently_in_gym)}
-            description="Active right now"
+            description={<LiveIndicator label="Active right now" />}
             icon={Dumbbell}
           />
           <DashboardCard
@@ -136,56 +139,81 @@ export default function DashboardPage() {
 
       {/* Attendance Trend Chart */}
       <motion.div variants={item}>
-        <Card>
+        <Card className="chart-container-premium">
           <CardHeader>
             <CardTitle>Attendance Trend</CardTitle>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 11 }}
-                    className="fill-muted-foreground"
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    className="fill-muted-foreground"
-                    allowDecimals={false}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "10px",
-                      fontSize: "12px",
-                      boxShadow: "0 4px 16px -4px rgba(0, 0, 0, 0.08)",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="visits"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#colorVisits)"
-                    animationBegin={200}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <>
+                {/* Screen-reader summary (UI/UX Pro Max: screen-reader-summary) */}
+                <p className="sr-only" aria-live="polite">
+                  Attendance trend chart for the last 14 days showing {chartData.length} data points.
+                </p>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart
+                    data={chartData}
+                    role="img"
+                    aria-label={`Attendance trend chart with ${chartData.length} data points`}
+                  >
+                    <defs>
+                      <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                        <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity={0.08} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11 }}
+                      className="fill-muted-foreground"
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      className="fill-muted-foreground"
+                      allowDecimals={false}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      content={<ChartTooltipContent />}
+                      cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="visits"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      fill="url(#colorVisits)"
+                      animationBegin={prefersReducedMotion ? 0 : 100}
+                      animationDuration={prefersReducedMotion ? 0 : 400}
+                      animationEasing="ease-out"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+                {/* Accessible data table (UI/UX Pro Max: data-table for screen readers) */}
+                <table className="sr-only" role="table" aria-label="Attendance trend data">
+                  <caption>Daily attendance for the last 14 days</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">Visits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.map((d) => (
+                      <tr key={d.date}>
+                        <td>{d.date}</td>
+                        <td>{d.visits}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             ) : (
               <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
                 No attendance data yet
