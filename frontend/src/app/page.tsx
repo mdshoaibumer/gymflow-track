@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollReveal, StaggerContainer, staggerItemVariants } from "@/components/scroll-reveal";
+import { AnimatedCounter } from "@/components/animated-counter";
+import { FloatingOrbs } from "@/components/floating-orbs";
 
 const features = [
   { icon: Users, title: "Member Management", desc: "Add, search, and manage all your gym members. Track plans, status, and history in one place." },
@@ -82,7 +84,7 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-xl font-bold text-gradient font-display">
             GymFlow Track
@@ -138,68 +140,88 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_50%_at_50%_40%,hsl(var(--primary)/0.12),transparent)]" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(25%_25%_at_75%_75%,hsl(var(--accent-warm)/0.06),transparent)]" />
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-24 sm:py-32 text-center">
+        {/* Premium multi-layer background */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_50%_at_50%_35%,hsl(var(--primary)/0.14),transparent)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(30%_30%_at_80%_70%,hsl(var(--accent-warm)/0.08),transparent)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(25%_40%_at_20%_80%,hsl(262_83%_68%/0.06),transparent)]" />
+        {/* Subtle grid pattern for depth */}
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(hsl(var(--border)/0.15)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.15)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black_20%,transparent_100%)]" />
+        {/* Floating gradient orbs — GPU composited */}
+        <FloatingOrbs />
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-28 sm:py-36 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Badge variant="secondary" className="mb-6 text-xs">
-              <Zap className="mr-1 h-3 w-3" /> 30-day free trial — no credit card required
+            <Badge variant="secondary" className="mb-6 text-xs px-4 py-1.5 border border-primary/10 shadow-soft">
+              <Zap className="mr-1.5 h-3 w-3 text-primary" /> 30-day free trial — no credit card required
             </Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl font-display">
               Gym Management
               <br />
               <span className="text-gradient">Made Simple</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed sm:text-xl">
               Members, payments, attendance & WhatsApp reminders — all in one place.
               Built for Indian gym owners who want to spend less time on admin and more time training.
             </p>
             <div className="mt-10 flex flex-wrap gap-4 justify-center">
-              <Button asChild size="lg" className="text-base px-8">
-                <Link href="/register">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild className="text-base px-8">
-                <Link href="/login">Login to Dashboard</Link>
-              </Button>
+              <div className="press-scale">
+                <Button asChild size="lg" className="text-base px-8 animate-glow-breathe">
+                  <Link href="/register">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="press-scale">
+                <Button variant="outline" size="lg" asChild className="text-base px-8">
+                  <Link href="/login">Login to Dashboard</Link>
+                </Button>
+              </div>
             </div>
           </motion.div>
 
           {/* Product screenshot placeholder */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            initial={{ opacity: 0, y: 48, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-16 max-w-4xl"
+            transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto mt-20 max-w-4xl"
           >
-            <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-b from-muted to-background shadow-2xl overflow-hidden">
-              <div className="flex items-center gap-2 border-b bg-muted px-4 py-3">
+            <div className="relative rounded-2xl border border-primary/15 bg-gradient-to-b from-card to-background shadow-2xl overflow-hidden ring-1 ring-black/[0.03] dark:ring-white/[0.03]">
+              {/* Glow behind the card */}
+              <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-primary/10 via-transparent to-transparent -z-10 blur-sm" />
+              <div className="flex items-center gap-2 border-b bg-muted/50 px-4 py-3">
                 <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-500" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
+                  <div className="h-3 w-3 rounded-full bg-red-400/80 shadow-inner" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-400/80 shadow-inner" />
+                  <div className="h-3 w-3 rounded-full bg-green-400/80 shadow-inner" />
                 </div>
-                <div className="ml-3 flex-1 rounded-md bg-background/80 px-3 py-1">
+                <div className="ml-3 flex-1 rounded-lg bg-background/80 px-3 py-1.5 border border-border/50">
                   <span className="text-xs text-muted-foreground">app.gymflowtrack.in/dashboard</span>
                 </div>
               </div>
-              <div className="p-6 sm:p-8 bg-background/50">
+              <div className="p-6 sm:p-8 bg-background/50 backdrop-blur-sm">
                 <div className="grid gap-4 sm:grid-cols-3 mb-6">
                   {[
-                    { label: "Active Members", value: "248", trend: "+12%" },
-                    { label: "Revenue (May)", value: "₹3,45,600", trend: "+8%" },
-                    { label: "Check-ins Today", value: "67", trend: "+5%" },
+                    { label: "Active Members", value: 248, prefix: "", suffix: "", trend: "+12%" },
+                    { label: "Revenue (May)", value: 345600, prefix: "₹", suffix: "", trend: "+8%", format: (n: number) => n.toLocaleString("en-IN") },
+                    { label: "Check-ins Today", value: 67, prefix: "", suffix: "", trend: "+5%" },
                   ].map((stat) => (
-                    <div key={stat.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
-                      <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-                      <p className="text-xs text-green-600 dark:text-green-400">{stat.trend} vs last month</p>
+                    <div key={stat.label} className="rounded-xl border border-border/60 bg-card p-4 shadow-soft hover:shadow-soft-md transition-shadow duration-300 group">
+                      <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                      <p className="mt-1.5 text-2xl font-bold tracking-tight">
+                        <AnimatedCounter
+                          value={stat.value}
+                          prefix={stat.prefix}
+                          suffix={stat.suffix}
+                          duration={1400}
+                          formatFn={stat.format}
+                        />
+                      </p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">{stat.trend} vs last month</p>
                     </div>
                   ))}
                 </div>
@@ -222,7 +244,7 @@ export default function HomePage() {
                           className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary/70 animate-chart-grow"
                           style={{ height: `${bar.h}%`, animationDelay: `${0.3 + i * 0.1}s`, animationFillMode: "backwards" }}
                         />
-                        <span className="text-[10px] text-muted-foreground mt-1">{bar.month}</span>
+                        <span className="text-[11px] text-muted-foreground mt-1">{bar.month}</span>
                       </div>
                     ))}
                   </div>
@@ -260,7 +282,9 @@ export default function HomePage() {
       </ScrollReveal>
 
       {/* Features */}
-      <section id="features" className="py-20 sm:py-28">
+      <section id="features" className="py-20 sm:py-28 content-auto relative">
+        {/* Animated gradient divider at top */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 max-w-xl gradient-divider" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
@@ -277,12 +301,12 @@ export default function HomePage() {
           <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
               <motion.div key={f.title} variants={staggerItemVariants}>
-                <Card className="h-full hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
+                <Card className="h-full card-premium group">
                   <CardContent className="p-6">
-                    <div className="rounded-lg bg-primary/10 p-2.5 w-fit">
+                    <div className="card-premium-icon rounded-xl bg-primary/8 p-3 w-fit transition-all duration-300 ease-spring">
                       <f.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="mt-4 font-semibold">{f.title}</h3>
+                    <h3 className="mt-4 font-semibold tracking-tight">{f.title}</h3>
                     <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                       {f.desc}
                     </p>
@@ -312,12 +336,15 @@ export default function HomePage() {
             {plans.map((plan) => (
               <motion.div key={plan.name} variants={staggerItemVariants}>
               <Card
-                className={`relative flex flex-col h-full ${plan.popular ? "border-primary shadow-glow ring-1 ring-primary scale-[1.02]" : "hover:shadow-soft-md hover:-translate-y-0.5"}`}
+                className={`relative flex flex-col h-full transition-all duration-300 ease-spring ${plan.popular ? "border-primary/30 shadow-glow ring-1 ring-primary/20 scale-[1.03] hover:shadow-[0_0_32px_-4px_hsl(var(--primary)/0.2)]" : "hover:shadow-soft-md hover:-translate-y-1 hover:border-primary/10"}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="px-3">Most Popular</Badge>
-                  </div>
+                  <>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="px-3 shadow-soft bg-gradient-premium text-white border-0">Most Popular</Badge>
+                    </div>
+                    <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
+                  </>
                 )}
                 <CardHeader>
                   <CardTitle className="text-lg">{plan.name}</CardTitle>
@@ -352,7 +379,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 sm:py-28">
+      <section id="testimonials" className="py-20 sm:py-28 content-auto">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
@@ -368,19 +395,24 @@ export default function HomePage() {
           <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-3">
             {testimonials.map((t) => (
               <motion.div key={t.name} variants={staggerItemVariants}>
-                <Card className="h-full">
+                <Card className="h-full hover:shadow-soft-md transition-all duration-300 ease-spring hover:-translate-y-1 group">
                   <CardContent className="p-6">
                     <div className="flex gap-0.5 mb-4">
                       {Array.from({ length: t.rating }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400 drop-shadow-sm" />
                       ))}
                     </div>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                    <p className="text-sm leading-relaxed text-muted-foreground italic">
                       &ldquo;{t.text}&rdquo;
                     </p>
-                    <div className="mt-4 border-t pt-4">
-                      <p className="text-sm font-semibold">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.gym}</p>
+                    <div className="mt-5 border-t pt-4 flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-accent-warm/20 flex items-center justify-center ring-2 ring-background shadow-soft">
+                        <span className="text-xs font-bold text-primary">{t.name[0]}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t.name}</p>
+                        <p className="text-xs text-muted-foreground">{t.gym}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -391,7 +423,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t bg-muted/30 py-20 sm:py-28">
+      <section id="faq" className="border-t bg-muted/30 py-20 sm:py-28 content-auto">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
@@ -401,15 +433,15 @@ export default function HomePage() {
             </div>
           </ScrollReveal>
 
-          <div className="mt-12 space-y-4">
+          <div className="mt-12 space-y-3">
             {faqs.map((faq, idx) => (
               <ScrollReveal key={faq.q} delay={idx * 0.05}>
-                <details className="group rounded-lg border bg-card">
-                  <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium">
+                <details className="group rounded-xl border bg-card hover:border-primary/15 hover:shadow-soft transition-all duration-300 ease-spring">
+                  <summary className="flex cursor-pointer items-center justify-between p-5 text-sm font-medium select-none">
                     {faq.q}
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 ease-spring group-open:rotate-180 group-hover:text-primary" />
                   </summary>
-                  <div className="border-t px-4 py-3 text-sm text-muted-foreground">
+                  <div className="border-t px-5 py-4 text-sm text-muted-foreground leading-relaxed animate-content-show">
                     {faq.a}
                   </div>
                 </details>
@@ -420,18 +452,21 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 sm:py-28">
+      <section className="py-20 sm:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_50%_at_50%_50%,hsl(var(--primary)/0.06),transparent)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(30%_40%_at_70%_70%,hsl(var(--accent-warm)/0.04),transparent)]" />
+        <FloatingOrbs />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
           <ScrollReveal>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
               Ready to streamline your gym?
             </h2>
-            <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
+            <p className="mt-4 text-muted-foreground max-w-lg mx-auto leading-relaxed">
               Join 500+ gym owners who stopped using spreadsheets and started using GymFlow Track.
               Free trial, no credit card required.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              <Button asChild size="lg" className="text-base px-8">
+            <div className="mt-10 flex flex-wrap gap-4 justify-center">
+              <Button asChild size="lg" className="text-base px-8 animate-glow-breathe">
                 <Link href="/register">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />

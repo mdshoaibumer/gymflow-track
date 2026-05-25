@@ -44,7 +44,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
-      <body className={`${inter.className} min-h-screen`} suppressHydrationWarning>
+      <body className={`${inter.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>
