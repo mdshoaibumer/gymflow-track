@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { type Table, type ColumnDef, flexRender } from "@tanstack/react-table";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ResponsiveDataTableProps<T> {
@@ -34,7 +35,7 @@ export function ResponsiveDataTable<T>({
           renderMobileCard ? "hidden md:block" : "block",
         )}
       >
-        <table className="w-full text-sm" role="table">
+        <table className="w-full text-sm table-striped" role="table">
           {caption && (
             <caption className="sr-only">{caption}</caption>
           )}
@@ -45,7 +46,7 @@ export function ResponsiveDataTable<T>({
                   <th
                     key={header.id}
                     scope="col"
-                    className="px-4 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     {header.isPlaceholder
                       ? null
@@ -66,17 +67,20 @@ export function ResponsiveDataTable<T>({
                     ))}
                   </tr>
                 ))
-              : rows.map((row) => (
-                  <tr
+              : rows.map((row, index) => (
+                  <motion.tr
                     key={row.id}
-                    className="border-b transition-colors duration-150 hover:bg-muted/50 last:border-b-0"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
+                    className="border-b transition-colors duration-150 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.05] last:border-b-0"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
-                  </tr>
+                  </motion.tr>
                 ))}
           </tbody>
         </table>
@@ -96,7 +100,16 @@ export function ResponsiveDataTable<T>({
                   <div className="h-3 w-1/3 animate-shimmer rounded-md" />
                 </div>
               ))
-            : rows.map((row, i) => renderMobileCard(row.original, i))}
+            : rows.map((row, i) => (
+                <motion.div
+                  key={row.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.04, 0.4), type: "spring" as const, stiffness: 300, damping: 28 }}
+                >
+                  {renderMobileCard(row.original, i)}
+                </motion.div>
+              ))}
         </div>
       )}
     </>

@@ -82,19 +82,19 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg max-w-lg [&>button]:hidden">
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3">
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      <DialogContent className="overflow-hidden p-0 shadow-soft-xl max-w-lg [&>button]:hidden glass-premium border-border/30">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3">
+          <div className="flex items-center border-b border-border/50 px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 text-primary/60" />
             <Command.Input
               placeholder="Type a command or search…"
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <kbd className="ml-2 hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <kbd className="ml-2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border/50 bg-muted/50 px-1.5 font-mono text-[11px] font-medium text-muted-foreground">
               ESC
             </kbd>
           </div>
-          <Command.List className="max-h-[300px] overflow-y-auto overflow-x-hidden p-2">
+          <Command.List className="max-h-[320px] overflow-y-auto overflow-x-hidden p-2">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
               No results found.
             </Command.Empty>
@@ -107,10 +107,12 @@ export function CommandPalette() {
                       key={item.id}
                       value={`${item.label} ${item.keywords || ""}`}
                       onSelect={item.action}
-                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                      className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none transition-colors duration-150 aria-selected:bg-primary/8 aria-selected:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent/60"
                     >
-                      <item.icon className="mr-3 h-4 w-4 text-muted-foreground" />
-                      <span>{item.label}</span>
+                      <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-aria-selected:bg-primary/10 transition-colors">
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium">{item.label}</span>
                     </Command.Item>
                   ))}
               </Command.Group>

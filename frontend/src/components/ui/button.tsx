@@ -4,23 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-200 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium cursor-pointer select-none ring-offset-background transition-all duration-200 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90 hover:shadow-glow active:scale-[0.98]",
-        destructive: "bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90 hover:shadow-soft-md active:scale-[0.98]",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:shadow-soft active:scale-[0.98]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98]",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default: "bg-primary text-primary-foreground shadow-soft btn-glow hover:bg-primary/90 hover:shadow-glow hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] active:shadow-soft",
+        destructive: "bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90 hover:shadow-soft-md hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97]",
+        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary/20 hover:shadow-soft hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97]",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97]",
+        ghost: "hover:bg-accent hover:text-accent-foreground active:scale-[0.96]",
         link: "text-primary underline-offset-4 hover:underline",
-        warm: "bg-gradient-warm text-white shadow-soft hover:shadow-glow-warm hover:brightness-110 active:scale-[0.98]",
+        warm: "bg-gradient-warm text-white shadow-soft btn-glow hover:shadow-glow-warm hover:brightness-110 hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97]",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3 text-xs",
-        lg: "h-11 rounded-lg px-6",
-        icon: "h-10 w-10",
+        default: "h-11 px-5 py-2",
+        sm: "h-10 rounded-md px-3.5 text-xs",
+        lg: "h-12 rounded-xl px-7 text-[15px]",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

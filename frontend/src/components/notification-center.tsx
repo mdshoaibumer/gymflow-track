@@ -50,19 +50,19 @@ export function NotificationCenter() {
         <Button variant="ghost" size="icon" className="relative h-8 w-8" aria-label="Notifications">
           <Bell className="h-4 w-4" />
           {totalUnread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground animate-fade-in">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold text-destructive-foreground shadow-[0_0_8px_rgba(239,68,68,0.4)] animate-breathe">
               {totalUnread > 99 ? "99+" : totalUnread}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0" forceMount>
+      <DropdownMenuContent align="end" className="w-80 p-0 glass-premium border-border/40 shadow-soft-xl" forceMount>
         <div className="flex items-center justify-between px-4 py-3">
           <h4 className="text-sm font-semibold">Notifications</h4>
           {stats && (
             <div className="flex gap-2">
               {stats.sent_today > 0 && (
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge variant="secondary" className="text-[11px] bg-success/10 text-success border-success/20">
                   {stats.sent_today} sent today
                 </Badge>
               )}
@@ -128,10 +128,10 @@ function NotificationItem({ notification }: { notification: Notification }) {
         <p className="text-sm font-medium truncate">{memberName}</p>
         <p className="text-xs text-muted-foreground">{config.label}</p>
         <div className="mt-1 flex items-center gap-2">
-          <span className={`text-[10px] font-medium capitalize ${statusColor}`}>
+          <span className={`text-[11px] font-medium capitalize ${statusColor}`}>
             {notification.status}
           </span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {formatTimeAgo(notification.scheduled_for)}
           </span>
         </div>

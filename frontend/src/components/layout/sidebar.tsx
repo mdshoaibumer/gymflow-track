@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import { useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -76,7 +77,7 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
     <>
       <div className={cn("flex h-14 items-center justify-between", collapsed ? "px-2" : "px-5")}>
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-glow">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-glow transition-all duration-300 group-hover:shadow-[0_0_16px_-2px_hsl(var(--primary)/0.3)] group-hover:scale-105">
             <span className="text-sm font-bold text-primary-foreground">G</span>
           </div>
           {!collapsed && (
@@ -111,14 +112,14 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
               onClick={() => setSidebarOpen(false)}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
-                "before:absolute before:inset-0 before:rounded-lg before:transition-all before:duration-200",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-250 ease-spring",
+                "before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-250 before:ease-spring",
                 collapsed && "justify-center px-2",
                 isActive
-                  ? "text-primary before:bg-primary/8 dark:before:bg-primary/10"
+                  ? "text-primary before:bg-primary/8 dark:before:bg-primary/12 before:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.12),0_0_8px_-2px_hsl(var(--primary)/0.1)]"
                   : isLocked
                     ? "text-muted-foreground/50 hover:before:bg-accent/50 before:bg-transparent"
-                    : "text-muted-foreground hover:text-foreground hover:before:bg-accent before:bg-transparent"
+                    : "text-muted-foreground hover:text-foreground hover:before:bg-accent/80 before:bg-transparent"
               )}
             >
               <item.icon className={cn("relative z-[1] h-4 w-4 shrink-0", isActive && "text-primary")} />
@@ -133,7 +134,7 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
       <div className="border-t px-4 py-3">
         {!collapsed && (
           <div className="rounded-lg bg-muted/50 px-3 py-2">
-            <p className="text-[11px] text-muted-foreground text-center font-medium">
+            <p className="text-xs text-muted-foreground text-center font-medium">
               GymFlow Track v1.0
             </p>
           </div>
@@ -146,12 +147,59 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
 export function Sidebar() {
   const { sidebarOpen, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapse } = useUIStore();
 
+  // Mobile swipe-to-open from left edge
+  useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+    const EDGE_WIDTH = 24;
+    const SWIPE_THRESHOLD = 60;
+
+    function handleTouchStart(e: TouchEvent) {
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      if (startX > EDGE_WIDTH) return; // Only detect from left edge
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+      // Horizontal swipe right from left edge
+      if (deltaX > SWIPE_THRESHOLD && deltaX > deltaY) {
+        setSidebarOpen(true);
+      }
+    }
+
+    // Only on mobile
+    const mql = window.matchMedia("(max-width: 767px)");
+    if (mql.matches) {
+      document.addEventListener("touchstart", handleTouchStart, { passive: true });
+      document.addEventListener("touchend", handleTouchEnd, { passive: true });
+    }
+
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [setSidebarOpen]);
+
+  // Swipe-to-close handler for the open sidebar
+  const handleDragEnd = useCallback(
+    (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (info.offset.x < -80 || info.velocity.x < -300) {
+        setSidebarOpen(false);
+      }
+    },
+    [setSidebarOpen]
+  );
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden flex-col border-r bg-sidebar md:flex transition-[width] duration-200 ease-spring",
+          "hidden flex-col border-r border-border/50 sidebar-premium dark:dark-depth-sidebar md:flex transition-[width] duration-300 ease-spring",
           sidebarCollapsed ? "w-[60px]" : "w-[260px]"
         )}
       >
@@ -162,7 +210,7 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebarCollapse}
-            className="h-7 w-7 w-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+            className="h-7 w-full flex items-center justify-center text-muted-foreground hover:text-foreground"
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? (
@@ -191,7 +239,11 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "spring", bounce: 0.08, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-card shadow-soft-lg md:hidden"
+              drag="x"
+              dragConstraints={{ left: -280, right: 0 }}
+              dragElastic={0.1}
+              onDragEnd={handleDragEnd}
+              className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-card shadow-soft-lg md:hidden touch-pan-y"
             >
               <SidebarContent showClose />
             </motion.aside>

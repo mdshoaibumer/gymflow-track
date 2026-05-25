@@ -40,7 +40,9 @@ export function Header() {
     : "GF";
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-card/60 backdrop-blur-md px-4 md:px-6">
+    <header className="flex h-14 items-center justify-between border-b border-border/40 bg-card/60 backdrop-blur-2xl backdrop-saturate-[1.6] px-4 md:px-6 transition-colors duration-200 relative">
+      {/* Subtle bottom shine line */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/10 to-transparent pointer-events-none" />
       {/* Mobile menu button */}
       <Button
         variant="ghost"
@@ -55,7 +57,7 @@ export function Header() {
       {/* Mobile logo */}
       <div className="flex items-center gap-2 md:hidden">
         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-          <span className="text-[10px] font-bold text-primary-foreground">G</span>
+          <span className="text-[11px] font-bold text-primary-foreground">G</span>
         </div>
         <span className="text-sm font-semibold text-foreground">GymFlow</span>
       </div>
@@ -63,16 +65,16 @@ export function Header() {
       {/* Desktop search trigger */}
       <Button
         variant="outline"
-        className="hidden md:inline-flex h-8 w-60 justify-start gap-2 text-xs text-muted-foreground border-border/60 bg-muted/40 hover:bg-muted/60"
+        className="hidden md:inline-flex h-9 w-72 justify-start gap-2 text-xs text-muted-foreground border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/20 hover:shadow-[0_0_16px_-4px_hsl(var(--primary)/0.1)] transition-all duration-300 ease-spring rounded-xl"
         onClick={() => {
           document.dispatchEvent(
             new KeyboardEvent("keydown", { key: "k", metaKey: true }),
           );
         }}
       >
-        <Search className="h-3.5 w-3.5" />
-        <span>Search…</span>
-        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-2xs font-medium text-muted-foreground">
+        <Search className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="text-muted-foreground/70">Search anything…</span>
+        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border/50 bg-background/80 px-1.5 font-mono text-2xs font-medium text-muted-foreground/60">
           ⌘K
         </kbd>
       </Button>
@@ -86,7 +88,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1" aria-label="User menu">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-semibold">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
