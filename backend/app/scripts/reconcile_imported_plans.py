@@ -85,7 +85,7 @@ async def run_plan_reconciliation():
     else:
         print("Running in LIVE mode. Changes will be committed.\n")
 
-    invoice_service = InvoiceService(session=None) # We will set session dynamically
+    invoice_service = InvoiceService(db=None) # We will set session dynamically
     
     async with async_session_factory() as session:
         invoice_service.db = session
