@@ -1,6 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.gymflowtrack.in",
+        pathname: "/uploads/**",
+      },
+    ],
+  },
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
     let apiOrigin = "http://localhost:8000";

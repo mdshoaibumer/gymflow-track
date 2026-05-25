@@ -56,17 +56,19 @@ describe("MembershipDistributionChart", () => {
 
   it("renders legend items for each plan", () => {
     render(<MembershipDistributionChart />);
-    expect(screen.getByText("Monthly")).toBeInTheDocument();
-    expect(screen.getByText("Quarterly")).toBeInTheDocument();
-    expect(screen.getByText("Annual")).toBeInTheDocument();
+    expect(screen.getAllByText("Monthly").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Quarterly").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Annual").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("navigates to members page with plan filter when legend item is clicked", () => {
+  it("toggles plan visibility when legend item is clicked", () => {
     render(<MembershipDistributionChart />);
-    const monthlyItem = screen.getByText("Monthly").closest("[class*=cursor-pointer]");
+    const monthlyItems = screen.getAllByText("Monthly");
+    const monthlyItem = monthlyItems[0].closest("[class*=cursor-pointer]");
     if (monthlyItem) {
       fireEvent.click(monthlyItem);
-      expect(mockPush).toHaveBeenCalledWith("/members?plan=Monthly");
+      // After clicking, the legend item should have opacity-40 (hidden)
+      expect(monthlyItem.className).toContain("opacity-40");
     }
   });
 

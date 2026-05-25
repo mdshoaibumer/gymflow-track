@@ -77,6 +77,7 @@ vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, ...props }: Record<string, unknown>) => <div {...props}>{children}</div>,
   },
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import MembersPage from "@/app/(dashboard)/members/page";

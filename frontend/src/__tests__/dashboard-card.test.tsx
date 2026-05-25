@@ -1,7 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { DashboardCard } from "@/components/layout/dashboard-card";
 import { Users } from "lucide-react";
+
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      <div className={className} {...props}>{children}</div>
+    ),
+  },
+}));
+
+import { DashboardCard } from "@/components/layout/dashboard-card";
 
 describe("DashboardCard", () => {
   it("renders title, value, and description", () => {
@@ -52,7 +61,7 @@ describe("DashboardCard", () => {
       />
     );
 
-    expect(screen.getByText("+12%")).toBeInTheDocument();
+    expect(screen.getByText(/↑.*12%/)).toBeInTheDocument();
   });
 
   it("renders negative trend", () => {
@@ -65,7 +74,7 @@ describe("DashboardCard", () => {
       />
     );
 
-    expect(screen.getByText("-5%")).toBeInTheDocument();
+    expect(screen.getByText(/↓.*5%/)).toBeInTheDocument();
   });
 
   it("applies custom className", () => {
@@ -73,7 +82,8 @@ describe("DashboardCard", () => {
       <DashboardCard title="Test" value="1" description="d" className="custom-card" />
     );
 
-    // The card wrapper should have the custom class
-    expect(container.firstChild).toHaveClass("custom-card");
+    // The Card inside the motion wrapper should have the custom class
+    const card = container.querySelector(".custom-card");
+    expect(card).toBeInTheDocument();
   });
 });

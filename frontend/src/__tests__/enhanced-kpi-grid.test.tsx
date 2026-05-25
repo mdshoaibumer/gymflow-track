@@ -4,6 +4,11 @@ import { render, screen } from "@testing-library/react";
 // Mock framer-motion
 vi.mock("framer-motion", () => ({
   useInView: () => true,
+  motion: {
+    div: ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      <div className={className} {...props}>{children}</div>
+    ),
+  },
 }));
 
 // Mock matchMedia

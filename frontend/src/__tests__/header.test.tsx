@@ -71,7 +71,7 @@ describe("Header", () => {
 
   it("renders desktop search trigger", () => {
     render(<Header />);
-    expect(screen.getByText("Search…")).toBeInTheDocument();
+    expect(screen.getByText("Search anything…")).toBeInTheDocument();
   });
 
   it("shows user info in dropdown when clicked", async () => {

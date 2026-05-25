@@ -42,6 +42,7 @@ vi.mock("@/lib/api", () => ({
 
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  LayoutGroup: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   motion: {
     div: ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
       <div className={className} {...props}>{children}</div>
@@ -51,6 +52,8 @@ vi.mock("framer-motion", () => ({
     ),
   },
   useInView: () => true,
+  useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
+  useSpring: () => ({ get: () => 0 }),
 }));
 
 // Mock child components that aren't under test
