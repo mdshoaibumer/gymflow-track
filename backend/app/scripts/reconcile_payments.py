@@ -105,9 +105,15 @@ async def reconcile_payments():
                         payment.payment_date = member.membership_start
                         has_mismatch = True
                         
-                    # Check/Update notes to include plan & dates if missing
-                    expected_notes = f"Plan: {member.membership_plan or 'N/A'} | Duration: {member.membership_start or 'N/A'} to {member.membership_end or 'N/A'}"
-                    if not payment.notes or "Plan:" not in payment.notes:
+                    # Check/Update notes to include plan & dates if missing or changed
+                    plan_str = member.membership_plan or 'N/A'
+                    expected_notes = f"Plan: {plan_str} | Duration: {member.membership_start or 'N/A'} to {member.membership_end or 'N/A'}"
+                    if (not payment.notes 
+                        or "Plan:" not in payment.notes 
+                        or f"Plan: {plan_str}" not in payment.notes
+                        or (member.membership_start and str(member.membership_start) not in payment.notes)
+                        or (member.membership_end and str(member.membership_end) not in payment.notes)):
+                        print(f"[MISMATCH] {member.name} - Plan or dates mismatch in notes. Updating notes to: '{expected_notes}'")
                         payment.notes = expected_notes
                         has_mismatch = True
                         
