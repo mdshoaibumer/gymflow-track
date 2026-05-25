@@ -61,7 +61,7 @@ export function ResponsiveDataTable<T>({
                   <tr key={`skel-${i}`}>
                     {columns.map((_, ci) => (
                       <td key={ci} className="px-4 py-3">
-                        <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                        <div className="h-4 w-full animate-shimmer rounded-md" />
                       </td>
                     ))}
                   </tr>
@@ -69,7 +69,7 @@ export function ResponsiveDataTable<T>({
               : rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b transition-colors duration-150 hover:bg-muted/40 last:border-b-0"
+                    className="border-b transition-colors duration-150 hover:bg-muted/50 last:border-b-0"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3">
@@ -89,11 +89,11 @@ export function ResponsiveDataTable<T>({
             ? Array.from({ length: loadingRows }).map((_, i) => (
                 <div
                   key={`mskel-${i}`}
-                  className="rounded-lg border bg-card p-4 space-y-3"
+                  className="rounded-xl border bg-card p-4 space-y-3 shadow-soft"
                 >
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                  <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
-                  <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-2/3 animate-shimmer rounded-md" />
+                  <div className="h-3 w-1/2 animate-shimmer rounded-md" />
+                  <div className="h-3 w-1/3 animate-shimmer rounded-md" />
                 </div>
               ))
             : rows.map((row, i) => renderMobileCard(row.original, i))}

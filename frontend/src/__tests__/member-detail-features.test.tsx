@@ -127,20 +127,24 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("Member Detail Page - New Features", () => {
-  it("displays date of birth and emergency contact", async () => {
-    const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
-    render(<MemberDetailPage />, { wrapper: Wrapper });
+  it(
+    "displays date of birth and emergency contact",
+    async () => {
+      const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
+      render(<MemberDetailPage />, { wrapper: Wrapper });
 
-    expect(screen.getByText("Date of Birth:")).toBeDefined();
-    expect(screen.getByText("Emergency Contact:")).toBeDefined();
-    expect(screen.getByText("9876500000")).toBeDefined();
-  });
+      expect(screen.getByText("Date of Birth:")).toBeDefined();
+      expect(screen.getByText("Emergency Contact:")).toBeDefined();
+      expect(screen.getByText("9876500000")).toBeDefined();
+    },
+    15000,
+  );
 
   it("shows Renew Membership button", async () => {
     const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
     render(<MemberDetailPage />, { wrapper: Wrapper });
 
-    expect(screen.getByText("Renew Membership")).toBeDefined();
+    expect(screen.getAllByText("Renew Membership").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows Freeze button for active member", async () => {

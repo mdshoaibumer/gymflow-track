@@ -18,6 +18,8 @@
     --muted-foreground: 240 4% 46%;
     --accent: 240 5% 96%;
     --accent-foreground: 240 6% 10%;
+    --accent-warm: 25 95% 53%;
+    --accent-warm-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 71% 45%;
@@ -39,9 +41,9 @@
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 240 8% 8%;
+    --card: 240 8% 10%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 8% 8%;
+    --popover: 240 8% 10%;
     --popover-foreground: 0 0% 98%;
     --primary: 262 83% 63%;
     --primary-foreground: 0 0% 100%;
@@ -51,14 +53,16 @@
     --muted-foreground: 240 5% 72%;
     --accent: 240 4% 16%;
     --accent-foreground: 0 0% 98%;
+    --accent-warm: 25 95% 60%;
+    --accent-warm-foreground: 0 0% 100%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     --success: 142 71% 35%;
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 40%;
     --warning-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
+    --border: 240 4% 18%;
+    --input: 240 4% 18%;
     --ring: 262 83% 63%;
     --chart-1: 262 83% 63%;
     --chart-2: 160 60% 45%;
@@ -84,10 +88,21 @@
   }
 }
 
-/* Premium typography system */
+/* Premium typography system with display font */
 @layer base {
   h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
     letter-spacing: -0.025em;
+  }
+  h1 {
+    font-size: clamp(2rem, 4vw + 0.5rem, 3.5rem);
+    line-height: 1.1;
+    font-weight: 800;
+  }
+  h2 {
+    font-size: clamp(1.75rem, 3vw + 0.5rem, 2.5rem);
+    line-height: 1.15;
+    font-weight: 700;
   }
 }
 
@@ -121,18 +136,6 @@
       opacity: 1;
       transform: translateY(0);
     }
-  }
-}
-
-/* Respect reduced motion preference globally */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 }
 
@@ -196,12 +199,52 @@
   }
 }
 
-/* Improved focus visibility for accessibility */
+/* Skeleton-to-content crossfade transition */
+@layer utilities {
+  .animate-content-show {
+    animation: contentShow 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes contentShow {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+}
+
+/* Gradient text utility */
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-warm)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(262 83% 48%));
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-warm)));
+  }
+}
+
+/* Dark mode enhanced card borders and shadows */
 @layer base {
-  :focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-    border-radius: 4px;
+  .dark .card-elevated {
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+    border-color: hsl(var(--border));
+  }
+
+  .dark .card-elevated:hover {
+    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    border-color: hsl(var(--primary) / 0.2);
   }
 }
 
@@ -210,25 +253,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Premium scrollbar styling */
-@layer base {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.3);
-  }
-}
-
-/* Reduce motion for users who prefer it */
+/* Respect reduced motion preference globally */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

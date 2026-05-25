@@ -49,7 +49,7 @@ export function UsageProgressCard({
         : "text-muted-foreground";
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-xl border bg-card p-5 shadow-soft hover:shadow-soft-md transition-all duration-200">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">

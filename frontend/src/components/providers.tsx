@@ -37,7 +37,10 @@ export function Providers({ children }: { children: ReactNode }) {
           closeButton
           duration={4000}
           toastOptions={{
-            className: "text-sm",
+            className: "text-sm font-medium shadow-soft-lg rounded-xl border",
+            style: {
+              padding: "14px 16px",
+            },
           }}
         />
         {/* Live region for screen readers to announce dynamic updates */}

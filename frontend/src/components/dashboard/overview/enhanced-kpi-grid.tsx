@@ -119,8 +119,8 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
   );
 
   return (
-    <Card className="group hover:shadow-soft-md transition-all duration-200">
-      <CardContent className="p-4">
+    <Card className="group hover:shadow-soft-md transition-all duration-200 ease-spring">
+      <CardContent className="p-4 animate-content-show">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate pr-2">
             {kpi.label}

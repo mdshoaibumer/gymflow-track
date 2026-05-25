@@ -114,7 +114,7 @@ export default function SubscriptionsPage() {
               const StatusIcon = config.icon;
 
               return (
-                <Card key={gym.id} className="overflow-hidden transition-shadow hover:shadow-md">
+                <Card key={gym.id} className="overflow-hidden hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>

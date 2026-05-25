@@ -78,8 +78,8 @@ describe("ResponsiveDataTable", () => {
   it("renders loading skeletons when isLoading", () => {
     const { container } = render(<TestWrapper isLoading />);
 
-    const pulsingElements = container.querySelectorAll("[class*='animate-pulse']");
-    expect(pulsingElements.length).toBeGreaterThan(0);
+    const shimmerElements = container.querySelectorAll("[class*='animate-shimmer']");
+    expect(shimmerElements.length).toBeGreaterThan(0);
   });
 
   it("renders mobile cards when renderMobileCard is provided", () => {

@@ -91,7 +91,7 @@ export function LockedFeatureCard({ feature, compact = false }: LockedFeatureCar
         <div className="border-t bg-muted/30 px-8 py-4">
           <Link
             href="/billing/manage"
-            className="group flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="group flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-200 ease-spring hover:bg-primary/90 hover:shadow-glow active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Upgrade to {planLabel}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

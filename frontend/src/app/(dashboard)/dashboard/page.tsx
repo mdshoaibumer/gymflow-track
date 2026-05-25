@@ -87,7 +87,7 @@ export default function DashboardPage() {
       {/* Header + Filters */}
       <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight font-display">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Welcome back! Here&apos;s your gym analytics overview.
           </p>
@@ -180,6 +180,9 @@ export default function DashboardPage() {
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     fill="url(#colorVisits)"
+                    animationBegin={200}
+                    animationDuration={800}
+                    animationEasing="ease-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -329,7 +332,7 @@ export default function DashboardPage() {
         {/* Dues */}
         {metrics && metrics.pending_dues_count > 0 && (
           <Link href="/payments?status=pending">
-            <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20 cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
               <CardContent className="p-4">
                 <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">
                   <AlertCircle className="inline h-4 w-4 mr-1" />
@@ -346,7 +349,7 @@ export default function DashboardPage() {
         {/* Expired */}
         {metrics && metrics.expired_members > 0 && (
           <Link href="/members?status=expired">
-            <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
               <CardContent className="p-4">
                 <p className="text-sm font-semibold text-red-800 dark:text-red-400">
                   <AlertCircle className="inline h-4 w-4 mr-1" />

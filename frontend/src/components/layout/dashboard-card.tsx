@@ -24,28 +24,30 @@ export function DashboardCard({
 }: DashboardCardProps) {
   if (loading) {
     return (
-      <Card className={className}>
+      <Card className={cn("overflow-hidden", className)}>
         <CardContent className="p-5">
-          <Skeleton className="h-4 w-24 mb-3" />
-          <Skeleton className="h-7 w-20 mb-2" />
-          <Skeleton className="h-3 w-32" />
+          <div className="animate-pulse">
+            <Skeleton className="h-4 w-24 mb-3" />
+            <Skeleton className="h-7 w-20 mb-2" />
+            <Skeleton className="h-3 w-32" />
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={cn("group hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200", className)}>
-      <CardContent className="p-5">
+    <Card className={cn("group hover:shadow-soft-md dark:hover:shadow-dark-soft-md hover:-translate-y-0.5 transition-all duration-200 ease-spring overflow-hidden", className)}>
+      <CardContent className="p-5 animate-content-show">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
           {Icon && (
-            <div className="rounded-lg bg-primary/8 p-2 group-hover:bg-primary/12 transition-colors duration-200">
+            <div className="rounded-lg bg-primary/8 p-2 group-hover:bg-primary/12 group-hover:scale-110 transition-all duration-200">
               <Icon className="h-4 w-4 text-primary" />
             </div>
           )}
         </div>
-        <p className="mt-3 text-2xl font-bold tracking-tight">{value}</p>
+        <p className="mt-3 text-2xl font-bold tracking-tight font-display">{value}</p>
         <div className="mt-1.5 flex items-center gap-2">
           {trend && (
             <span

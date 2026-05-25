@@ -84,7 +84,7 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-bold text-primary">
+          <Link href="/" className="text-xl font-bold text-gradient font-display">
             GymFlow Track
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm">
@@ -139,6 +139,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_50%_at_50%_40%,hsl(var(--primary)/0.12),transparent)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(25%_25%_at_75%_75%,hsl(var(--accent-warm)/0.06),transparent)]" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-24 sm:py-32 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -148,10 +149,10 @@ export default function HomePage() {
             <Badge variant="secondary" className="mb-6 text-xs">
               <Zap className="mr-1 h-3 w-3" /> 30-day free trial — no credit card required
             </Badge>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl font-display">
               Gym Management
               <br />
-              <span className="text-primary">Made Simple</span>
+              <span className="text-gradient">Made Simple</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
               Members, payments, attendance & WhatsApp reminders — all in one place.
@@ -215,11 +216,11 @@ export default function HomePage() {
                       { month: "Mar", h: 70 },
                       { month: "Apr", h: 82 },
                       { month: "May", h: 100 },
-                    ].map((bar) => (
+                    ].map((bar, i) => (
                       <div key={bar.month} className="flex-1 flex flex-col items-center justify-end h-full">
                         <div
-                          className="w-full rounded-t-sm bg-primary"
-                          style={{ height: `${bar.h}%` }}
+                          className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary/70 animate-chart-grow"
+                          style={{ height: `${bar.h}%`, animationDelay: `${0.3 + i * 0.1}s`, animationFillMode: "backwards" }}
                         />
                         <span className="text-[10px] text-muted-foreground mt-1">{bar.month}</span>
                       </div>
@@ -263,7 +264,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
                 Everything your gym needs
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
@@ -276,7 +277,7 @@ export default function HomePage() {
           <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
               <motion.div key={f.title} variants={staggerItemVariants}>
-                <Card className="h-full transition-shadow hover:shadow-md">
+                <Card className="h-full hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
                   <CardContent className="p-6">
                     <div className="rounded-lg bg-primary/10 p-2.5 w-fit">
                       <f.icon className="h-5 w-5 text-primary" />
@@ -298,7 +299,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
                 Simple, transparent pricing
               </h2>
               <p className="mt-4 text-muted-foreground">
@@ -311,7 +312,7 @@ export default function HomePage() {
             {plans.map((plan) => (
               <motion.div key={plan.name} variants={staggerItemVariants}>
               <Card
-                className={`relative flex flex-col h-full ${plan.popular ? "border-primary shadow-lg ring-1 ring-primary" : ""}`}
+                className={`relative flex flex-col h-full ${plan.popular ? "border-primary shadow-glow ring-1 ring-primary scale-[1.02]" : "hover:shadow-soft-md hover:-translate-y-0.5"}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -355,7 +356,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
                 Loved by gym owners
               </h2>
               <p className="mt-4 text-muted-foreground">
@@ -394,7 +395,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
                 Frequently asked questions
               </h2>
             </div>
@@ -422,7 +423,7 @@ export default function HomePage() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center">
           <ScrollReveal>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-display">
               Ready to streamline your gym?
             </h2>
             <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
@@ -449,7 +450,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 sm:grid-cols-4">
             <div className="sm:col-span-2">
-              <Link href="/" className="text-xl font-bold text-primary">
+              <Link href="/" className="text-xl font-bold text-gradient font-display">
                 GymFlow Track
               </Link>
               <p className="mt-2 text-sm text-muted-foreground max-w-xs">

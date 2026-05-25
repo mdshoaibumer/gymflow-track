@@ -428,7 +428,7 @@ export default function PaymentsPage() {
             {payments.map((payment) => (
               <Card
                 key={payment.id}
-                className={`transition-shadow hover:shadow-md ${
+                className={`hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200 ${
                   payment.payment_status === "refunded" ? "opacity-60" : ""
                 }`}
               >

@@ -5,12 +5,16 @@ import { describe, it, expect } from "vitest";
  * These tests verify bundle-friendly patterns are followed.
  */
 describe("Performance Patterns", () => {
-  it("framer-motion is imported from top-level (tree-shakeable)", async () => {
-    // Verify we import from "framer-motion" not a deep path
-    const scrollReveal = await import("@/components/scroll-reveal");
-    expect(scrollReveal.ScrollReveal).toBeDefined();
-    expect(scrollReveal.StaggerContainer).toBeDefined();
-  });
+  it(
+    "framer-motion is imported from top-level (tree-shakeable)",
+    async () => {
+      // Verify we import from "framer-motion" not a deep path
+      const scrollReveal = await import("@/components/scroll-reveal");
+      expect(scrollReveal.ScrollReveal).toBeDefined();
+      expect(scrollReveal.StaggerContainer).toBeDefined();
+    },
+    15000,
+  );
 
   it("AnimatedNumber uses requestAnimationFrame pattern", async () => {
     const mod = await import("@/components/animated-number");

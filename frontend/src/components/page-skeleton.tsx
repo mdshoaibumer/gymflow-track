@@ -19,7 +19,7 @@ export function PageSkeleton({
   rows = 5,
 }: PageSkeletonProps) {
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in" role="status" aria-label="Loading content">
       {/* Header skeleton */}
       <div className="space-y-2.5">
         <Skeleton className="h-7 w-44" />

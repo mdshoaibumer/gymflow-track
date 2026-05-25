@@ -152,7 +152,8 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
               stroke="hsl(var(--chart-1))"
               strokeWidth={2}
               fill="url(#revenueGradient)"
-              animationDuration={800}
+              animationDuration={1000}
+              animationBegin={200}
               animationEasing="ease-out"
             />
           </AreaChart>

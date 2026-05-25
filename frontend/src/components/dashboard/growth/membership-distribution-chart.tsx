@@ -66,7 +66,8 @@ export function MembershipDistributionChart() {
                 outerRadius={90}
                 paddingAngle={2}
                 dataKey="value"
-                animationDuration={800}
+                animationDuration={1000}
+                animationBegin={200}
                 animationEasing="ease-out"
                 onClick={(_, index) => {
                   const plan = chartData[index]?.name;
@@ -105,7 +106,7 @@ export function MembershipDistributionChart() {
             <div
               key={d.name}
               onClick={() => router.push(`/members?plan=${encodeURIComponent(d.name)}`)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors duration-150 cursor-pointer"
             >
               <div
                 className="h-3 w-3 rounded-full flex-shrink-0"

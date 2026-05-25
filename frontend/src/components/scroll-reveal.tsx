@@ -10,6 +10,7 @@ interface ScrollRevealProps {
   direction?: "up" | "down" | "left" | "right";
   duration?: number;
   once?: boolean;
+  threshold?: number;
 }
 
 const directionOffsets = {
@@ -31,9 +32,10 @@ export function ScrollReveal({
   direction = "up",
   duration = 0.5,
   once = true,
+  threshold,
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once, margin: "-60px" });
+  const isInView = useInView(ref, { once, margin: threshold ? `${-threshold}px` : "-80px" });
 
   const offset = directionOffsets[direction];
 
@@ -58,18 +60,21 @@ interface StaggerContainerProps {
   children: ReactNode;
   className?: string;
   staggerDelay?: number;
+  threshold?: number;
 }
 
 /**
  * Container that staggers children animation on scroll into view.
+ * Higher threshold prevents overlap with other stagger groups.
  */
 export function StaggerContainer({
   children,
   className,
   staggerDelay = 0.08,
+  threshold,
 }: StaggerContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-40px" });
+  const isInView = useInView(ref, { once: true, margin: threshold ? `${-threshold}px` : "-60px" });
 
   return (
     <motion.div
@@ -81,7 +86,7 @@ export function StaggerContainer({
         hidden: { opacity: 0 },
         show: {
           opacity: 1,
-          transition: { staggerChildren: staggerDelay },
+          transition: { staggerChildren: staggerDelay, delayChildren: 0.1 },
         },
       }}
     >

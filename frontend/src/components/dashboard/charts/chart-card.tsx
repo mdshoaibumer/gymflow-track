@@ -43,7 +43,9 @@ export function ChartCard({
         ) : empty ? (
           <ChartEmpty message={emptyMessage} />
         ) : (
-          children
+          <div className="animate-content-show">
+            {children}
+          </div>
         )}
       </CardContent>
     </Card>
