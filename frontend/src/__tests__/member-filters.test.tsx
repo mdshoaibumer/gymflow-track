@@ -47,6 +47,16 @@ vi.mock("@/lib/membership-plans", () => ({
   ],
 }));
 
+vi.mock("@/hooks/use-membership-plans", () => ({
+  useMembershipPlans: () => ({
+    data: [
+      { id: "1", name: "Monthly", duration_months: 1, amount: 1000 },
+      { id: "2", name: "Quarterly", duration_months: 3, amount: 2500 },
+    ],
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/store/auth-store", () => ({
   useAuthStore: () => "mock-token",
 }));

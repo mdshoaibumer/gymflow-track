@@ -18,6 +18,11 @@ vi.mock("@/lib/membership-plans", () => ({
   calculateEndDate: () => null,
 }));
 
+// Mock use-membership-plans hook
+vi.mock("@/hooks/use-membership-plans", () => ({
+  useMembershipPlans: () => ({ data: [], isLoading: false }),
+}));
+
 // Mock unsaved changes hook
 vi.mock("@/hooks/use-unsaved-changes", () => ({
   useUnsavedChanges: () => {},

@@ -13,15 +13,13 @@ Tests:
 
 from uuid import uuid4
 
-import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import get_cache_backend
 from app.core.security import create_access_token, hash_password
 from app.models.gym import Gym
-from app.models.membership_plan import GymMembershipPlan
-from app.models.subscription import BillingStatus, GymSubscription, PlanTier, SubscriptionPlan
+from app.models.subscription import BillingStatus, GymSubscription, SubscriptionPlan
 from app.models.user import User, UserRole
 
 

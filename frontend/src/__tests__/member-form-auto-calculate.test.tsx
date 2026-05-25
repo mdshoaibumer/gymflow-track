@@ -28,6 +28,18 @@ vi.mock("@/lib/membership-plans", () => ({
   }),
 }));
 
+// Mock use-membership-plans hook
+vi.mock("@/hooks/use-membership-plans", () => ({
+  useMembershipPlans: () => ({
+    data: [
+      { id: "plan-1", name: "Monthly", duration_months: 1, amount: 1000 },
+      { id: "plan-3", name: "Quarterly", duration_months: 3, amount: 2500 },
+      { id: "plan-12", name: "Annual", duration_months: 12, amount: 8000 },
+    ],
+    isLoading: false,
+  }),
+}));
+
 // Mock unsaved changes hook
 vi.mock("@/hooks/use-unsaved-changes", () => ({
   useUnsavedChanges: () => {},
