@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -82,7 +83,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontSize: {
-        "2xs": ["0.65rem", { lineHeight: "1rem" }],
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
         // Fluid typography for headings
         "fluid-4xl": ["clamp(2rem, 4vw + 0.5rem, 3.5rem)", { lineHeight: "1.1" }],
         "fluid-3xl": ["clamp(1.75rem, 3vw + 0.5rem, 2.5rem)", { lineHeight: "1.15" }],
@@ -92,12 +93,15 @@ const config: Config = {
         "soft": "0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 12px -4px rgba(0, 0, 0, 0.04)",
         "soft-md": "0 4px 16px -4px rgba(0, 0, 0, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04)",
         "soft-lg": "0 8px 32px -8px rgba(0, 0, 0, 0.12), 0 4px 16px -4px rgba(0, 0, 0, 0.06)",
-        "glow": "0 0 20px -4px hsl(var(--primary) / 0.15)",
+        "soft-xl": "0 16px 48px -12px rgba(0, 0, 0, 0.15), 0 8px 24px -8px rgba(0, 0, 0, 0.08)",
+        "glow": "0 0 20px -4px hsl(var(--primary) / 0.18), 0 0 8px -2px hsl(var(--primary) / 0.1)",
         "glow-warm": "0 0 20px -4px hsl(var(--accent-warm) / 0.2)",
-        // Dark mode enhanced shadows
-        "dark-soft": "0 2px 8px -2px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.03)",
-        "dark-soft-md": "0 4px 16px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.04)",
-        "dark-glow": "0 0 24px -4px hsl(var(--primary) / 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+        "glow-lg": "0 0 40px -8px hsl(var(--primary) / 0.2), 0 0 16px -4px hsl(var(--primary) / 0.1)",
+        // Dark mode enhanced shadows with stronger depth
+        "dark-soft": "0 2px 10px -2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+        "dark-soft-md": "0 4px 20px -4px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.06)",
+        "dark-soft-lg": "0 8px 32px -8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.07)",
+        "dark-glow": "0 0 24px -4px hsl(var(--primary) / 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.06)",
       },
       keyframes: {
         "accordion-down": {
@@ -144,6 +148,33 @@ const config: Config = {
           from: { transform: "scaleY(0)", transformOrigin: "bottom" },
           to: { transform: "scaleY(1)", transformOrigin: "bottom" },
         },
+        "orbit": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "25%": { transform: "translate(10px, -15px) scale(1.05)" },
+          "50%": { transform: "translate(-5px, 10px) scale(0.95)" },
+          "75%": { transform: "translate(-10px, -5px) scale(1.02)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 20px -4px hsl(var(--primary) / 0.15)" },
+          "50%": { boxShadow: "0 0 30px -2px hsl(var(--primary) / 0.25)" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.92)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "slide-down-fade": {
+          from: { opacity: "0", transform: "translateY(-8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "breathe": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.8" },
+          "50%": { transform: "scale(1.05)", opacity: "1" },
+        },
+        "border-flow": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -156,14 +187,22 @@ const config: Config = {
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
         "gradient-x": "gradient-x 3s ease infinite",
         "slide-up-fade": "slide-up-fade 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-        "chart-grow": "chart-grow 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+        "chart-grow": "chart-grow 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
+        "orbit-slow": "orbit 12s ease-in-out infinite",
+        "orbit-medium": "orbit 8s ease-in-out infinite reverse",
+        "orbit-fast": "orbit 6s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "scale-in": "scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-down-fade": "slide-down-fade 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+        "breathe": "breathe 3s ease-in-out infinite",
+        "border-flow": "border-flow 4s ease infinite",
       },
       transitionTimingFunction: {
         "ease-spring": "cubic-bezier(0.16, 1, 0.3, 1)",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;
