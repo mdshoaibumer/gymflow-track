@@ -20,6 +20,7 @@ from app.models.notification import Notification
 from app.models.asset import Asset, MaintenanceRecord
 from app.models.member_invoice import MemberInvoice
 from app.models.whatsapp_config import WhatsAppConfig
+from app.models.membership_plan import GymMembershipPlan
 
 __all__ = [
     "BaseModel",
@@ -47,4 +48,5 @@ __all__ = [
     "MaintenanceRecord",
     "MemberInvoice",
     "WhatsAppConfig",
+    "GymMembershipPlan",
 ]

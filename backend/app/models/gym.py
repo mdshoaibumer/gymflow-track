@@ -20,3 +20,4 @@ class Gym(BaseModel):
     # Always load related data explicitly via joinedload/selectinload in queries.
     users = relationship("User", back_populates="gym", lazy="raise")
     members = relationship("Member", back_populates="gym", lazy="raise")
+    membership_plans = relationship("GymMembershipPlan", back_populates="gym", lazy="raise")

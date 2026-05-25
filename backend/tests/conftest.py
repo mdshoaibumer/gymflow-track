@@ -42,6 +42,7 @@ from app.models.notification import Notification  # noqa: F401 — ensure model 
 from app.models.attendance import Attendance  # noqa: F401 — ensure model is registered
 from app.models.asset import Asset, MaintenanceRecord  # noqa: F401 — ensure model is registered
 from app.models.feedback import Feedback  # noqa: F401 — ensure model is registered
+from app.models.membership_plan import GymMembershipPlan  # noqa: F401 — ensure model is registered
 from app.models.subscription import (  # noqa: F401
     BillingStatus, GymSubscription, Invoice, PlanTier, SubscriptionPlan,
 )
