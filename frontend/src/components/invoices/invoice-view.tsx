@@ -60,6 +60,8 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
             <img
               src={getFullAssetUrl(invoice.gym_logo_url)!}
               alt={invoice.gym_name}
+              width={64}
+              height={64}
               className="h-16 mx-auto mb-2 object-contain"
             />
           )}

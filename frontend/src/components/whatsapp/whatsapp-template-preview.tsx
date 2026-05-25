@@ -39,7 +39,7 @@ export function WhatsAppTemplatePreview({
         <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
           {resolved}
         </p>
-        <p className="text-[10px] text-muted-foreground text-right mt-1">
+        <p className="text-[11px] text-muted-foreground text-right mt-1">
           {new Date().toLocaleTimeString("en-IN", {
             hour: "2-digit",
             minute: "2-digit",

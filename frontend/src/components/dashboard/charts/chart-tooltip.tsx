@@ -25,25 +25,25 @@ export function ChartTooltipContent({
   const displayLabel = labelFormatter ? labelFormatter(label ?? "") : label;
 
   return (
-    <div className="rounded-lg border bg-card px-3 py-2 shadow-lg">
+    <div className="animate-scale-in rounded-xl border border-border/50 bg-card/95 backdrop-blur-xl px-4 py-3 shadow-soft-lg dark:shadow-dark-soft-lg dark:ring-1 dark:ring-white/[0.06]">
       {displayLabel && (
-        <p className="text-xs font-medium text-muted-foreground mb-1.5">
+        <p className="text-[11px] font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
           {displayLabel}
         </p>
       )}
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {payload.map((entry, index) => {
           const displayValue = formatter
             ? formatter(entry.value, entry.name)
-            : String(entry.value);
+            : entry.value.toLocaleString("en-IN");
           return (
-            <div key={index} className="flex items-center gap-2 text-sm">
+            <div key={index} className="flex items-center gap-2.5 text-sm">
               <div
-                className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: entry.color }}
+                className="h-2.5 w-2.5 rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-card"
+                style={{ backgroundColor: entry.color, boxShadow: `0 0 8px ${entry.color}50` }}
               />
-              <span className="text-muted-foreground">{entry.name}:</span>
-              <span className="font-semibold">{displayValue}</span>
+              <span className="text-muted-foreground text-xs">{entry.name}</span>
+              <span className="font-bold text-foreground ml-auto tabular-nums">{displayValue}</span>
             </div>
           );
         })}

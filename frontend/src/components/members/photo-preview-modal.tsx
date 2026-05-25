@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import Image from "next/image";
 import { useEffect } from "react";
 
 interface PhotoPreviewModalProps {
@@ -34,9 +35,12 @@ export function PhotoPreviewModal({ isOpen, imageUrl, onClose }: PhotoPreviewMod
       >
         <X className="h-6 w-6" />
       </button>
-      <img
+      <Image
         src={imageUrl}
         alt="Member photo preview"
+        width={600}
+        height={600}
+        unoptimized
         className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import { Camera, Trash2, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadMemberPhoto, useDeleteMemberPhoto } from "@/hooks/use-members";
@@ -128,9 +129,12 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
           </div>
         )}
         {displayUrl ? (
-          <img
+          <Image
             src={displayUrl}
             alt="Member photo"
+            width={96}
+            height={96}
+            unoptimized
             className="h-full w-full object-cover"
           />
         ) : (

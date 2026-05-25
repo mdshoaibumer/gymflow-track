@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ChartCard } from "@/components/dashboard/charts/chart-card";
 import { formatPaise, cn } from "@/lib/utils";
 import { useRevenueTrend } from "@/hooks/use-analytics";
+import { useReducedMotion } from "framer-motion";
 
 type Granularity = "daily" | "weekly" | "monthly";
 
@@ -30,6 +31,7 @@ interface RevenueTrendChartProps {
 
 export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) {
   const [granularity, setGranularity] = useState<Granularity>("monthly");
+  const prefersReducedMotion = useReducedMotion();
 
   const { data, isLoading } = useRevenueTrend({
     granularity,
@@ -58,7 +60,7 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
           variant={granularity === opt.key ? "default" : "ghost"}
           size="sm"
           className={cn(
-            "h-6 px-2.5 text-[11px] font-medium",
+            "h-6 px-2.5 text-xs font-medium",
             granularity !== opt.key && "text-muted-foreground",
           )}
           onClick={() => setGranularity(opt.key)}
@@ -83,6 +85,16 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
       emptyMessage="No revenue data yet. Payments will appear here once recorded."
     >
       <div className="space-y-4">
+        {/* Screen-reader summary for accessibility (UI/UX Pro Max: screen-reader-summary) */}
+        {summary && (
+          <p className="sr-only" aria-live="polite">
+            Revenue trend chart showing {granularity} data.
+            Total revenue: {formatPaise(summary.total_revenue_paise)}.
+            Growth: {summary.growth_percent !== null ? `${summary.growth_percent}%` : "no data"}.
+            Collection rate: {summary.collection_rate_percent.toFixed(1)}%.
+          </p>
+        )}
+
         {/* Summary stats row */}
         {summary && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -98,14 +110,19 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
 
         {/* Chart */}
         <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <defs>
+          <AreaChart
+            data={chartData}
+            margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+            role="img"
+            aria-label={`Revenue trend ${granularity} chart with ${chartData.length} data points`}
+          >            <defs>
               <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                <stop offset="40%" stopColor="hsl(var(--chart-1))" stopOpacity={0.12} />
+                <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
             <XAxis
               dataKey="period"
               tick={{ fontSize: 11 }}
@@ -152,12 +169,35 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
               stroke="hsl(var(--chart-1))"
               strokeWidth={2}
               fill="url(#revenueGradient)"
-              animationDuration={1000}
-              animationBegin={200}
+              animationDuration={prefersReducedMotion ? 0 : 400}
+              animationBegin={prefersReducedMotion ? 0 : 100}
               animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>
+
+        {/* Accessible data table alternative (UI/UX Pro Max: data-table for screen readers) */}
+        {chartData.length > 0 && (
+          <table className="sr-only" role="table" aria-label="Revenue data table">
+            <caption>Revenue trend data ({granularity})</caption>
+            <thead>
+              <tr>
+                <th scope="col">Period</th>
+                <th scope="col">Revenue (₹)</th>
+                <th scope="col">Payments</th>
+              </tr>
+            </thead>
+            <tbody>
+              {chartData.map((d) => (
+                <tr key={d.rawPeriod}>
+                  <td>{d.period}</td>
+                  <td>{d.revenue.toLocaleString("en-IN")}</td>
+                  <td>{d.payments}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </ChartCard>
   );
@@ -166,7 +206,7 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
 function SummaryChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-muted/50 px-3 py-2">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
         {label}
       </p>
       <p className="text-sm font-semibold mt-0.5">{value}</p>

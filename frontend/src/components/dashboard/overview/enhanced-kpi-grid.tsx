@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   IndianRupee,
   Users,
@@ -74,7 +75,7 @@ export function EnhancedKPIGrid({ periodDays }: EnhancedKPIGridProps) {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <KPICardSkeleton key={i} />
         ))}
@@ -87,11 +88,19 @@ export function EnhancedKPIGrid({ periodDays }: EnhancedKPIGridProps) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <motion.div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      initial="hidden"
+      animate="show"
+      variants={{
+        hidden: { opacity: 0 },
+        show: { opacity: 1, transition: { staggerChildren: 0.04 } },
+      }}
+    >
       {data.kpis.map((kpi) => (
         <EnhancedKPICard key={kpi.key} kpi={kpi} />
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -119,51 +128,65 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
   );
 
   return (
-    <Card className="group hover:shadow-soft-md transition-all duration-200 ease-spring">
-      <CardContent className="p-4 animate-content-show">
+    <motion.div
+      variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 28 } } }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.1 }}
+    >
+    <Card className="group relative hover:shadow-soft-md transition-all duration-300 ease-spring dark:dark-depth-card will-animate gradient-border overflow-hidden">
+      {/* Subtle ambient glow on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-accent-warm/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl" />
+      <CardContent className="p-4 animate-content-show relative">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate pr-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate pr-2">
             {kpi.label}
           </p>
-          <div className={cn("rounded-lg bg-muted/60 p-1.5 flex-shrink-0 group-hover:bg-muted transition-colors duration-200")}>
+          <div className={cn("rounded-xl bg-muted/50 p-2 flex-shrink-0 group-hover:bg-primary/8 group-hover:scale-110 group-hover:shadow-[0_0_12px_-3px_hsl(var(--primary)/0.2)] transition-all duration-300 ease-spring")}>
             <Icon className={cn("h-3.5 w-3.5", config.color)} />
           </div>
         </div>
-        <p className="text-2xl font-bold tracking-tight">
-          <AnimatedNumber value={numericValue} formatFn={formatFn} duration={800} />
-        </p>
-        <div className="mt-2 flex items-center gap-1.5">
-          {hasGrowth && !isNeutral && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
-                isPositive
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                  : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-2xl font-bold tracking-tight truncate">
+              <AnimatedNumber value={numericValue} formatFn={formatFn} duration={800} />
+            </p>
+            <div className="mt-2 flex items-center gap-1.5">
+              {hasGrowth && !isNeutral && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                    isPositive
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                      : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
+                  )}
+                >
+                  {isPositive ? (
+                    <TrendingUp className="h-2.5 w-2.5" />
+                  ) : (
+                    <TrendingDown className="h-2.5 w-2.5" />
+                  )}
+                  {isPositive ? "+" : ""}
+                  {kpi.growth_percent!.toFixed(1)}%
+                </span>
               )}
-            >
-              {isPositive ? (
-                <TrendingUp className="h-2.5 w-2.5" />
-              ) : (
-                <TrendingDown className="h-2.5 w-2.5" />
+              {kpi.previous_value !== null && kpi.previous_value !== undefined && kpi.unit === "paise" && (
+                <span className="text-[11px] text-muted-foreground">
+                  vs {formatPaise(Number(kpi.previous_value))}
+                </span>
               )}
-              {isPositive ? "+" : ""}
-              {kpi.growth_percent!.toFixed(1)}%
-            </span>
-          )}
-          {kpi.previous_value !== null && kpi.previous_value !== undefined && kpi.unit === "paise" && (
-            <span className="text-[10px] text-muted-foreground">
-              vs {formatPaise(Number(kpi.previous_value))}
-            </span>
-          )}
-          {kpi.previous_value !== null && kpi.previous_value !== undefined && kpi.unit === "count" && (
-            <span className="text-[10px] text-muted-foreground">
-              vs {kpi.previous_value} prev
-            </span>
-          )}
+              {kpi.previous_value !== null && kpi.previous_value !== undefined && kpi.unit === "count" && (
+                <span className="text-[11px] text-muted-foreground">
+                  vs {kpi.previous_value} prev
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Mini sparkline visualization */}
+          <MiniSparkline value={numericValue} growth={kpi.growth_percent} />
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }
 
@@ -175,9 +198,40 @@ function KPICardSkeleton() {
           <Skeleton className="h-3 w-20" />
           <Skeleton className="h-7 w-7 rounded-md" />
         </div>
-        <Skeleton className="h-7 w-16 mb-2" />
-        <Skeleton className="h-3 w-24" />
+        <div className="flex items-end justify-between">
+          <div>
+            <Skeleton className="h-7 w-20 mb-2" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <Skeleton className="h-6 w-12 rounded-sm" />
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Generates a deterministic pseudo-sparkline based on value and growth */
+function MiniSparkline({ value, growth }: { value: number; growth?: number | null }) {
+  // Generate 7 bars representing a mini trend
+  const trend = growth ?? 0;
+  const bars: number[] = [];
+  const seed = Math.abs(value % 100) + 1;
+  for (let i = 0; i < 7; i++) {
+    // Create a plausible upward/downward trend shape
+    const base = 30 + (trend >= 0 ? (i / 6) * 50 : (1 - i / 6) * 50);
+    const noise = ((seed * (i + 1) * 7) % 20) - 10;
+    bars.push(Math.min(100, Math.max(15, base + noise)));
+  }
+
+  return (
+    <div className="sparkline-container flex-shrink-0" aria-hidden="true">
+      {bars.map((h, i) => (
+        <div
+          key={i}
+          className="sparkline-bar"
+          style={{ height: `${h}%` }}
+        />
+      ))}
+    </div>
   );
 }

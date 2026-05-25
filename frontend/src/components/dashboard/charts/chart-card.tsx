@@ -27,7 +27,7 @@ export function ChartCard({
   children,
 }: ChartCardProps) {
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card className={cn("overflow-hidden chart-container-premium", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-base font-semibold">{title}</CardTitle>

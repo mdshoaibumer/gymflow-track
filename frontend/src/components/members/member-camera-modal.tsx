@@ -226,7 +226,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
               />
               {/* Circular alignment guide */}
               <div className="absolute inset-0 border-2 border-dashed border-white/60 rounded-full m-8 pointer-events-none z-20 flex items-center justify-center">
-                <span className="text-[10px] text-white/50 font-medium tracking-widest uppercase bg-black/40 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] text-white/50 font-medium tracking-widest uppercase bg-black/40 px-2 py-0.5 rounded-full">
                   Align Face
                 </span>
               </div>

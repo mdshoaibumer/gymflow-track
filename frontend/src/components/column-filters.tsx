@@ -89,7 +89,7 @@ export function ColumnFilters({ definitions, values, onChange, onClear }: Column
           {activeCount > 0 && (
             <Badge
               variant="secondary"
-              className="ml-1 h-5 min-w-[20px] rounded-full px-1.5 text-[10px] font-semibold bg-primary text-primary-foreground"
+              className="ml-1 h-5 min-w-[20px] rounded-full px-1.5 text-[11px] font-semibold bg-primary text-primary-foreground"
             >
               {activeCount}
             </Badge>
@@ -117,7 +117,7 @@ export function ColumnFilters({ definitions, values, onChange, onClear }: Column
                   >
                     <span>{def.label}</span>
                     {values[def.key] && (
-                      <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                      <Badge variant="secondary" className="text-[11px] h-5 px-1.5">
                         {def.options.find((o) => o.value === values[def.key])?.label || values[def.key]}
                       </Badge>
                     )}

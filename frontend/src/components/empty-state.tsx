@@ -26,22 +26,23 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-h-[320px] flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-border/60 bg-gradient-to-b from-muted/30 to-background p-10 text-center animate-content-show",
+        "flex min-h-[320px] flex-col items-center justify-center gap-5 rounded-2xl border border-dashed border-border/50 bg-gradient-to-b from-muted/20 via-background to-muted/10 p-10 text-center animate-content-show",
         className,
       )}
     >
       <div className="relative">
-        <div className="absolute inset-0 rounded-xl bg-primary/5 blur-xl animate-pulse-soft" />
-        <div className="relative rounded-xl bg-muted/60 p-4 ring-1 ring-border/50 transition-transform duration-300 ease-spring hover:scale-105 animate-float">
-          <Icon className="h-7 w-7 text-muted-foreground" />
+        <div className="absolute -inset-4 rounded-3xl bg-primary/5 blur-2xl animate-pulse-soft" />
+        <div className="absolute -inset-8 rounded-full bg-accent-warm/3 blur-3xl opacity-50" />
+        <div className="relative rounded-2xl bg-muted/50 p-5 ring-1 ring-border/40 shadow-soft-md transition-all duration-500 ease-spring hover:scale-110 hover:shadow-soft-lg hover:ring-primary/20 animate-float">
+          <Icon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
         </div>
       </div>
-      <div className="max-w-sm space-y-1.5">
-        <h3 className="text-base font-semibold font-display">{title}</h3>
+      <div className="max-w-sm space-y-2.5">
+        <h3 className="text-base font-semibold font-display tracking-tight">{title}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
       {action && (
-        <Button onClick={action.onClick} size="sm" className="mt-1">
+        <Button onClick={action.onClick} size="sm" className="mt-3 shadow-soft hover:shadow-glow animate-glow-breathe">
           {action.icon && <action.icon className="mr-2 h-4 w-4" />}
           {action.label}
         </Button>

@@ -43,7 +43,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const variant = STATUS_VARIANTS[status] || "secondary";
   return (
-    <Badge variant={variant} className={cn("capitalize text-[11px]", className)}>
+    <Badge variant={variant} className={cn("capitalize text-xs", className)}>
       {status.replace(/_/g, " ")}
     </Badge>
   );

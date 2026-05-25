@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   PieChart,
@@ -12,6 +12,7 @@ import {
 import { ChartCard } from "@/components/dashboard/charts/chart-card";
 import { formatPaise } from "@/lib/utils";
 import { useMembershipDistribution } from "@/hooks/use-analytics";
+import { useReducedMotion } from "framer-motion";
 
 const COLORS = [
   "hsl(var(--chart-1))",
@@ -27,6 +28,8 @@ const COLORS = [
 export function MembershipDistributionChart() {
   const { data, isLoading } = useMembershipDistribution();
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+  const [hiddenPlans, setHiddenPlans] = useState<Set<string>>(new Set());
 
   const chartData = useMemo(() => {
     if (!data?.distributions) return [];
@@ -38,6 +41,25 @@ export function MembershipDistributionChart() {
       fill: COLORS[i % COLORS.length],
     }));
   }, [data]);
+
+  const visibleChartData = useMemo(() => {
+    return chartData.filter((d) => !hiddenPlans.has(d.name));
+  }, [chartData, hiddenPlans]);
+
+  const togglePlan = (planName: string) => {
+    setHiddenPlans((prev) => {
+      const next = new Set(prev);
+      if (next.has(planName)) {
+        next.delete(planName);
+      } else {
+        // Don't allow hiding all plans
+        if (next.size < chartData.length - 1) {
+          next.add(planName);
+        }
+      }
+      return next;
+    });
+  };
 
   const hasData = chartData.length > 0 && chartData.some((d) => d.value > 0);
 
@@ -53,29 +75,38 @@ export function MembershipDistributionChart() {
       empty={!hasData && !isLoading}
       emptyMessage="No active memberships yet"
     >
+      {/* Screen-reader summary (UI/UX Pro Max: screen-reader-summary) */}
+      {data && (
+        <p className="sr-only" aria-live="polite">
+          Membership distribution donut chart. {data.total_members} total active members
+          across {chartData.length} plans.
+          {data.most_popular_plan ? ` Most popular plan: ${data.most_popular_plan}.` : ""}
+        </p>
+      )}
+
       <div className="flex flex-col lg:flex-row items-center gap-4">
         {/* Pie chart */}
         <div className="w-full lg:w-1/2">
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
+            <PieChart role="img" aria-label="Membership distribution donut chart">
               <Pie
-                data={chartData}
+                data={visibleChartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={55}
                 outerRadius={90}
                 paddingAngle={2}
                 dataKey="value"
-                animationDuration={1000}
-                animationBegin={200}
+                animationDuration={prefersReducedMotion ? 0 : 400}
+                animationBegin={prefersReducedMotion ? 0 : 100}
                 animationEasing="ease-out"
                 onClick={(_, index) => {
-                  const plan = chartData[index]?.name;
+                  const plan = visibleChartData[index]?.name;
                   if (plan) router.push(`/members?plan=${encodeURIComponent(plan)}`);
                 }}
                 style={{ cursor: "pointer" }}
               >
-                {chartData.map((entry, index) => (
+                {visibleChartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} strokeWidth={0} />
                 ))}
               </Pie>
@@ -100,24 +131,29 @@ export function MembershipDistributionChart() {
           </ResponsiveContainer>
         </div>
 
-        {/* Legend table */}
+        {/* Interactive Legend table — click to toggle series visibility (UI/UX Pro Max: legend-interactive) */}
         <div className="w-full lg:w-1/2 space-y-2">
           {chartData.map((d) => (
             <div
               key={d.name}
-              onClick={() => router.push(`/members?plan=${encodeURIComponent(d.name)}`)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors duration-150 cursor-pointer"
+              onClick={() => togglePlan(d.name)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50 transition-all duration-150 cursor-pointer select-none ${
+                hiddenPlans.has(d.name) ? "opacity-40" : ""
+              }`}
+              title={hiddenPlans.has(d.name) ? "Click to show in chart" : "Click to hide from chart"}
             >
               <div
-                className="h-3 w-3 rounded-full flex-shrink-0"
+                className={`h-3 w-3 rounded-full flex-shrink-0 transition-transform duration-150 ${
+                  hiddenPlans.has(d.name) ? "scale-75" : ""
+                }`}
                 style={{ backgroundColor: d.fill }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{d.name}</p>
+                <p className={`text-sm font-medium truncate ${hiddenPlans.has(d.name) ? "line-through" : ""}`}>{d.name}</p>
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-semibold">{d.value}</p>
-                <p className="text-[10px] text-muted-foreground">{d.percentage}%</p>
+                <p className="text-[11px] text-muted-foreground">{d.percentage}%</p>
               </div>
             </div>
           ))}
@@ -131,6 +167,31 @@ export function MembershipDistributionChart() {
           )}
         </div>
       </div>
+
+      {/* Accessible data table alternative (UI/UX Pro Max: data-table for screen readers) */}
+      {chartData.length > 0 && (
+        <table className="sr-only" role="table" aria-label="Membership distribution data">
+          <caption>Members by plan</caption>
+          <thead>
+            <tr>
+              <th scope="col">Plan</th>
+              <th scope="col">Members</th>
+              <th scope="col">Percentage</th>
+              <th scope="col">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((d) => (
+              <tr key={d.name}>
+                <td>{d.name}</td>
+                <td>{d.value}</td>
+                <td>{d.percentage}%</td>
+                <td>{formatPaise(d.revenue)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </ChartCard>
   );
 }

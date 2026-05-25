@@ -192,7 +192,7 @@ export function StaffTable({
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-sm" role="table">
             <caption className="sr-only">Staff members</caption>
-            <thead className="border-b bg-muted/50">
+            <thead className="border-b bg-muted/30 dark:bg-muted/15">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -215,11 +215,11 @@ export function StaffTable({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border/50">
               {table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="hover:bg-muted/30 transition-colors"
+                  className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150"
                 >
                   {row.getVisibleCells().map((cell) => {
                     const meta = cell.column.columnDef.meta as
@@ -246,7 +246,7 @@ export function StaffTable({
         {/* Mobile cards */}
         <div className="space-y-3 p-4 md:hidden">
           {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-3 rounded-lg border p-3">
+            <div key={u.id} className="flex items-center gap-3 rounded-xl border p-3 gradient-border hover:shadow-soft-md transition-all duration-250 ease-spring">
               <Avatar className="h-9 w-9 shrink-0">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                   {getInitials(u.name)}
