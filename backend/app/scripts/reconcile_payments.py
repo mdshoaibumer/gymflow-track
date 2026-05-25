@@ -34,6 +34,12 @@ from app.services.invoice_service import InvoiceService
 
 
 async def reconcile_payments():
+    dry_run = "--dry-run" in sys.argv
+    if dry_run:
+        print("Running in DRY RUN mode. No changes will be committed to the database.\n")
+    else:
+        print("Running in LIVE mode. Changes will be committed to the database.\n")
+
     print("Starting database reconciliation...")
     async with async_session_factory() as session:
         async with session.begin():
@@ -137,7 +143,17 @@ async def reconcile_payments():
             print(f"  - New payment records created: {created_count}")
             print(f"  - Existing payment records corrected: {updated_payments}")
             print(f"  - Member page records updated from ledger: {updated_members}")
+            
+            if dry_run:
+                print("\n[DRY RUN] Rolling back all changes as requested.")
+                raise RuntimeError("DRY_RUN_ROLLBACK")
 
 
 if __name__ == "__main__":
-    asyncio.run(reconcile_payments())
+    try:
+        asyncio.run(reconcile_payments())
+    except RuntimeError as e:
+        if str(e) == "DRY_RUN_ROLLBACK":
+            print("\nDry run execution finished successfully. All changes rolled back.")
+        else:
+            raise e
