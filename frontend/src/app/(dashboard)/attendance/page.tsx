@@ -182,7 +182,7 @@ function AttendanceContent() {
     >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Attendance</h1>
           <p className="text-sm text-muted-foreground">
             Daily attendance tracking. Search members to mark check-in.
           </p>
@@ -303,7 +303,7 @@ function AttendanceContent() {
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm" role="table">
                 <caption className="sr-only">Today&apos;s attendance records</caption>
-                <thead className="bg-muted/50">
+                <thead className="bg-muted/30 dark:bg-muted/15">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Member</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Time</th>
@@ -312,9 +312,9 @@ function AttendanceContent() {
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-border/50">
                   {todayList.map((a) => (
-                    <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={a.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150">
                       <td className="px-4 py-3">
                         <p className="font-medium">{a.member_name || "Unknown"}</p>
                         <p className="text-xs text-muted-foreground">{a.member_phone || "—"}</p>

@@ -58,7 +58,7 @@ export default function BillingManagePage() {
       transition={{ duration: 0.3 }}
       className="max-w-3xl space-y-6"
     >
-      <h1 className="text-2xl font-bold tracking-tight">Billing & Subscription</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Billing & Subscription</h1>
 
       {/* Subscription Status Card */}
       {subscription ? (
@@ -266,7 +266,7 @@ export default function BillingManagePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b bg-muted/50">
+                <thead className="border-b bg-muted/30 dark:bg-muted/15">
                   <tr>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Invoice</th>
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Period</th>
@@ -275,9 +275,9 @@ export default function BillingManagePage() {
                     <th className="px-4 py-2 text-left font-medium text-muted-foreground">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-border/50">
                   {history.invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={inv.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150">
                       <td className="px-4 py-2 font-mono text-xs">{inv.invoice_number}</td>
                       <td className="px-4 py-2">
                         {new Date(inv.period_start).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}

@@ -82,9 +82,16 @@ export default function MemberDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
+        <motion.div layoutId={`member-avatar-${member.id}`}>
+          <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
+        </motion.div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{member.name}</h1>
+          <motion.h1
+            layoutId={`member-name-${member.id}`}
+            className="text-2xl font-bold tracking-tight"
+          >
+            {member.name}
+          </motion.h1>
           <p className="text-sm text-muted-foreground">{member.phone}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">

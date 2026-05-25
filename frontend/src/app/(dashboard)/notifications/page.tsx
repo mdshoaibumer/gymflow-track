@@ -69,7 +69,7 @@ export default function NotificationsPage() {
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">WhatsApp Reminders</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">WhatsApp Reminders</h1>
           <p className="text-sm text-muted-foreground">
             Automated renewal reminders and notification history.
           </p>
@@ -171,7 +171,7 @@ export default function NotificationsPage() {
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm" role="table">
                 <caption className="sr-only">Notification queue</caption>
-                <thead className="border-b bg-muted/50">
+                <thead className="border-b bg-muted/30 dark:bg-muted/15">
                   <tr>
                     <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
                     <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -183,9 +183,9 @@ export default function NotificationsPage() {
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-border/50">
                   {notifications.map((n) => (
-                    <tr key={n.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={n.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150">
                       <td className="px-4 py-3">
                         <span className="font-medium">
                           {TYPE_LABELS[n.notification_type] || n.notification_type}

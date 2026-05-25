@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Dumbbell, Users, BarChart3 } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -101,30 +101,76 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen bg-background">
-      {/* Left decorative panel — visible on large screens */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent border-r">
+      {/* Left decorative panel — animated gradient mesh with floating orbs */}
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r">
+        {/* Animated gradient mesh background */}
+        <div className="absolute inset-0 gradient-mesh" />
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
+        {/* Static SVG gradient orbs — GPU-friendly, no blur repaints */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+          <defs>
+            <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="hsl(262 83% 58% / 0.08)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+            <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="hsl(25 95% 53% / 0.06)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+            <radialGradient id="orb3" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="hsl(262 83% 68% / 0.05)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+          </defs>
+          <circle cx="20%" cy="15%" r="120" fill="url(#orb1)" className="animate-orbit-slow" />
+          <circle cx="85%" cy="80%" r="150" fill="url(#orb2)" className="animate-orbit-medium" />
+          <circle cx="60%" cy="60%" r="90" fill="url(#orb3)" className="animate-orbit-fast" />
+        </svg>
+        {/* Content */}
         <div className="relative z-10 max-w-md px-12">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-8 animate-glow-pulse">
             <span className="text-2xl font-bold text-primary">G</span>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">Manage your gym,<br />effortlessly.</h2>
-          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">Track members, automate billing, monitor attendance — all in one powerful dashboard built for Indian gym owners.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground leading-tight">Manage your gym,<br />effortlessly.</h2>
+          <p className="mt-4 text-sm text-muted-foreground leading-relaxed">Track members, automate billing, monitor attendance — all in one powerful dashboard built for Indian gym owners.</p>
+          {/* Feature highlights */}
+          <div className="mt-8 space-y-3">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
+                <Users className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <span>Member management & renewals</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10">
+                <Dumbbell className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <span>Attendance & check-in tracking</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                <BarChart3 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              </div>
+              <span>Revenue analytics & insights</span>
+            </div>
+          </div>
         </div>
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border)/0.4)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.4)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
       </div>
       {/* Right form panel */}
-      <div className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-[380px] animate-fade-in-up">
+      <div className="flex flex-1 items-center justify-center p-6 relative">
+        {/* Subtle radial glow behind form on mobile */}
+        <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_40%,hsl(var(--primary)/0.04),transparent)] lg:hidden" />
+      <div className="relative w-full max-w-[380px] animate-fade-in-up">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-glow mb-4">
-            <span className="text-base font-bold text-primary-foreground">G</span>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-glow animate-glow-pulse mb-5">
+            <span className="text-lg font-bold text-primary-foreground">G</span>
           </div>
-          <h1 className="text-lg font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to your GymFlow Track account</p>
+          <h1 className="text-xl font-bold tracking-tight font-display">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Sign in to your GymFlow Track account</p>
         </div>
-        <Card className="shadow-soft-md">
-          <CardContent className="p-6">
+        <Card className="shadow-soft-lg border-border/60 glass-premium">
+          <CardContent className="p-7">
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
@@ -207,7 +253,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11 text-[15px] font-semibold shadow-glow hover:shadow-glow-lg"
                 disabled={isSubmitting}
                 aria-busy={isSubmitting}
               >
@@ -226,7 +272,7 @@ export default function LoginPage() {
             </p>
           </CardContent>
         </Card>
-        <p className="text-center text-[11px] text-muted-foreground/60 mt-6">
+        <p className="text-center text-xs text-muted-foreground/60 mt-6">
           GymFlow Track — Gym Management Made Simple
         </p>
       </div>

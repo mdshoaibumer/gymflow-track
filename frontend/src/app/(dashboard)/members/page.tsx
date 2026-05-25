@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
@@ -309,14 +310,19 @@ export default function MembersPage() {
             : null;
           return (
             <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">
-              <span className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+              <motion.span
+                layoutId={`member-avatar-${row.original.id}`}
+                className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0"
+              >
                 {photoUrl ? (
-                  <img src={photoUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <Image src={photoUrl} alt="" width={28} height={28} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
-              </span>
-              {row.original.name}
+              </motion.span>
+              <motion.span layoutId={`member-name-${row.original.id}`}>
+                {row.original.name}
+              </motion.span>
             </Link>
           );
         },
@@ -526,34 +532,53 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Create Form */}
-      {showCreateForm && (
-        <MemberForm
-          title="Add New Member"
-          submitLabel="Add Member"
-          onSubmit={handleCreate}
-          onCancel={() => setShowCreateForm(false)}
-          isPending={createMutation.isPending}
-        />
-      )}
+      {/* Create Form (animated entrance — UI/UX Pro Max: modal-motion) */}
+      <AnimatePresence mode="wait">
+        {showCreateForm && (
+          <motion.div
+            key="create-form"
+            initial={{ opacity: 0, scale: 0.97, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <MemberForm
+              title="Add New Member"
+              submitLabel="Add Member"
+              onSubmit={handleCreate}
+              onCancel={() => setShowCreateForm(false)}
+              isPending={createMutation.isPending}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Edit Form */}
-      {editingMember && (
-        <div ref={editFormRef}>
-          <MemberForm
-            key={editingMember.id}
-            title={`Edit: ${editingMember.name}`}
-            submitLabel="Save Changes"
-            isEditing
-            defaultValues={memberToFormValues(editingMember).formValues}
-            defaultCustomFields={memberToFormValues(editingMember).customFieldValues}
-            initialPhotoUrl={editingMember.photo_url}
-            onSubmit={handleEdit}
-            onCancel={() => setEditingMember(null)}
-            isPending={updateMutation.isPending}
-          />
-        </div>
-      )}
+      {/* Edit Form (animated entrance — UI/UX Pro Max: modal-motion) */}
+      <AnimatePresence mode="wait">
+        {editingMember && (
+          <motion.div
+            key={`edit-${editingMember.id}`}
+            ref={editFormRef}
+            initial={{ opacity: 0, scale: 0.97, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <MemberForm
+              key={editingMember.id}
+              title={`Edit: ${editingMember.name}`}
+              submitLabel="Save Changes"
+              isEditing
+              defaultValues={memberToFormValues(editingMember).formValues}
+              defaultCustomFields={memberToFormValues(editingMember).customFieldValues}
+              initialPhotoUrl={editingMember.photo_url}
+              onSubmit={handleEdit}
+              onCancel={() => setEditingMember(null)}
+              isPending={updateMutation.isPending}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Table */}
       {isLoading ? (
@@ -610,14 +635,14 @@ export default function MembersPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" role="table">
                   <caption className="sr-only">Gym members list</caption>
-                  <thead className="border-b bg-muted/50">
+                  <thead className="border-b bg-muted/30 dark:bg-muted/15">
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <th
                             key={header.id}
                             scope="col"
-                            className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                            className="px-4 py-3.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
@@ -625,11 +650,11 @@ export default function MembersPage() {
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y divide-border/50">
                     {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                      <tr key={row.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150">
                         {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="px-4 py-3">
+                          <td key={cell.id} className="px-4 py-3.5">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}
@@ -644,7 +669,7 @@ export default function MembersPage() {
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">
             {members.map((member) => (
-              <Card key={member.id} className="hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
+              <Card key={member.id} className="hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-250 ease-spring gradient-border">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
@@ -652,7 +677,9 @@ export default function MembersPage() {
                         href={`/members/${member.id}`}
                         className="font-medium text-primary hover:underline truncate block"
                       >
-                        {member.name}
+                        <motion.span layoutId={`member-name-${member.id}`}>
+                          {member.name}
+                        </motion.span>
                       </Link>
                       <p className="text-sm text-muted-foreground mt-0.5">
                         {member.phone}

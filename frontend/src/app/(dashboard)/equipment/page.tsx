@@ -288,7 +288,7 @@ export default function EquipmentPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Equipment</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Equipment</h1>
           <p className="text-sm text-muted-foreground">
             Track gym assets, maintenance, and service history.
           </p>
@@ -423,7 +423,7 @@ export default function EquipmentPage() {
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm" role="table">
                 <caption className="sr-only">Gym equipment inventory</caption>
-                <thead className="border-b bg-muted/50">
+                <thead className="border-b bg-muted/30 dark:bg-muted/15">
                   <tr>
                     <th
                       scope="col"
@@ -468,9 +468,9 @@ export default function EquipmentPage() {
                     <th scope="col" className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-border/50">
                   {sortedAssets.map((a) => (
-                    <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={a.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-colors duration-150">
                       <td className="px-4 py-3">
                         <p className="font-medium">{a.name}</p>
                         <p className="text-xs text-muted-foreground">

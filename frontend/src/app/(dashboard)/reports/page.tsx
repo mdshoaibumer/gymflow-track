@@ -94,7 +94,7 @@ function ReportsContent() {
       className="space-y-6"
     >
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Reports</h1>
         <p className="text-sm text-muted-foreground">
           View key metrics and export data as CSV.
         </p>

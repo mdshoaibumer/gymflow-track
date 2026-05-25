@@ -143,7 +143,7 @@ export default function SubscriptionsPage() {
                       <span className="font-medium capitalize">
                         {gym.plan_name || "—"}
                         {gym.plan_tier && (
-                          <Badge variant="secondary" className="ml-1 text-[10px] capitalize">
+                          <Badge variant="secondary" className="ml-1 text-[11px] capitalize">
                             {gym.plan_tier}
                           </Badge>
                         )}
