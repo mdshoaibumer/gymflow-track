@@ -7,7 +7,8 @@ import { memberFormSchema, type MemberFormValues } from "@/lib/validations/membe
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useCustomFields } from "@/hooks/use-custom-fields";
 import { useGym } from "@/hooks/use-gym";
-import { getPlans, calculateEndDate, type MembershipPlan } from "@/lib/membership-plans";
+import { useMembershipPlans } from "@/hooks/use-membership-plans";
+import { calculateEndDate } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -59,13 +60,7 @@ export function MemberForm({
   const { data: customFieldsData } = useCustomFields();
   const customFields: CustomField[] = customFieldsData?.fields ?? [];
   const { data: gym } = useGym();
-  const [plans, setPlans] = useState<MembershipPlan[]>([]);
-
-  useEffect(() => {
-    if (gym?.id) {
-      setPlans(getPlans(gym.id));
-    }
-  }, [gym?.id]);
+  const { data: plans = [] } = useMembershipPlans();
 
   const [cfValues, setCfValues] = useState<Record<string, string | number | null>>(
     defaultCustomFields ?? {}

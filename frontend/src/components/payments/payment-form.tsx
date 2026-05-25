@@ -10,7 +10,8 @@ import {
 import type { Member } from "@/services/member.service";
 import { useMembers } from "@/hooks/use-members";
 import { useGym } from "@/hooks/use-gym";
-import { getPlans, calculateEndDate, type MembershipPlan } from "@/lib/membership-plans";
+import { useMembershipPlans } from "@/hooks/use-membership-plans";
+import { calculateEndDate } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -52,13 +53,9 @@ export function PaymentForm({
 
   const showRenewal = watch("payment_status") === "completed";
 
-  // --- Membership plans from settings ---
+  // --- Membership plans from settings (API-backed) ---
   const { data: gym } = useGym();
-  const [plans, setPlans] = useState<MembershipPlan[]>([]);
-
-  useEffect(() => {
-    setPlans(getPlans(gym?.id));
-  }, [gym?.id]);
+  const { data: plans = [] } = useMembershipPlans();
 
   const handlePlanSelect = (planId: string) => {
     const plan = plans.find((p) => p.id === planId);

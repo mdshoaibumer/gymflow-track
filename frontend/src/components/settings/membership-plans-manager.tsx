@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Save, X, IndianRupee } from "lucide-react";
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Save, X, IndianRupee, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { type MembershipPlan } from "@/lib/membership-plans";
 import {
-  getPlans,
-  addPlan,
-  updatePlan,
-  deletePlan,
-  type MembershipPlan,
-} from "@/lib/membership-plans";
-import { useGym } from "@/hooks/use-gym";
+  useMembershipPlans,
+  useCreateMembershipPlan,
+  useUpdateMembershipPlan,
+  useDeleteMembershipPlan,
+} from "@/hooks/use-membership-plans";
 import { toast } from "sonner";
 
 export function MembershipPlansManager() {
-  const { data: gym } = useGym();
-  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const { data: plans = [], isLoading } = useMembershipPlans();
+  const createMutation = useCreateMembershipPlan();
+  const updateMutation = useUpdateMembershipPlan();
+  const deleteMutation = useDeleteMembershipPlan();
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -33,10 +35,6 @@ export function MembershipPlansManager() {
   const [editDuration, setEditDuration] = useState<number>(1);
   const [editAmount, setEditAmount] = useState<number>(0);
 
-  useEffect(() => {
-    setPlans(getPlans(gym?.id));
-  }, [gym?.id]);
-
   const handleAdd = () => {
     if (!newName.trim()) {
       toast.error("Plan name is required");
@@ -47,16 +45,17 @@ export function MembershipPlansManager() {
       return;
     }
 
-    const updated = addPlan(
+    createMutation.mutate(
       { name: newName.trim(), duration_months: newDuration, amount: newAmount },
-      gym?.id
+      {
+        onSuccess: () => {
+          setNewName("");
+          setNewDuration(1);
+          setNewAmount(0);
+          setIsAdding(false);
+        },
+      }
     );
-    setPlans(updated);
-    setNewName("");
-    setNewDuration(1);
-    setNewAmount(0);
-    setIsAdding(false);
-    toast.success("Plan added");
   };
 
   const handleEdit = (plan: MembershipPlan) => {
@@ -77,21 +76,17 @@ export function MembershipPlansManager() {
       return;
     }
 
-    const updated = updatePlan(
-      editingId,
-      { name: editName.trim(), duration_months: editDuration, amount: editAmount },
-      gym?.id
+    updateMutation.mutate(
+      { id: editingId, name: editName.trim(), duration_months: editDuration, amount: editAmount },
+      {
+        onSuccess: () => setEditingId(null),
+      }
     );
-    setPlans(updated);
-    setEditingId(null);
-    toast.success("Plan updated");
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this plan?")) return;
-    const updated = deletePlan(id, gym?.id);
-    setPlans(updated);
-    toast.success("Plan deleted");
+    deleteMutation.mutate(id);
   };
 
   const formatDuration = (months: number) => {
@@ -126,8 +121,15 @@ export function MembershipPlansManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
         {/* Existing plans */}
-        {plans.length === 0 && !isAdding && (
+        {!isLoading && plans.length === 0 && !isAdding && (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No plans configured yet. Add your first membership plan.
           </p>

@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
 import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
 import { useGym } from "@/hooks/use-gym";
-import { getPlans } from "@/lib/membership-plans";
+import { useMembershipPlans } from "@/hooks/use-membership-plans";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MemberFormValues } from "@/lib/validations/member";
 
@@ -50,7 +50,7 @@ export default function MembersPage() {
   const [planFilter, setPlanFilter] = useState<string>(searchParams.get("plan") || "");
   const [batchFilter, setBatchFilter] = useState<string>("");
 
-  const plans = useMemo(() => getPlans(gymData?.id), [gymData?.id]);
+  const { data: plans = [] } = useMembershipPlans();
 
   const filterDefinitions = useMemo<FilterDefinition[]>(() => [
     {
@@ -644,7 +644,7 @@ export default function MembersPage() {
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">
             {members.map((member) => (
-              <Card key={member.id} className="transition-shadow hover:shadow-md">
+              <Card key={member.id} className="hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
