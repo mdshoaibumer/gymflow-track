@@ -69,7 +69,12 @@ class TestMockProvider:
 
     def test_verify_webhook_always_valid(self):
         provider = MockProvider()
-        assert provider.verify_webhook_signature(b"body", "sig") is True
+        assert provider.verify_webhook_signature(b"body", "mock_valid_signature") is True
+
+    def test_verify_webhook_rejects_invalid(self):
+        provider = MockProvider()
+        assert provider.verify_webhook_signature(b"body", "bad_sig") is False
+        assert provider.verify_webhook_signature(b"body", "") is False
 
     def test_parse_webhook(self):
         provider = MockProvider()
