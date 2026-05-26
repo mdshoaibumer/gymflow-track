@@ -513,9 +513,9 @@ class TestBillingAPI:
         response = await client.post(
             "/api/v1/billing/webhook",
             json={"event": "payment.captured", "payment_id": "test", "order_id": "test"},
-            headers={"X-Razorpay-Signature": "mock_sig"},
+            headers={"X-Razorpay-Signature": "mock_valid_signature"},
         )
-        # Mock provider accepts all signatures
+        # Mock provider accepts known test signature
         assert response.status_code == 200
 
     @pytest.mark.asyncio

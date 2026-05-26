@@ -291,7 +291,20 @@ class MockProvider(PaymentProvider):
         )
 
     def verify_webhook_signature(self, body: bytes, signature: str) -> bool:
-        return True  # Always valid in mock mode
+        # In mock mode, accept a known test signature or HMAC with "mock_webhook_secret"
+        if not signature:
+            return False
+        if signature == "mock_valid_signature":
+            return True
+        # Compute expected using a fixed mock secret
+        import hashlib as _hashlib
+        import hmac as _hmac
+        expected = _hmac.new(
+            b"mock_webhook_secret",
+            body,
+            _hashlib.sha256,
+        ).hexdigest()
+        return _hmac.compare_digest(expected, signature)
 
     def parse_webhook(self, payload: dict) -> WebhookEvent:
         return WebhookEvent(
