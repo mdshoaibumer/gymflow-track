@@ -35,7 +35,7 @@ class TestAuthFullFlow:
 
     async def test_register_login_refresh_logout(self, client, db_session):
         """Complete lifecycle: register → login → refresh → logout."""
-        unique = uuid4().hex[:8]
+        unique = uuid4().int % 100000
 
         # Step 1: Register
         reg_response = await client.post(
@@ -44,7 +44,7 @@ class TestAuthFullFlow:
                 "gym_name": f"E2E Test Gym {unique}",
                 "owner_name": "E2E Owner",
                 "email": f"e2e-{unique}@test.com",
-                "phone": f"98765{unique[:5]}",
+                "phone": f"98765{unique:05d}",
                 "password": "SecurePass123!",
                 "city": "Delhi",
             },
@@ -100,12 +100,12 @@ class TestAuthFullFlow:
 
     async def test_register_duplicate_email_same_gym_fails(self, client, db_session):
         """Same email in same gym should fail."""
-        unique = uuid4().hex[:8]
+        unique = uuid4().int % 100000  # numeric only for phone validation
         payload = {
             "gym_name": f"Dup Test Gym {unique}",
             "owner_name": "Owner",
             "email": f"dup-{unique}@test.com",
-            "phone": f"98760{unique[:5]}",
+            "phone": f"98760{unique:05d}",
             "password": "SecurePass123!",
             "city": "Mumbai",
         }
@@ -115,7 +115,7 @@ class TestAuthFullFlow:
 
         # Second registration with same email
         payload["gym_name"] = f"Another Gym {unique}"
-        payload["phone"] = f"98761{unique[:5]}"
+        payload["phone"] = f"98761{unique:05d}"
         r2 = await client.post("/api/v1/auth/register", json=payload)
         # Should succeed (different gym, same email is OK in multi-tenant)
         # or fail if same gym constraint triggers
