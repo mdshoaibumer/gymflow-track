@@ -1,7 +1,7 @@
 """Add gym_membership_plans table
 
 Revision ID: 028_gym_membership_plans
-Revises: 027_discount_field
+Revises: 028_payment_edit
 Create Date: 2026-05-25
 """
 from alembic import op
@@ -10,7 +10,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "028_gym_membership_plans"
-down_revision = "027_discount_field"
+down_revision = "028_payment_edit"
 branch_labels = None
 depends_on = None
 

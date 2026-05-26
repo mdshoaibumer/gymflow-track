@@ -31,6 +31,20 @@ export default defineConfig({
     navigationTimeout: 30_000,
     // Capture console logs
     bypassCSP: true,
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://localhost:3000",
+          localStorage: [
+            {
+              name: "gymflow-tour-completed",
+              value: "true"
+            }
+          ]
+        }
+      ]
+    }
   },
 
   projects: [

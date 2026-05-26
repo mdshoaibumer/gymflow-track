@@ -78,6 +78,8 @@ export async function loginViaUI(
 ) {
   await page.goto("/login");
   await page.waitForLoadState("networkidle");
+  // Pre-populate tour completion so onboarding tour doesn't block the UI
+  await page.evaluate(() => localStorage.setItem("gymflow-tour-completed", "true")).catch(() => {});
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();

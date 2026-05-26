@@ -46,7 +46,7 @@ services:
       - LOG_LEVEL=INFO
       - RATE_LIMIT_AUTH=99999
       - RATE_LIMIT_API=99999
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --limit-max-requests 10000 --timeout-graceful-shutdown 30 --access-log --proxy-headers --forwarded-allow-ips '*'"
+    command: sh -c "alembic upgrade head && python seed_test.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --limit-max-requests 10000 --timeout-graceful-shutdown 30 --access-log --proxy-headers --forwarded-allow-ips '*'"
     depends_on:
       db:
         condition: service_healthy
