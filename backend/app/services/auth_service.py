@@ -207,7 +207,9 @@ class AuthService:
     # Grace period (seconds) for concurrent refresh requests (multi-tab scenario).
     # If a revoked token is re-presented within this window, the replacement token
     # is returned instead of triggering reuse-detection revocation.
-    REFRESH_GRACE_SECONDS = 30
+    # Kept short (5s) to minimize stolen-token exploitation window while still
+    # accommodating multi-tab race conditions on slow networks.
+    REFRESH_GRACE_SECONDS = 5
 
     async def refresh_token(self, data: RefreshRequest) -> TokenResponse:
         payload = decode_token(data.refresh_token)

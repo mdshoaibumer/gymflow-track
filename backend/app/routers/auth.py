@@ -145,20 +145,11 @@ async def refresh_token(
 ):
     """Get new access token using refresh token (with rotation).
 
-    Accepts refresh token from:
-    1. HttpOnly cookie (preferred — browser-based clients)
-    2. Request body (backward compat — mobile/API clients)
+    Security: Only accepts refresh token from HttpOnly cookie.
+    Body-based tokens are rejected to prevent XSS token theft exploitation.
+    Mobile/API clients should use cookie-based auth or a separate token endpoint.
     """
-    # Prefer cookie-based refresh token, fall back to body
     refresh_tok = request.cookies.get(REFRESH_COOKIE)
-
-    if not refresh_tok:
-        # Try reading from request body (backward compat for non-browser clients)
-        try:
-            body = await request.json()
-            refresh_tok = body.get("refresh_token") if isinstance(body, dict) else None
-        except Exception:
-            pass
 
     if not refresh_tok:
         from app.core.exceptions import AuthenticationError
@@ -265,11 +256,15 @@ async def reset_password(
 
     Token is single-use and expires in 1 hour.
     On success, all existing sessions are terminated.
-    Rate-limited to prevent brute-force on intercepted tokens.
+    Rate-limited per IP AND per token to prevent brute-force on intercepted tokens.
     """
+    import hashlib
+
     # Rate limit: prevent brute-force attempts on reset tokens
     cache = get_cache_backend()
     client_ip = _get_client_ip(request)
+
+    # Per-IP rate limit
     reset_key = f"rl:reset_pwd:{client_ip}"
     count = cache.increment_window(reset_key, _RESET_WINDOW_SECONDS)
     if count > _RESET_MAX_ATTEMPTS:
@@ -277,6 +272,18 @@ async def reset_password(
             status_code=429,
             detail="Too many password reset attempts. Please try again later.",
             headers={"Retry-After": str(_RESET_WINDOW_SECONDS)},
+        )
+
+    # Per-token rate limit (max 3 attempts per token — prevents brute-force
+    # even if attacker rotates IPs after intercepting a reset token)
+    token_hash = hashlib.sha256(data.token.encode()).hexdigest()[:16]
+    token_key = f"rl:reset_token:{token_hash}"
+    token_count = cache.increment_window(token_key, 3600)  # 1 hour window
+    if token_count > 3:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many attempts with this reset link. Please request a new one.",
+            headers={"Retry-After": "3600"},
         )
 
     service = AuthService(db)

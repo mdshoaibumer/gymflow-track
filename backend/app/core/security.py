@@ -73,6 +73,13 @@ def create_refresh_token(user_id: UUID, gym_id: UUID | None, role: str) -> str:
 
 def decode_token(token: str) -> dict | None:
     try:
+        # Validate algorithm header BEFORE decoding to prevent algorithm confusion.
+        # An attacker might craft a token with alg=none or alg=RS256 to bypass
+        # signature verification.
+        unverified_header = pyjwt.get_unverified_header(token)
+        if unverified_header.get("alg") != settings.JWT_ALGORITHM:
+            return None
+
         payload = pyjwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )

@@ -308,6 +308,26 @@ async def seed_demo_data(
 
 # === CSV Member Import ===
 
+# Characters that Excel/Sheets interpret as formula prefixes.
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _sanitize_csv_value(value: str) -> str:
+    """
+    Sanitize a CSV field value against formula injection.
+
+    Excel and Google Sheets interpret cells starting with =, +, -, @, tab, or CR
+    as formulas. An attacker could embed =HYPERLINK(...) or =CMD(...) in imported
+    CSV data, which would execute when the data is later exported and opened.
+
+    Strategy: prefix dangerous values with a single quote (') which Excel displays
+    as a literal character and does not interpret as a formula.
+    """
+    if value and value[0] in _CSV_FORMULA_PREFIXES:
+        return f"'{value}"
+    return value
+
+
 def _normalize_phone(raw: str) -> str:
     """
     Normalize Indian phone numbers.
@@ -489,6 +509,12 @@ def parse_csv_with_mapping(
         start = mapped.get("membership_start")
         end = mapped.get("membership_end")
         amount_raw = mapped.get("amount_paid", "")
+
+        # Sanitize against CSV formula injection — values starting with these
+        # characters can be interpreted as formulas by Excel/Sheets when exported.
+        name = _sanitize_csv_value(name)
+        if email:
+            email = _sanitize_csv_value(email.strip())
 
         phone = _normalize_phone(phone_raw)
         gender = _normalize_gender(gender_raw) if gender_raw else None
