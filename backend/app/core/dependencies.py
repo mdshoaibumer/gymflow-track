@@ -138,10 +138,9 @@ async def _check_user_active(user_id: UUID, iat: int | None = None) -> None:
         # If active, check if session is revoked
         if cached_revoked_at and iat:
             revoked_at_ts = float(cached_revoked_at)
-            # Use integer comparison for second-precision JWT iat.
-            # Allow tokens issued in the same second as the revocation (leeway).
-            if iat < int(revoked_at_ts):
-                logger.warning(f"Session REVOKED (CACHED) for user {user_id} (iat {iat} < revoked_at {revoked_at_ts})")
+            # Reject tokens issued at or before the revocation timestamp.
+            if iat <= int(revoked_at_ts):
+                logger.warning(f"Session REVOKED (CACHED) for user {user_id} (iat {iat} <= revoked_at {revoked_at_ts})")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Session has been revoked",
@@ -183,10 +182,9 @@ async def _check_user_active(user_id: UUID, iat: int | None = None) -> None:
             
             if revoked_at and iat:
                 revoked_ts = revoked_at.timestamp()
-                # Use integer comparison for second-precision JWT iat.
-                # Allow tokens issued in the same second as the revocation (leeway).
-                if iat < int(revoked_ts):
-                    logger.warning("Session revoked for user %s (iat %s < revoked_at %s)", user_id, iat, revoked_ts)
+                # Reject tokens issued at or before the revocation timestamp.
+                if iat <= int(revoked_ts):
+                    logger.warning("Session revoked for user %s (iat %s <= revoked_at %s)", user_id, iat, revoked_ts)
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Session has been revoked",
