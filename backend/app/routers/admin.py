@@ -25,6 +25,7 @@ from app.schemas.admin import (
     ChangePlanRequest,
     DeleteGymRequest,
     ExtendTrialRequest,
+    GrantAccessRequest,
     GymDetailResponse,
     GymDirectoryResponse,
     ImpersonationResponse,
@@ -229,6 +230,30 @@ async def activate_subscription(
     service = AdminService(db)
     return await service.activate_subscription(
         gym_id=gym_id,
+        actor_id=current_user.user_id,
+        ip_address=_get_client_ip(request),
+    )
+
+
+@router.post("/gyms/{gym_id}/grant-access", response_model=AdminActionResponse)
+async def grant_access(
+    gym_id: UUID,
+    data: GrantAccessRequest,
+    request: Request,
+    current_user: CurrentUser = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant a gym full access for a specified duration. SUPER_ADMIN only.
+
+    This activates the subscription and extends the period end date
+    by the specified number of days. Useful for giving complimentary
+    access, handling payment disputes, or onboarding partner gyms.
+    """
+    service = AdminService(db)
+    return await service.grant_access(
+        gym_id=gym_id,
+        days=data.days,
+        reason=data.reason,
         actor_id=current_user.user_id,
         ip_address=_get_client_ip(request),
     )

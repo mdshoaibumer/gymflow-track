@@ -183,6 +183,12 @@ class MarkPaymentReceivedRequest(BaseModel):
     amount_in_paise: int = Field(..., gt=0)
 
 
+class GrantAccessRequest(BaseModel):
+    """Grant a gym full access for a specified number of days (bypasses billing)."""
+    days: int = Field(..., ge=1, le=365, description="Number of days to grant full access")
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
 class AdminActionResponse(BaseModel):
     success: bool
     message: str

@@ -697,6 +697,54 @@ class AdminService:
             action="subscription_activated",
         )
 
+    async def grant_access(
+        self, gym_id: UUID, days: int, reason: str,
+        actor_id: UUID, ip_address: str | None = None,
+    ) -> AdminActionResponse:
+        """Grant a gym full access for a specified number of days.
+
+        Activates the subscription (regardless of current status) and sets
+        the period end to today + days. Used by super admins to give
+        complimentary access or resolve billing disputes.
+        """
+        sub = await self._get_subscription(gym_id)
+        if not sub:
+            raise NotFoundError("No subscription found for this gym")
+
+        old_status = sub.status.value
+        sub.status = BillingStatus.ACTIVE
+        today = today_ist()
+        sub.current_period_start = today
+        sub.current_period_end = today + timedelta(days=days)
+        sub.payment_retry_count = 0
+
+        await self.db.flush()
+        invalidate_subscription_cache(gym_id)
+
+        await self._log_action(
+            actor_id=actor_id,
+            action=AuditAction.SUBSCRIPTION_ACTIVATED,
+            target_gym_id=gym_id,
+            description=(
+                f"Access granted for {days} days. Reason: {reason}. "
+                f"Previous status: {old_status}"
+            ),
+            metadata={
+                "old_status": old_status,
+                "days_granted": days,
+                "period_end": str(sub.current_period_end),
+                "reason": reason,
+            },
+            ip_address=ip_address,
+        )
+
+        return AdminActionResponse(
+            success=True,
+            message=f"Full access granted for {days} days (until {sub.current_period_end})",
+            gym_id=str(gym_id),
+            action="access_granted",
+        )
+
     # === Audit Log ===
 
     async def get_audit_logs(
