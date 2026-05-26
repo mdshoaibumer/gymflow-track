@@ -17,6 +17,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.core.cache import get_cache_backend
+from app.core.config import settings
 from app.core.security import create_access_token
 from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.models.gym import Gym
@@ -26,9 +27,10 @@ from app.models.user import User
 @pytest.fixture(autouse=True)
 def enable_enforcement():
     """Enable subscription enforcement for middleware tests."""
-    SubscriptionEnforcementMiddleware.ENABLE_ENFORCEMENT = True
+    original = settings.SUBSCRIPTION_ENFORCE
+    settings.SUBSCRIPTION_ENFORCE = True
     yield
-    SubscriptionEnforcementMiddleware.ENABLE_ENFORCEMENT = False
+    settings.SUBSCRIPTION_ENFORCE = original
 
 
 # === Full Access Tests ===

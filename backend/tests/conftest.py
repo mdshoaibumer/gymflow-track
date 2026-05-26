@@ -56,6 +56,9 @@ TEST_DATABASE_URL = f"{_base_url}/gymflowtrack_test"
 # Force in-memory cache for all tests to match test assumptions and keep isolation
 settings.REDIS_URL = ""
 
+# Disable subscription enforcement by default in tests (test_middleware.py enables it explicitly)
+settings.SUBSCRIPTION_ENFORCE = False
+
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
