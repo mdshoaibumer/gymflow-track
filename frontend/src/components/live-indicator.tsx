@@ -14,7 +14,7 @@ interface LiveIndicatorProps {
  */
 export function LiveIndicator({ className, label = "Live", pulse = true }: LiveIndicatorProps) {
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
       <span className="relative flex h-2 w-2">
         {pulse && (
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -24,6 +24,6 @@ export function LiveIndicator({ className, label = "Live", pulse = true }: LiveI
       <span className="text-2xs font-medium text-emerald-600 dark:text-emerald-400">
         {label}
       </span>
-    </div>
+    </span>
   );
 }

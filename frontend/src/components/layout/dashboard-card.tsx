@@ -76,7 +76,7 @@ export function DashboardCard({
               {trend.value >= 0 ? "↑" : "↓"} {Math.abs(trend.value)}%
             </span>
           )}
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <span className="text-xs text-muted-foreground">{description}</span>
         </div>
       </CardContent>
     </Card>
