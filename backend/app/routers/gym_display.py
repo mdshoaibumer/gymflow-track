@@ -25,6 +25,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.gym import Gym
 from app.repositories.gym_repository import GymRepository
 from app.services.gym_qr_service import (
@@ -198,8 +199,7 @@ async def self_service_check_in(
 
 # --- WhatsApp Webhook ---
 
-# Webhook verification token (used by WhatsApp to verify the webhook URL)
-WEBHOOK_VERIFY_TOKEN = "gymflow_attendance_webhook_v1"
+# Webhook verification token — sourced from environment variable (never hardcoded)
 
 
 @router.get("/webhook/whatsapp-attendance")
@@ -217,7 +217,7 @@ async def verify_whatsapp_webhook(
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    if mode == "subscribe" and token == WEBHOOK_VERIFY_TOKEN:
+    if mode == "subscribe" and token == settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN:
         logger.info("WhatsApp webhook verified successfully")
         return JSONResponse(content=int(challenge) if challenge else 0)
 

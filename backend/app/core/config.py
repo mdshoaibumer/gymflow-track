@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     # === WhatsApp ===
     WHATSAPP_PROVIDER: str = "log_only"  # "log_only" | "aisensy"
     WHATSAPP_API_KEY: str = ""
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = "change-me-webhook-token"  # WhatsApp webhook verification token
+
+    # === Subscription Enforcement ===
+    SUBSCRIPTION_ENFORCE: bool = True  # Enable/disable subscription gating middleware
 
     # === Password Policy ===
     PASSWORD_MIN_LENGTH: int = 8
@@ -174,6 +178,15 @@ class Settings(BaseSettings):
         if self.is_production and not self.RAZORPAY_WEBHOOK_SECRET:
             warnings.append("RAZORPAY_WEBHOOK_SECRET not set — webhook verification will fail.")
 
+        # --- WhatsApp webhook token ---
+        if self.is_production and self.WHATSAPP_WEBHOOK_VERIFY_TOKEN in (
+            "change-me-webhook-token", ""
+        ):
+            warnings.append(
+                "WHATSAPP_WEBHOOK_VERIFY_TOKEN is using default value. "
+                "Set a strong random token for WhatsApp webhook verification."
+            )
+
         # --- Proxy headers ---
         if self.is_production and not self.TRUST_PROXY_HEADERS:
             warnings.append(
@@ -188,6 +201,17 @@ class Settings(BaseSettings):
                 "COOKIE_SECURE=false in production. HttpOnly auth cookies must have "
                 "Secure flag enabled (requires HTTPS). Set COOKIE_SECURE=true."
             )
+
+        # --- CORS wildcard with credentials ---
+        if "*" in self.CORS_ORIGINS:
+            msg = (
+                "CORS_ORIGINS contains '*'. This is incompatible with "
+                "allow_credentials=True and will silently break cookie-based auth."
+            )
+            if self.is_production:
+                errors.append(msg)
+            else:
+                warnings.append(msg)
 
         # --- Emit warnings ---
         for w in warnings:
@@ -211,4 +235,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Hard assertion: prevent ANY startup with default JWT secret in production.
+# This catches cases where validate_for_startup() might be skipped.
+if settings.is_production and settings.JWT_SECRET_KEY in ("change-me", ""):
+    raise SystemExit(
+        "FATAL: JWT_SECRET_KEY is insecure. Cannot start in production. "
+        'Generate a secure key: python -c "import secrets; print(secrets.token_hex(32))"'
+    )
 
