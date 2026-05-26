@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, memo } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUIStore } from "@/store/ui-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useFeatureLimits } from "@/hooks/use-billing";
@@ -53,7 +54,7 @@ const navItems: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, roles: ["owner", "admin"] },
 ];
 
-function SidebarContent({ showClose = false, collapsed = false }: { showClose?: boolean; collapsed?: boolean }) {
+const SidebarContent = memo(function SidebarContent({ showClose = false, collapsed = false }: { showClose?: boolean; collapsed?: boolean }) {
   const pathname = usePathname();
   const { setSidebarOpen } = useUIStore();
   const role = useAuthStore((s) => s.role);
@@ -105,12 +106,11 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const isLocked = item.requiredFeature ? !featureFlags[item.requiredFeature] : false;
 
-          return (
+          const linkContent = (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setSidebarOpen(false)}
-              title={collapsed ? item.label : undefined}
               className={cn(
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-250 ease-spring",
                 "before:absolute before:inset-0 before:rounded-xl before:transition-all before:duration-250 before:ease-spring",
@@ -129,6 +129,21 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
               )}
             </Link>
           );
+
+          // Collapsed mode: wrap with Tooltip for accessibility
+          if (collapsed) {
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">
+                  {item.label}
+                  {isLocked && <span className="text-muted-foreground ml-1">(Locked)</span>}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return linkContent;
         })}
       </nav>
       <div className="border-t px-4 py-3">
@@ -142,7 +157,8 @@ function SidebarContent({ showClose = false, collapsed = false }: { showClose?: 
       </div>
     </>
   );
-}
+});
+SidebarContent.displayName = "SidebarContent";
 
 export function Sidebar() {
   const { sidebarOpen, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapse } = useUIStore();
@@ -199,7 +215,7 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden flex-col border-r border-border/50 sidebar-premium dark:dark-depth-sidebar md:flex transition-[width] duration-300 ease-spring",
+          "hidden flex-col border-r border-border/50 sidebar-premium dark:dark-depth-sidebar md:flex transition-[width] duration-300 ease-spring will-change-[width] contain-layout",
           sidebarCollapsed ? "w-[60px]" : "w-[260px]"
         )}
       >
