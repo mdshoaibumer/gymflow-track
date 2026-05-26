@@ -20,8 +20,7 @@ import sqlalchemy as sa
 
 from app.core.cache import get_cache_backend
 from app.core.security import create_access_token, decode_token, hash_password
-from app.models.auth_token import PasswordResetToken, RefreshToken
-from app.models.gym import Gym
+from app.models.auth_token import PasswordResetToken
 from app.models.user import User, UserRole
 
 

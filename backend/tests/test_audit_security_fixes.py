@@ -16,10 +16,8 @@ from httpx import AsyncClient
 
 from app.core.cache import get_cache_backend
 from app.core.config import settings
-from app.core.security import create_access_token
 from app.models.gym import Gym
 from app.models.subscription import BillingStatus, GymSubscription
-from app.models.user import User
 
 
 # =============================================================================

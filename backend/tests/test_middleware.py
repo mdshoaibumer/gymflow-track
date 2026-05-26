@@ -19,7 +19,6 @@ from httpx import AsyncClient
 from app.core.cache import get_cache_backend
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.models.gym import Gym
 from app.models.user import User
 

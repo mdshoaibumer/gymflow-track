@@ -12,19 +12,15 @@ Verifies:
 8. upgrade_all_to_elite script correctness
 """
 
-from datetime import date, timedelta, datetime, timezone
+from datetime import date, timedelta
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.cache import get_cache_backend
-from app.core.security import create_access_token, hash_password
 from app.models.gym import Gym
 from app.models.subscription import (
-    BillingInterval,
     BillingStatus,
     GymSubscription,
     Invoice,
@@ -32,7 +28,6 @@ from app.models.subscription import (
     PlanTier,
     SubscriptionPlan,
 )
-from app.models.user import User, UserRole
 from app.services.billing_service import (
     TRIAL_DAYS,
     create_trial_subscription,
@@ -40,7 +35,6 @@ from app.services.billing_service import (
     get_plan_by_tier,
     get_subscription,
     seed_default_plans,
-    verify_and_activate,
 )
 
 
@@ -245,7 +239,7 @@ class TestPaymentVerificationSecurity:
     ):
         """Verifying a payment order belonging to another gym must fail."""
         # Create an invoice for the OTHER gym
-        elite_plan = await get_plan_by_tier(db_session, "elite")
+        await get_plan_by_tier(db_session, "elite")
         other_sub = await get_subscription(db_session, other_gym.id)
 
         invoice = Invoice(

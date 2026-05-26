@@ -12,32 +12,19 @@ Tests all critical security fixes identified in the SaaS security audit:
 """
 
 import hashlib
-import time
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
 from uuid import uuid4
 
 import jwt as pyjwt
 import pytest
-import sqlalchemy as sa
 
-from app.core.cache import get_cache_backend
 from app.core.config import Settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    hash_password,
 )
 from app.models.auth_token import RefreshToken
-from app.models.gym import Gym
-from app.models.subscription import (
-    BillingStatus,
-    GymSubscription,
-    PlanTier,
-    SubscriptionPlan,
-)
-from app.models.user import User, UserRole
 from app.services.onboarding_service import _sanitize_csv_value
 
 
