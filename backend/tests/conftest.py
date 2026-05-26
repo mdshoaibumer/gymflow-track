@@ -159,9 +159,13 @@ async def client(db_session: AsyncSession) -> AsyncClient:
     """
     HTTPX async client wired to the FastAPI app with test DB session.
     """
-    # Clear rate-limit counters so each test starts with a fresh window
+    # Clear rate-limit counters and lockout keys so each test starts fresh
     cache = get_cache_backend()
     cache._counters.clear()
+    # Remove any login lockout keys from previous tests
+    stale_keys = [k for k in cache._store if k.startswith("login_lockout:")]
+    for k in stale_keys:
+        del cache._store[k]
 
     async def _override_get_db():
         yield db_session
