@@ -525,11 +525,12 @@ class TestWhatsAppWebhookEndpoint:
 
     async def test_webhook_verification_success(self, client: AsyncClient):
         """GET webhook with correct verify token returns challenge."""
+        from app.core.config import settings
         response = await client.get(
             "/api/v1/webhook/whatsapp-attendance",
             params={
                 "hub.mode": "subscribe",
-                "hub.verify_token": "gymflow_attendance_webhook_v1",
+                "hub.verify_token": settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
                 "hub.challenge": "1234567890",
             },
         )
