@@ -11,8 +11,9 @@ export function useAttendanceToday() {
     queryKey: ["attendance", "today"],
     queryFn: () => attendanceService.getToday(),
     enabled: !!token,
-    staleTime: 10_000,
+    staleTime: 15_000,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -42,6 +43,7 @@ export function useMemberAttendance(memberId: string, skip = 0, limit = 30) {
     queryKey: ["attendance", "member", memberId, skip, limit],
     queryFn: () => attendanceService.getMemberAttendance(memberId, skip, limit),
     enabled: !!token && !!memberId,
+    staleTime: 30_000,
   });
 }
 

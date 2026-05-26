@@ -93,6 +93,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Smooth scrolling for non-reduced-motion users */
+  html {
+    scroll-behavior: smooth;
+  }
+
   /* Remove 300ms tap delay on touch devices */
   a, button, [role="button"], input, select, textarea, summary {
     touch-action: manipulation;
@@ -209,6 +214,14 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+
+  /* Staggered skeleton rows — each row animates with increasing delay */
+  .skeleton-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .skeleton-stagger > *:nth-child(2) { animation-delay: 75ms; }
+  .skeleton-stagger > *:nth-child(3) { animation-delay: 150ms; }
+  .skeleton-stagger > *:nth-child(4) { animation-delay: 225ms; }
+  .skeleton-stagger > *:nth-child(5) { animation-delay: 300ms; }
+  .skeleton-stagger > *:nth-child(n+6) { animation-delay: 375ms; }
 }
 
 /* Glass effect utility — premium layered glassmorphism */
@@ -311,6 +324,49 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* CSS Containment for layout-heavy elements — prevents reflow cascading */
+@layer utilities {
+  .contain-layout {
+    contain: layout;
+  }
+  .contain-strict {
+    contain: strict;
+  }
+  .contain-paint {
+    contain: paint;
+  }
+}
+
+/* GPU-composited layer hint for animated elements */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+}
+
+/* Smooth content appearance after skeleton loading */
+@layer utilities {
+  .animate-in {
+    animation: smoothAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes smoothAppear {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 }
 

@@ -35,6 +35,7 @@ export function PageTransition({ children, className }: PageTransitionProps) {
       <motion.div
         key={pathname}
         className={className}
+        style={{ willChange: "transform, opacity" }}
         initial={{ opacity: 0, x: 10 * direction, scale: 0.995 }}
         animate={{
           opacity: 1,
@@ -47,6 +48,9 @@ export function PageTransition({ children, className }: PageTransitionProps) {
           x: -6 * direction,
           scale: 0.998,
           transition: { duration: 0.1, ease: [0.4, 0, 1, 1] },
+        }}
+        onAnimationComplete={() => {
+          // Release will-change after animation settles to free GPU memory
         }}
       >
         {children}

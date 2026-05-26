@@ -70,11 +70,11 @@ export default function DashboardLayout({
         Skip to main content
       </a>
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden relative">
+      <div className="flex flex-1 flex-col overflow-hidden relative min-w-0">
         <ScrollProgress />
         <Header />
         <BillingBanner />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6 lg:p-8">
+        <main id="main-content" className="flex-1 overflow-y-auto scroll-smooth overscroll-contain p-4 pb-20 md:p-6 md:pb-6 lg:p-8">
           <Breadcrumbs className="mb-5" />
           <ErrorBoundary key={pathname}>
             <LayoutGroup>

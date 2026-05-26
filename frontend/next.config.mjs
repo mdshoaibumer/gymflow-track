@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Performance: enable React compiler optimizations
+  reactStrictMode: true,
+  // Performance: compress responses
+  compress: true,
+  // Performance: optimize package imports to reduce bundle size
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],
+  },
   images: {
     remotePatterns: [
       {

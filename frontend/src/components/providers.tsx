@@ -3,17 +3,23 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { useState, useEffect, type ReactNode } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 
+// SSR-safe mobile detection using useSyncExternalStore (no hydration mismatch)
+function subscribeMobile(cb: () => void) {
+  const mql = window.matchMedia("(max-width: 767px)");
+  mql.addEventListener("change", cb);
+  return () => mql.removeEventListener("change", cb);
+}
+function getIsMobile() {
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+function getServerSnapshot() {
+  return false; // Default to desktop during SSR
+}
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-  return isMobile;
+  return useSyncExternalStore(subscribeMobile, getIsMobile, getServerSnapshot);
 }
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -42,7 +48,9 @@ export function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <TooltipProvider delayDuration={300} skipDelayDuration={100}>
+          {children}
+        </TooltipProvider>
         <Toaster
           position={isMobile ? "bottom-center" : "top-right"}
           richColors

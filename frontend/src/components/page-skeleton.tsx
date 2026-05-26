@@ -60,8 +60,8 @@ export function PageSkeleton({
               <Skeleton className="h-8 w-60" />
               <Skeleton className="h-8 w-24 ml-auto" />
             </div>
-            {/* Rows */}
-            <div className="divide-y">
+            {/* Rows — staggered shimmer for better perceived performance */}
+            <div className="divide-y skeleton-stagger">
               {Array.from({ length: rows }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 px-4 py-3.5">
                   <Skeleton className="h-4 w-32" />

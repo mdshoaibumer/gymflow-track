@@ -1,7 +1,7 @@
 "use client";
 
-import { type ReactNode } from "react";
-import { type Table, type ColumnDef, flexRender } from "@tanstack/react-table";
+import { type ReactNode, memo } from "react";
+import { type Table, type ColumnDef, type Row, flexRender } from "@tanstack/react-table";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,30 @@ interface ResponsiveDataTableProps<T> {
   isLoading?: boolean;
   loadingRows?: number;
 }
+
+// Memoized table row to prevent re-renders when sibling rows update
+const MemoizedTableRow = memo(function MemoizedTableRow<T>({
+  row,
+  index,
+}: {
+  row: Row<T>;
+  index: number;
+}) {
+  return (
+    <motion.tr
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
+      className="border-b transition-colors duration-150 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.05] last:border-b-0"
+    >
+      {row.getVisibleCells().map((cell) => (
+        <td key={cell.id} className="px-4 py-3">
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </td>
+      ))}
+    </motion.tr>
+  );
+}) as <T>(props: { row: Row<T>; index: number }) => ReactNode;
 
 export function ResponsiveDataTable<T>({
   table,
@@ -68,19 +92,7 @@ export function ResponsiveDataTable<T>({
                   </tr>
                 ))
               : rows.map((row, index) => (
-                  <motion.tr
-                    key={row.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
-                    className="border-b transition-colors duration-150 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.05] last:border-b-0"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </motion.tr>
+                  <MemoizedTableRow key={row.id} row={row} index={index} />
                 ))}
           </tbody>
         </table>
