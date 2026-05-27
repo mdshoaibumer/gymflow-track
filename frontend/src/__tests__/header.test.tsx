@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 
 // Mock dependencies
@@ -34,49 +35,60 @@ vi.mock("@/components/layout/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
 
+function renderHeader() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Header />
+    </QueryClientProvider>
+  );
+}
+
 describe("Header", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders the header element", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByRole("banner")).toBeInTheDocument();
   });
 
   it("renders mobile menu button with correct aria-label", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByLabelText("Open menu")).toBeInTheDocument();
   });
 
   it("renders user menu button", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByLabelText("User menu")).toBeInTheDocument();
   });
 
   it("renders user initials in avatar", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByText("JS")).toBeInTheDocument();
   });
 
   it("renders notification center", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByTestId("notification-center")).toBeInTheDocument();
   });
 
   it("renders theme toggle", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
   });
 
   it("renders desktop search trigger", () => {
-    render(<Header />);
+    renderHeader();
     expect(screen.getByText("Search anything…")).toBeInTheDocument();
   });
 
   it("shows user info in dropdown when clicked", async () => {
     const user = userEvent.setup();
-    render(<Header />);
+    renderHeader();
 
     await user.click(screen.getByLabelText("User menu"));
 
@@ -87,7 +99,7 @@ describe("Header", () => {
 
   it("shows logout option in dropdown", async () => {
     const user = userEvent.setup();
-    render(<Header />);
+    renderHeader();
 
     await user.click(screen.getByLabelText("User menu"));
 

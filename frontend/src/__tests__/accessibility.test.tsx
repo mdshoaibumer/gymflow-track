@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Mock hooks
 vi.mock("@/hooks/use-auth", () => ({
@@ -81,9 +82,18 @@ vi.mock("@/components/layout/theme-toggle", () => ({
 
 import DashboardLayout from "@/app/(dashboard)/layout";
 
+function renderWithProviders(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
+}
+
 describe("Accessibility - Dashboard Layout", () => {
   it("has a skip-to-content link", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <DashboardLayout>
         <p>Content</p>
       </DashboardLayout>
@@ -94,7 +104,7 @@ describe("Accessibility - Dashboard Layout", () => {
   });
 
   it("has main content landmark with id", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <DashboardLayout>
         <p>Content</p>
       </DashboardLayout>
@@ -104,7 +114,7 @@ describe("Accessibility - Dashboard Layout", () => {
   });
 
   it("skip link becomes visible on focus", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <DashboardLayout>
         <p>Content</p>
       </DashboardLayout>
@@ -117,7 +127,7 @@ describe("Accessibility - Dashboard Layout", () => {
   });
 
   it("sidebar has navigation landmark", () => {
-    const { container } = render(
+    const { container } = renderWithProviders(
       <DashboardLayout>
         <p>Content</p>
       </DashboardLayout>
@@ -127,7 +137,7 @@ describe("Accessibility - Dashboard Layout", () => {
   });
 
   it("renders page content inside main", () => {
-    render(
+    renderWithProviders(
       <DashboardLayout>
         <p>Test Content Here</p>
       </DashboardLayout>
