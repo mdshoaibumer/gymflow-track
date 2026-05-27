@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { CurrentUserResponse } from "@/services/auth.service";
 import type { UserRole } from "@/types";
 import { TOKEN_KEY, REFRESH_KEY } from "@/lib/api";
+import { getQueryClient } from "@/lib/query-client";
 
 /**
  * Auth store — cookie-based session management.
@@ -95,6 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       channel.onmessage = (event: MessageEvent<AuthMessage>) => {
         const msg = event.data;
         if (msg.type === "logout") {
+          try { getQueryClient().clear(); } catch { /* safe */ }
           set({
             isAuthenticated: false,
             token: null,
@@ -171,6 +173,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
     }
+
+    // Clear React Query cache to prevent cross-account data leakage
+    try {
+      getQueryClient().clear();
+    } catch { /* safe to ignore during SSR */ }
 
     // Notify other tabs about logout
     const channel = getAuthChannel();

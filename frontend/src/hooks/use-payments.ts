@@ -16,30 +16,33 @@ import { toast } from "sonner";
 
 export function useDashboardMetrics() {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["dashboard", "metrics"],
+    queryKey: ["dashboard", "metrics", gymId],
     queryFn: () => dashboardService.getMetrics(),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 30_000,
   });
 }
 
 export function useExpiringMembers(days = 7) {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["dashboard", "expiring", days],
+    queryKey: ["dashboard", "expiring", days, gymId],
     queryFn: () => dashboardService.getExpiring(days),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 60_000,
   });
 }
 
 export function useRecentPayments(limit = 5) {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["dashboard", "recent-payments", limit],
+    queryKey: ["dashboard", "recent-payments", limit, gymId],
     queryFn: () => dashboardService.getRecentPayments(limit),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 30_000,
   });
 }

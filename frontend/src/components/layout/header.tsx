@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Menu, LogOut, User, Search, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUIStore } from "@/store/ui-store";
@@ -23,9 +24,11 @@ export function Header() {
   const { role, user, logout } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useUIStore();
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     authService.logout().catch(() => {});
+    queryClient.clear();  // Wipe all cached data to prevent cross-account leakage
     logout();
     router.push("/login");
   };

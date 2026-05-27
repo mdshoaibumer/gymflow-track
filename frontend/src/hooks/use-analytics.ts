@@ -10,10 +10,11 @@ import {
 
 export function useRevenueTrend(params: RevenueTrendParams = {}) {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["analytics", "revenue-trend", params],
+    queryKey: ["analytics", "revenue-trend", params, gymId],
     queryFn: () => analyticsService.getRevenueTrend(params),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 60_000,
     retry: 2,
   });
@@ -21,10 +22,11 @@ export function useRevenueTrend(params: RevenueTrendParams = {}) {
 
 export function useRevenueSummary(params: { date_from?: string; date_to?: string } = {}) {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["analytics", "revenue-summary", params],
+    queryKey: ["analytics", "revenue-summary", params, gymId],
     queryFn: () => analyticsService.getRevenueSummary(params),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 60_000,
     retry: 2,
   });
@@ -32,10 +34,11 @@ export function useRevenueSummary(params: { date_from?: string; date_to?: string
 
 export function useMembershipDistribution() {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["analytics", "membership-distribution"],
+    queryKey: ["analytics", "membership-distribution", gymId],
     queryFn: () => analyticsService.getMembershipDistribution(),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 120_000,
     retry: 2,
   });
@@ -43,10 +46,11 @@ export function useMembershipDistribution() {
 
 export function useDashboardKPIs(params: DashboardKPIsParams = {}) {
   const token = useAuthStore((s) => s.token);
+  const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
-    queryKey: ["analytics", "dashboard-kpis", params],
+    queryKey: ["analytics", "dashboard-kpis", params, gymId],
     queryFn: () => analyticsService.getDashboardKPIs(params),
-    enabled: !!token,
+    enabled: !!token && !!gymId,
     staleTime: 30_000,
     retry: 2,
   });
