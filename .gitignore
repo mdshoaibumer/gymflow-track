@@ -81,5 +81,11 @@ backend/list_users.py
 # Root-level uploads (import script output)
 /uploads/
 
-# Stray assets
+# Stray assets / accidentally committed binaries
 1.webp
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+!frontend/public/**
