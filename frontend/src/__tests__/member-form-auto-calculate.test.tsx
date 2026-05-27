@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { MemberForm } from "@/components/members/member-form";
-import { calculateEndDate } from "@/lib/membership-plans";
 
 // Mock custom fields hook
 vi.mock("@/hooks/use-custom-fields", () => ({

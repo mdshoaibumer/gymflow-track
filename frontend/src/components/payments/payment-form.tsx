@@ -9,7 +9,6 @@ import {
 } from "@/lib/validations/payment";
 import type { Member } from "@/services/member.service";
 import { useMembers } from "@/hooks/use-members";
-import { useGym } from "@/hooks/use-gym";
 import { useMembershipPlans } from "@/hooks/use-membership-plans";
 import { calculateEndDate } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
@@ -54,7 +53,6 @@ export function PaymentForm({
   const showRenewal = watch("payment_status") === "completed";
 
   // --- Membership plans from settings (API-backed) ---
-  const { data: gym } = useGym();
   const { data: plans = [] } = useMembershipPlans();
 
   const handlePlanSelect = (planId: string) => {

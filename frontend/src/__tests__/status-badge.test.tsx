@@ -26,7 +26,7 @@ describe("StatusBadge", () => {
   });
 
   it("renders unknown statuses with secondary variant", () => {
-    const { container } = render(<StatusBadge status="unknown_status" />);
+    render(<StatusBadge status="unknown_status" />);
     // Should still render without crashing
     expect(screen.getByText("unknown status")).toBeInTheDocument();
   });

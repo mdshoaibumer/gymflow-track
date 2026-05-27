@@ -27,7 +27,7 @@ export default function DashboardLayout({
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { sidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed: _sidebarCollapsed } = useUIStore();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

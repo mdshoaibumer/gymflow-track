@@ -10,8 +10,6 @@ import { PhotoPreviewModal } from "./photo-preview-modal";
 import { compressImage } from "@/lib/compress-image";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE_MB = 5;
-const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 interface MemberPhotoUploadProps {
   memberId: string;

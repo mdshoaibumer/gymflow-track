@@ -6,7 +6,6 @@ import { Loader2, Camera, Upload, Trash2, User } from "lucide-react";
 import { memberFormSchema, type MemberFormValues } from "@/lib/validations/member";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useCustomFields } from "@/hooks/use-custom-fields";
-import { useGym } from "@/hooks/use-gym";
 import { useMembershipPlans } from "@/hooks/use-membership-plans";
 import { calculateEndDate } from "@/lib/membership-plans";
 import { Input } from "@/components/ui/input";
@@ -50,7 +49,7 @@ export function MemberForm({
   defaultValues,
   defaultCustomFields,
   initialPhotoUrl,
-  isEditing = false,
+  isEditing: _isEditing = false,
   onSubmit,
   onCancel,
   submitLabel,
@@ -59,7 +58,6 @@ export function MemberForm({
 }: MemberFormProps) {
   const { data: customFieldsData } = useCustomFields();
   const customFields: CustomField[] = customFieldsData?.fields ?? [];
-  const { data: gym } = useGym();
   const { data: plans = [] } = useMembershipPlans();
 
   const [cfValues, setCfValues] = useState<Record<string, string | number | null>>(
@@ -186,12 +184,14 @@ export function MemberForm({
               title={photoPreview || initialPhotoUrl ? "Click to view full photo" : undefined}
             >
               {photoPreview ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={photoPreview}
                   alt="Preview"
                   className="h-full w-full object-cover"
                 />
               ) : initialPhotoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={getFullAssetUrl(initialPhotoUrl)!}
                   alt="Existing"

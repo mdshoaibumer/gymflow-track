@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { PageSkeleton } from "@/components/page-skeleton";
 
 describe("PageSkeleton", () => {
@@ -12,7 +12,7 @@ describe("PageSkeleton", () => {
   it("renders stat cards when cards prop is set", () => {
     const { container } = render(<PageSkeleton cards={4} />);
     // Should render 4 card containers
-    const cards = container.querySelectorAll("[class*='CardContent']");
+    container.querySelectorAll("[class*='CardContent']");
     // Cards render as divs with p-5
     expect(container.innerHTML).toContain("grid");
   });

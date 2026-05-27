@@ -32,7 +32,6 @@ import { downloadCsv } from "@/lib/export-csv";
 import { toast } from "sonner";
 import { useUsageInfo } from "@/hooks/use-feature-access";
 import { UpgradePrompt } from "@/components/subscription/upgrade-prompt";
-import { useGym } from "@/hooks/use-gym";
 import { useMembershipPlans } from "@/hooks/use-membership-plans";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MemberFormValues } from "@/lib/validations/member";
@@ -43,7 +42,6 @@ export default function MembersPage() {
   const { isAdminOrAbove } = useAuth();
   const usage = useUsageInfo();
   const searchParams = useSearchParams();
-  const { data: gymData } = useGym();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -152,7 +150,7 @@ export default function MembersPage() {
     batch: batchFilter || undefined,
   });
 
-  const members = data?.members ?? [];
+  const members = useMemo(() => data?.members ?? [], [data?.members]);
   const total = data?.total ?? 0;
 
   const toggleSelectAll = useCallback(() => {

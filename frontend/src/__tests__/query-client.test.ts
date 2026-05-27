@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { getQueryClient } from "@/lib/query-client";
 

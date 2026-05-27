@@ -57,6 +57,7 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
         {/* Header */}
         <div className="text-center border-b pb-4 mb-6">
           {invoice.gym_logo_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={getFullAssetUrl(invoice.gym_logo_url)!}
               alt={invoice.gym_name}

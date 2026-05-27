@@ -22,7 +22,7 @@ vi.mock("@/store/auth-store", () => ({
 vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
-      const { initial, animate, transition, ...rest } = props as Record<string, unknown>;
+      const { initial: _initial, animate: _animate, transition: _transition, ...rest } = props as Record<string, unknown>;
       return <div {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>;
     },
   },

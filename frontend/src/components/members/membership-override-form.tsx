@@ -67,7 +67,7 @@ export function MembershipOverrideForm({ member, onSuccess, onCancel }: Membersh
     if (status !== member.membership_status) payload.membership_status = status;
 
     // Only submit if something actually changed
-    const { version: _, ...fields } = payload;
+    const { version: _version, ...fields } = payload;
     if (Object.keys(fields).length === 0) {
       toast.info("No changes detected");
       return;

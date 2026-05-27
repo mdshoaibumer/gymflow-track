@@ -56,14 +56,6 @@ const KPI_CONFIG: Record<
   },
 };
 
-function formatKPIValue(kpi: KPICard): string {
-  const config = KPI_CONFIG[kpi.key];
-  if (config) return config.formatValue(kpi.value, kpi.unit);
-  if (kpi.unit === "paise") return formatPaise(Number(kpi.value));
-  if (kpi.unit === "percent") return `${Number(kpi.value).toFixed(1)}%`;
-  return String(kpi.value);
-}
-
 interface EnhancedKPIGridProps {
   periodDays: number;
 }

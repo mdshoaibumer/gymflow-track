@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download, Snowflake, Play, RefreshCw, Activity } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import { useMember, useMemberTimeline } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
@@ -33,7 +32,6 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { isAdminOrAbove } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: member, isLoading } = useMember(id);

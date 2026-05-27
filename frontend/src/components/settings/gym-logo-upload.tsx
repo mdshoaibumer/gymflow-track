@@ -98,6 +98,7 @@ export function GymLogoUpload({ logoUrl, disabled }: GymLogoUploadProps) {
         {/* Logo preview */}
         <div className="relative h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden bg-muted/50">
           {currentImage ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={currentImage}
               alt="Gym logo"

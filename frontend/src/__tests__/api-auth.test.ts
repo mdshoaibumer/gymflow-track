@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import axios from "axios";
 
 // We test the API module's auth-expired event logic in isolation
 describe("API Auth Logic", () => {

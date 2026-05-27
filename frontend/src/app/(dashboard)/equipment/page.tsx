@@ -207,7 +207,7 @@ export default function EquipmentPage() {
   });
   const { data: stats } = useAssetStats();
 
-  const assets = assetsData?.assets ?? [];
+  const assets = useMemo(() => assetsData?.assets ?? [], [assetsData?.assets]);
   const total = assetsData?.total ?? 0;
 
   // Client-side sorting (server already did filtering/pagination)

@@ -210,6 +210,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
 
           {/* Captured snap preview */}
           {previewUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={previewUrl}
               alt="Captured preview"
