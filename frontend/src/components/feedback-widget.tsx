@@ -52,7 +52,7 @@ export function FeedbackWidget() {
       {/* Floating trigger button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+        className="fixed bottom-[calc(68px+1rem)] md:bottom-6 right-4 md:right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
         aria-label={open ? "Close feedback form" : "Open feedback form"}
       >
         {open ? "✕" : "💬"}
@@ -60,7 +60,7 @@ export function FeedbackWidget() {
 
       {/* Feedback panel */}
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-80 rounded-lg border bg-background shadow-xl">
+        <div className="fixed bottom-[calc(68px+4.5rem)] md:bottom-20 right-4 md:right-6 z-40 w-[calc(100%-2rem)] sm:w-80 max-w-80 rounded-lg border bg-background shadow-xl">
           <div className="border-b px-4 py-3">
             <h3 className="font-semibold text-sm">Send Feedback</h3>
             <p className="text-xs text-muted-foreground">Help us improve GymFlow Track</p>
