@@ -1,3 +1,11 @@
+/**
+ * @file whatsapp-reminder-button.tsx
+ * @description Self-contained WhatsApp reminder button with modal.
+ *              Supports compact mode for table rows (icon-only on small screens).
+ * @author Mohammed Shoaib U
+ * @module components/whatsapp/whatsapp-reminder-button
+ */
+
 "use client";
 
 import { MessageSquare } from "lucide-react";

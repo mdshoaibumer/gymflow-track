@@ -1,5 +1,8 @@
 """
-Billing service — subscription lifecycle, trial management, payment processing.
+Billing Service — Subscription Lifecycle & Payment Processing.
+
+Author      : Mohammed Shoaib U
+Module      : app.services.billing_service
 
 SaaS Retention Reasoning:
 ─────────────────────────

@@ -1,3 +1,9 @@
+"""User Model — Authentication & RBAC Entity.
+
+Author      : Mohammed Shoaib U
+Module      : app.models.user
+"""
+
 import uuid
 from datetime import datetime
 from enum import Enum as PyEnum

@@ -1,3 +1,12 @@
+"""Security Utilities — JWT Token Management & Password Hashing.
+
+Description : Provides token creation/decoding, password hashing via bcrypt,
+              and token validation with algorithm enforcement.
+              Implements HS256 JWTs with jti claims for revocation support.
+Author      : Mohammed Shoaib U
+Module      : app.core.security
+"""
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 

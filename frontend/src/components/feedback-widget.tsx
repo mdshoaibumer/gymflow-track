@@ -1,3 +1,11 @@
+/**
+ * @file feedback-widget.tsx
+ * @description Floating feedback button and panel for collecting user
+ *              feedback. Positioned above mobile nav to avoid overlap.
+ * @author Mohammed Shoaib U
+ * @module components/feedback-widget
+ */
+
 "use client";
 
 import { useState } from "react";

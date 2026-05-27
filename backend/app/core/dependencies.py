@@ -1,3 +1,12 @@
+"""Authentication Dependencies — FastAPI Dependency Injection.
+
+Description : Provides `get_current_user` and `require_role` dependencies
+              for securing API endpoints. Extracts JWT from cookies/headers,
+              validates tokens, and enforces RBAC with user-active checks.
+Author      : Mohammed Shoaib U
+Module      : app.core.dependencies
+"""
+
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status

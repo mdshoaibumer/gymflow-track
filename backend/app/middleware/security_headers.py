@@ -1,5 +1,8 @@
 """
-Security headers middleware.
+Security Headers Middleware — Browser Security Policy Enforcement.
+
+Author      : Mohammed Shoaib U
+Module      : app.middleware.security_headers
 
 Adds standard security headers to every response. These headers instruct
 browsers to apply security policies that prevent common attack vectors.

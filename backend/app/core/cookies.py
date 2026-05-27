@@ -1,5 +1,8 @@
 """
-HttpOnly cookie utilities for secure token storage.
+HttpOnly Cookie Utilities — Secure Token Storage.
+
+Author      : Mohammed Shoaib U
+Module      : app.core.cookies
 
 Security rationale:
 - HttpOnly: Prevents JavaScript access → mitigates XSS token theft

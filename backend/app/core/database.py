@@ -1,5 +1,8 @@
 """
-Database engine and session factory.
+Database Engine & Session Factory.
+
+Author      : Mohammed Shoaib U
+Module      : app.core.database
 
 Connection pool tuning for SaaS:
 - pool_size: Base connections kept open (default 5 — fine for 10-50 concurrent users)

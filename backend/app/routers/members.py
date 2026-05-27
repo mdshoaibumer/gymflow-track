@@ -1,3 +1,12 @@
+"""Members Router — CRUD, Photo Upload, Membership Lifecycle.
+
+Description : Provides endpoints for member management including
+              creation, updates, filtering, photo handling, and
+              membership status transitions.
+Author      : Mohammed Shoaib U
+Module      : app.routers.members
+"""
+
 from uuid import UUID
 import logging
 from datetime import datetime

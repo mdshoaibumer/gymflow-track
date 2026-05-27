@@ -1,3 +1,11 @@
+/**
+ * @file api.ts
+ * @description Axios HTTP client with cookie-based auth, token refresh
+ *              interceptor, and auth-expired event broadcasting.
+ * @author Mohammed Shoaib U
+ * @module lib/api
+ */
+
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";

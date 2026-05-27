@@ -1,3 +1,11 @@
+/**
+ * @file auth-store.ts
+ * @description Zustand store for authentication state.
+ *              Manages session lifecycle with HttpOnly cookie-based tokens.
+ * @author Mohammed Shoaib U
+ * @module store/auth-store
+ */
+
 import { create } from "zustand";
 import type { CurrentUserResponse } from "@/services/auth.service";
 import type { UserRole } from "@/types";

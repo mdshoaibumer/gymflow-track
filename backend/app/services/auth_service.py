@@ -1,3 +1,12 @@
+"""Authentication Service — Core Auth Business Logic.
+
+Description : Handles user registration, login, token rotation, password
+              reset, and session management. Implements timing-attack
+              resistant comparisons and token chain depth limiting.
+Author      : Mohammed Shoaib U
+Module      : app.services.auth_service
+"""
+
 import hashlib
 import logging
 import re
@@ -44,10 +53,6 @@ from app.services.email_service import send_password_reset_email
 _MAX_CHAIN_DEPTH = 5
 
 logger = logging.getLogger("gymflow.auth")
-
-# Maximum depth for following refresh token replacement chains.
-# Prevents DoS via adversarial token chains that cause unbounded DB queries.
-_MAX_CHAIN_DEPTH = 5
 
 # Pre-computed bcrypt hash used for constant-time rejection on invalid emails.
 # Prevents timing side-channels from revealing whether an email is registered.

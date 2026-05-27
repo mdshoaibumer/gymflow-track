@@ -1,4 +1,10 @@
-"""Member management service — CRUD and lifecycle operations for gym members."""
+"""Member Management Service — CRUD and Lifecycle Operations.
+
+Description : Handles member creation, updates, filtering, photo upload,
+              membership status management, and bulk operations.
+Author      : Mohammed Shoaib U
+Module      : app.services.member_service
+"""
 
 import logging
 import os

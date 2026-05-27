@@ -1,3 +1,11 @@
+"""Authentication Router — Login, Register, Refresh, Logout, Password Reset.
+
+Description : Exposes auth endpoints with rate limiting, cookie-based
+              token management, and secure session handling.
+Author      : Mohammed Shoaib U
+Module      : app.routers.auth
+"""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response

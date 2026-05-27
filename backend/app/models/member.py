@@ -1,3 +1,9 @@
+"""Member Model — Gym Member Entity with Membership Lifecycle.
+
+Author      : Mohammed Shoaib U
+Module      : app.models.member
+"""
+
 import uuid
 from datetime import date
 from enum import Enum as PyEnum

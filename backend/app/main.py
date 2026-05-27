@@ -1,3 +1,12 @@
+"""GymFlow Track — Application Entry Point.
+
+Description : FastAPI application factory with lifespan management.
+              Configures middleware stack, mounts routers, and handles
+              graceful startup/shutdown with health checks.
+Author      : Mohammed Shoaib U
+Module      : app.main
+"""
+
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path

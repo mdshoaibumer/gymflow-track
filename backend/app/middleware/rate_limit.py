@@ -1,5 +1,8 @@
 """
-Rate limiting middleware — brute-force protection for auth endpoints.
+Rate Limiting Middleware — Brute-Force Protection.
+
+Author      : Mohammed Shoaib U
+Module      : app.middleware.rate_limit
 
 Implementation: In-memory sliding window counter per IP address.
 No Redis/external storage needed at MVP scale (single-process deployment).

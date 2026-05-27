@@ -1,4 +1,12 @@
 /**
+ * @file whatsapp.ts
+ * @description WhatsApp URL generation, phone sanitization, and template
+ *              resolution utilities. Uses wa.me deep links (zero API cost).
+ * @author Mohammed Shoaib U
+ * @module lib/whatsapp
+ */
+
+/**
  * WhatsApp URL generation and phone number sanitization utilities.
  *
  * Uses the wa.me deep link — zero API cost, zero Meta approval.

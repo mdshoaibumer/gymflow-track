@@ -1,3 +1,11 @@
+/**
+ * @file use-auth.ts
+ * @description React hook for authentication state management.
+ *              Wraps Zustand auth store with session validation on mount.
+ * @author Mohammed Shoaib U
+ * @module hooks/use-auth
+ */
+
 "use client";
 
 import { useEffect } from "react";

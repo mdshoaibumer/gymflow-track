@@ -1,3 +1,11 @@
+/**
+ * @file dialog.tsx
+ * @description Radix-based Dialog component with responsive centering,
+ *              backdrop blur overlay, and accessible close controls.
+ * @author Mohammed Shoaib U
+ * @module components/ui/dialog
+ */
+
 "use client";
 
 import * as React from "react";

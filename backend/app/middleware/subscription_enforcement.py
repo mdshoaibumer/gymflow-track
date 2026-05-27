@@ -1,5 +1,8 @@
 """
-Subscription enforcement middleware.
+Subscription Enforcement Middleware — Billing-Aware Access Control.
+
+Author      : Mohammed Shoaib U
+Module      : app.middleware.subscription_enforcement
 
 Checks subscription status on every authenticated request.
 Routes access levels based on billing status.

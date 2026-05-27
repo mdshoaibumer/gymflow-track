@@ -1,3 +1,11 @@
+/**
+ * @file whatsapp-reminder-modal.tsx
+ * @description Premium modal for composing WhatsApp reminders with
+ *              live preview, placeholder insertion, and wa.me deep linking.
+ * @author Mohammed Shoaib U
+ * @module components/whatsapp/whatsapp-reminder-modal
+ */
+
 "use client";
 
 import { useCallback, useRef } from "react";

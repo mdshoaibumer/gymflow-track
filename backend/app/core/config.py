@@ -1,5 +1,8 @@
 """
-Application configuration — single source of truth for all settings.
+Application Configuration — Single Source of Truth for All Settings.
+
+Author      : Mohammed Shoaib U
+Module      : app.core.config
 
 Environment strategy:
 - development: Permissive defaults, debug on, insecure secrets allowed.
