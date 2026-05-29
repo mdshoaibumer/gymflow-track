@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.services.invoice_service import InvoiceService
 from app.models.member_invoice import MemberInvoice
@@ -9,7 +9,7 @@ from app.models.member_invoice import MemberInvoice
 async def test_get_recorded_by_name_with_user():
     """Test that it returns the name of the user who recorded the payment."""
     mock_db = AsyncMock()
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = "Staff Name"
     mock_db.execute.return_value = mock_result
     
@@ -24,7 +24,7 @@ async def test_get_recorded_by_name_with_user():
 async def test_get_recorded_by_name_fallback():
     """Test that it falls back to the gym owner if payment user is not found."""
     mock_db = AsyncMock()
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_db.execute.return_value = mock_result
     
