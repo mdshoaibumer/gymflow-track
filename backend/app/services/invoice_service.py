@@ -127,6 +127,22 @@ class InvoiceService:
             owner = result.scalar_one_or_none()
         return owner.name if owner else "Admin"
 
+    async def get_recorded_by_name(self, invoice: MemberInvoice) -> str:
+        """Fetch the name of the user who recorded the payment, falling back to owner name."""
+        from app.models.user import User
+        from app.models.payment import Payment
+        stmt = (
+            select(User.name)
+            .select_from(Payment)
+            .join(User, Payment.created_by == User.id)
+            .where(Payment.id == invoice.payment_id)
+        )
+        result = await self.db.execute(stmt)
+        name = result.scalar_one_or_none()
+        if not name:
+            name = await self.get_owner_name(invoice.gym_id)
+        return name
+
     def generate_pdf(self, invoice: MemberInvoice, owner_name: str | None = None) -> bytes:
         """Generate a premium PDF invoice matching the layout and design of 1.webp."""
         from reportlab.lib.pagesizes import A4
@@ -160,7 +176,8 @@ class InvoiceService:
             fontSize=9, 
             leading=12, 
             textColor=colors.HexColor("#555555"),
-            fontName="Helvetica"
+            fontName="Helvetica",
+            alignment=1  # TA_CENTER
         )
         member_addr_style = ParagraphStyle(
             "MemberAddress", 
@@ -298,12 +315,28 @@ class InvoiceService:
                     try:
                         # Limit logo height to 18mm while keeping aspect ratio
                         logo_img = Image(p, height=18 * mm, width=45 * mm, kind='proportional')
-                        logo_img.hAlign = 'RIGHT'
+                        logo_img.hAlign = 'CENTER'
                         break
                     except Exception as e:
                         logger.error(f"Error loading logo image: {e}")
                         
-        # Fallback placeholder typographic logo if no custom logo is present
+        # Fallback placeholder image logo if no custom logo is present
+        if not logo_img:
+            default_logo_paths = [
+                "/app/app/assets/default_logo.png",
+                "app/assets/default_logo.png",
+                "./backend/app/assets/default_logo.png",
+            ]
+            for p in default_logo_paths:
+                if os.path.exists(p) and os.path.isfile(p):
+                    try:
+                        logo_img = Image(p, height=18 * mm, width=45 * mm, kind='proportional')
+                        logo_img.hAlign = 'CENTER'
+                        break
+                    except Exception as e:
+                        logger.error(f"Error loading default logo image: {e}")
+
+        # Final fallback typographic logo if still no logo is loaded
         if not logo_img:
             fallback_text = f"<b>{invoice.gym_name.upper()}</b>"
             fallback_style = ParagraphStyle(
@@ -313,7 +346,7 @@ class InvoiceService:
                 leading=15, 
                 textColor=colors.HexColor("#D32F2F"),
                 fontName="Helvetica-Bold",
-                alignment=TA_RIGHT
+                alignment=1  # TA_CENTER
             )
             logo_img = Paragraph(fallback_text, fallback_style)
 
@@ -325,15 +358,10 @@ class InvoiceService:
             gym_info_html += f"<br/>Phone: {invoice.gym_phone}"
             
         header_p = Paragraph(gym_info_html, gym_address_style)
-        header_table = Table([[header_p, logo_img]], colWidths=[110 * mm, 60 * mm])
-        header_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        elements.append(header_table)
+        
+        elements.append(logo_img)
+        elements.append(Spacer(1, 4 * mm))
+        elements.append(header_p)
         elements.append(Spacer(1, 10 * mm))
 
         # ------------------ Bill To & Invoice Meta ------------------
@@ -374,7 +402,7 @@ class InvoiceService:
         # ------------------ Invoice Total Banner ------------------
         amount_rupees = invoice.amount_in_paise / 100
         total_lbl = Paragraph("Invoice Total", total_label_style)
-        total_val = Paragraph(f"₹{amount_rupees:,.2f}", total_amount_style)
+        total_val = Paragraph(f"Rs. {amount_rupees:,.2f}", total_amount_style)
         
         total_banner = Table([[total_lbl, total_val]], colWidths=[85 * mm, 85 * mm])
         total_banner.setStyle(TableStyle([
@@ -412,7 +440,7 @@ class InvoiceService:
         plan_display = (invoice.plan_name or "Membership Payment").upper()
         desc_html = f"<b>{plan_display}</b><br/><font color='#777777' size='8'><i>{start_str} to {end_str}</i></font>"
         td_desc = Paragraph(desc_html, td_desc_style)
-        td_amt = Paragraph(f"₹{amount_rupees:,.2f}", td_amount_style)
+        td_amt = Paragraph(f"Rs. {amount_rupees:,.2f}", td_amount_style)
 
         items_data = [
             [th_sr, th_desc, th_amt],
@@ -434,7 +462,7 @@ class InvoiceService:
 
         # ------------------ Subtotal ------------------
         subtotal_lbl = Paragraph("SUB TOTAL", subtotal_label_style)
-        subtotal_val = Paragraph(f"₹{amount_rupees:,.2f}", subtotal_val_style)
+        subtotal_val = Paragraph(f"Rs. {amount_rupees:,.2f}", subtotal_val_style)
         
         subtotal_table = Table([["", subtotal_lbl, subtotal_val]], colWidths=[100 * mm, 35 * mm, 35 * mm])
         subtotal_table.setStyle(TableStyle([

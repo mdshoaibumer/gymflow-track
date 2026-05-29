@@ -97,7 +97,7 @@ export function WhatsAppReminderModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-3 sm:p-6">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
@@ -165,7 +165,7 @@ export function WhatsAppReminderModal({
             id="wa-message"
             value={message}
             onChange={handleTextareaChange}
-            className="min-h-[140px] resize-none text-sm leading-relaxed"
+            className="min-h-[140px] max-h-[250px] overflow-y-auto resize-none text-sm leading-relaxed"
             placeholder="Type your reminder message..."
             aria-label="WhatsApp reminder message"
           />
@@ -186,7 +186,7 @@ export function WhatsAppReminderModal({
         />
 
         {/* Footer Actions */}
-        <DialogFooter className="flex-col gap-2 sm:flex-row">
+        <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
           <Button
             type="button"
             variant="outline"

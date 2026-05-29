@@ -192,7 +192,7 @@ describe("Invoice View - Discount Display", () => {
 
     expect(screen.getByText("Discount")).toBeDefined();
     // Should show net total (2000 - 500 = 1500)
-    expect(screen.getByText("₹1,500.00")).toBeDefined();
+    expect(screen.getByText("Rs. 1,500.00")).toBeDefined();
   });
 
   it("hides discount section when discount is 0", async () => {
@@ -221,6 +221,33 @@ describe("Invoice View - Discount Display", () => {
 
     expect(screen.queryByText("Discount")).toBeNull();
     // Total should just be the amount (appears in line item + total)
-    expect(screen.getAllByText("₹2,000.00").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Rs. 2,000.00").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("shows Guest Member when member_name is empty", async () => {
+    const { InvoiceView } = await import("@/components/invoices/invoice-view");
+    const invoice = {
+      id: "inv-3",
+      invoice_number: "INV-003",
+      invoice_date: "2025-01-15",
+      gym_name: "Test Gym",
+      gym_address: null,
+      gym_phone: null,
+      gym_logo_url: null,
+      member_name: "",
+      member_phone: "9876543210",
+      amount_in_paise: 200000,
+      discount_in_paise: 0,
+      payment_method: "upi",
+      payment_date: "2025-01-15",
+      plan_name: "Monthly",
+      notes: null,
+      created_at: "2025-01-15T00:00:00Z",
+    };
+    render(<InvoiceView invoice={invoice} onDownloadPdf={vi.fn()} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText("Guest Member")).toBeDefined();
   });
 });

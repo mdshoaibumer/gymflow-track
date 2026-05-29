@@ -308,19 +308,16 @@ export default function MembersPage() {
             : null;
           return (
             <Link href={`/members/${row.original.id}`} className="flex items-center gap-2 font-medium text-primary hover:underline">
-              <motion.span
-                layoutId={`member-avatar-${row.original.id}`}
-                className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0"
-              >
+              <span className="h-7 w-7 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
                 {photoUrl ? (
                   <Image src={photoUrl} alt="" width={28} height={28} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
-              </motion.span>
-              <motion.span layoutId={`member-name-${row.original.id}`}>
+              </span>
+              <span>
                 {row.original.name}
-              </motion.span>
+              </span>
             </Link>
           );
         },
@@ -675,9 +672,9 @@ export default function MembersPage() {
                         href={`/members/${member.id}`}
                         className="font-medium text-primary hover:underline truncate block"
                       >
-                        <motion.span layoutId={`member-name-${member.id}`}>
+                        <span>
                           {member.name}
-                        </motion.span>
+                        </span>
                       </Link>
                       <p className="text-sm text-muted-foreground mt-0.5">
                         {member.phone}

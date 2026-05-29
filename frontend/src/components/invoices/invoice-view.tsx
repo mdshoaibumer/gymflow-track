@@ -22,7 +22,7 @@ interface InvoiceViewProps {
 }
 
 function formatAmount(paise: number): string {
-  return `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  return `Rs. ${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -55,24 +55,24 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
       {/* Invoice content */}
       <div className="bg-white border rounded-lg p-8 print:border-none print:shadow-none print:p-0">
         {/* Header */}
-        <div className="text-center border-b pb-4 mb-6">
-          {invoice.gym_logo_url && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={getFullAssetUrl(invoice.gym_logo_url)!}
-              alt={invoice.gym_name}
-              width={64}
-              height={64}
-              className="h-16 mx-auto mb-2 object-contain"
-            />
-          )}
-          <h1 className="text-2xl font-bold">{invoice.gym_name}</h1>
-          {invoice.gym_address && (
-            <p className="text-muted-foreground text-sm">{invoice.gym_address}</p>
-          )}
-          {invoice.gym_phone && (
-            <p className="text-muted-foreground text-sm">Phone: {invoice.gym_phone}</p>
-          )}
+        <div className="flex flex-col items-center text-center gap-4 border-b pb-4 mb-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={invoice.gym_logo_url ? getFullAssetUrl(invoice.gym_logo_url)! : "/default_logo.png"}
+            alt={invoice.gym_name}
+            width={64}
+            height={64}
+            className="h-16 object-contain"
+          />
+          <div>
+            <h1 className="text-2xl font-bold">{invoice.gym_name}</h1>
+            {invoice.gym_address && (
+              <p className="text-muted-foreground text-sm">{invoice.gym_address}</p>
+            )}
+            {invoice.gym_phone && (
+              <p className="text-muted-foreground text-sm">Phone: {invoice.gym_phone}</p>
+            )}
+          </div>
         </div>
 
         {/* Invoice title and meta */}
@@ -98,7 +98,7 @@ export function InvoiceView({ invoice, onDownloadPdf }: InvoiceViewProps) {
         {/* Bill To */}
         <div className="mb-6">
           <p className="text-sm font-semibold text-muted-foreground mb-1">BILL TO</p>
-          <p className="font-medium">{invoice.member_name}</p>
+          <p className="font-medium">{invoice.member_name || "Guest Member"}</p>
           <p className="text-sm text-muted-foreground">Phone: {invoice.member_phone}</p>
         </div>
 

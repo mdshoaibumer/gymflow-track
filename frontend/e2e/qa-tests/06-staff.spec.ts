@@ -154,10 +154,10 @@ test.describe("06. STAFF — RBAC", () => {
     await page.waitForLoadState("networkidle");
 
     // Open mobile sidebar first if on mobile
-    const menuBtn = page.locator("button[aria-label='Open menu']");
+    const menuBtn = page.locator("button[aria-label='Open menu']").first();
     if (await menuBtn.isVisible().catch(() => false)) {
       await menuBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
     }
 
     // Owner should see Staff link

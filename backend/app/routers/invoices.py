@@ -39,7 +39,9 @@ async def download_invoice_pdf(
     gym_id = current_user.gym_id
     service = InvoiceService(db)
     invoice = await service.get_invoice(invoice_id, gym_id)
-    pdf_bytes = service.generate_pdf(invoice)
+    
+    recorded_by_name = await service.get_recorded_by_name(invoice)
+    pdf_bytes = service.generate_pdf(invoice, owner_name=recorded_by_name)
 
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
