@@ -248,11 +248,11 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT || 22 }}
           script: |
             set -e
-            cd /opt/gymflowtrack
+            cd /opt/gymflowtrack/gym-management-system
             git fetch origin main
             git checkout main
             git pull origin main
-            ./scripts/deploy.sh 2>&1 | tail -50
+            APP_DIR=/opt/gymflowtrack/gym-management-system ./scripts/deploy.sh 2>&1 | tail -50
 
       - name: Verify deployment health
         run: |
@@ -289,8 +289,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || 22 }}
           script: |
-            cd /opt/gymflowtrack
-            echo "yes" | ./scripts/rollback.sh
+            cd /opt/gymflowtrack/gym-management-system
+            echo "yes" | APP_DIR=/opt/gymflowtrack/gym-management-system ./scripts/rollback.sh
 
       - name: Verify rollback health
         run: |
