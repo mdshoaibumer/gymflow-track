@@ -99,6 +99,7 @@ describe("LoginPage", () => {
       expect(mockLogin).toHaveBeenCalledWith({
         email: "owner@gym.com",
         password: "ValidPass1",
+        remember_me: false,
       });
     });
   });
