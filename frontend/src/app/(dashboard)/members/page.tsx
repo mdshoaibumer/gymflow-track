@@ -663,22 +663,40 @@ export default function MembersPage() {
 
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">
-            {members.map((member) => (
+            {members.map((member) => {
+              const mobilePhotoUrl = member.photo_url
+                ? `${member.photo_url}?v=${member.version || 0}`
+                : null;
+              return (
               <Card key={member.id} className="hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-250 ease-spring gradient-border">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/members/${member.id}`}
-                        className="font-medium text-primary hover:underline truncate block"
-                      >
-                        <span>
-                          {member.name}
-                        </span>
+                    <div className="min-w-0 flex-1 flex items-center gap-3">
+                      <Link href={`/members/${member.id}`}>
+                        <motion.span
+                          layoutId={`member-avatar-${member.id}`}
+                          className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 ring-2 ring-border/50"
+                        >
+                          {mobilePhotoUrl ? (
+                            <Image src={mobilePhotoUrl} alt="" width={40} height={40} className="h-full w-full object-cover" loading="lazy" />
+                          ) : (
+                            <User className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </motion.span>
                       </Link>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {member.phone}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/members/${member.id}`}
+                          className="font-medium text-primary hover:underline truncate block"
+                        >
+                          <motion.span layoutId={`member-name-${member.id}`}>
+                            {member.name}
+                          </motion.span>
+                        </Link>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {member.phone}
+                        </p>
+                      </div>
                     </div>
                     <StatusBadge status={member.membership_status} />
                   </div>
@@ -712,7 +730,8 @@ export default function MembersPage() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pagination */}
