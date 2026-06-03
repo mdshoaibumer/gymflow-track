@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import get_cache_backend
 from app.core.config import settings
-from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies, set_auth_cookies
+from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies, get_remember_me, set_auth_cookies
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
 from app.schemas.auth import (
@@ -141,7 +141,7 @@ async def login(
 
     # Successful login — clear any prior failure counts
     _clear_login_failures(request)
-    set_auth_cookies(response, result.access_token, result.refresh_token)
+    set_auth_cookies(response, result.access_token, result.refresh_token, remember_me=data.remember_me)
     return result
 
 
@@ -166,7 +166,9 @@ async def refresh_token(
     service = AuthService(db)
     refresh_data = RefreshRequest(refresh_token=refresh_tok)
     result = await service.refresh_token(refresh_data)
-    set_auth_cookies(response, result.access_token, result.refresh_token)
+    # Preserve the remember_me preference from the original login
+    remember_me = get_remember_me(request)
+    set_auth_cookies(response, result.access_token, result.refresh_token, remember_me=remember_me)
     return result
 
 
