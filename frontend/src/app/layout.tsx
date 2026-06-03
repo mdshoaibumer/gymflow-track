@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   title: "GymFlow Track — Gym Management Made Simple",
   description: "Modern gym management software for Indian fitness businesses. Track members, payments, attendance & more.",
   metadataBase: new URL("https://gymflowtrack.in"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "GymFlow",
+  },
   openGraph: {
     title: "GymFlow Track — Gym Management Made Simple",
     description: "Modern gym management software for Indian fitness businesses. Track members, payments, attendance & more.",
@@ -35,6 +41,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://gymflowtrack.in",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -44,6 +53,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
+      <head>
+        <meta name="theme-color" content="#6366f1" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body className={`${inter.className} min-h-dvh`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

@@ -18,6 +18,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUIStore } from "@/store/ui-store";
 import { onAuthExpired } from "@/lib/api";
 import { authService } from "@/services/auth.service";
+import { useServiceWorker } from "@/hooks/use-service-worker";
+import { InstallAppBanner } from "@/components/install-app-banner";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +30,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { sidebarCollapsed: _sidebarCollapsed } = useUIStore();
+  useServiceWorker();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -84,6 +87,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <MobileBottomNav />
+      <InstallAppBanner />
       <FeedbackWidget />
       <CommandPalette />
       <OnboardingTour />
