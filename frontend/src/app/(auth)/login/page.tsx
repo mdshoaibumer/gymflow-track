@@ -30,6 +30,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
   const submittingRef = useRef(false);
   const user = useAuthStore((s) => s.user);
 
@@ -61,7 +62,10 @@ export default function LoginPage() {
     setFormError(null);
 
     try {
-      const response = await authService.login(data);
+      const response = await authService.login({
+        ...data,
+        remember_me: rememberMe,
+      });
 
       // Mark tokens saved (resets _profileFetched so dashboard can hydrate)
       useAuthStore.getState().saveTokens(response.access_token, response.refresh_token);
@@ -249,6 +253,20 @@ export default function LoginPage() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isSubmitting}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                />
+                <Label htmlFor="remember-me" className="text-sm font-normal text-muted-foreground cursor-pointer select-none">
+                  Remember me
+                </Label>
               </div>
 
               <Button
