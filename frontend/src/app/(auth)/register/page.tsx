@@ -72,6 +72,9 @@ export default function RegisterPage() {
       // Mark tokens saved (resets _profileFetched so dashboard can hydrate)
       useAuthStore.getState().saveTokens(response.access_token, response.refresh_token);
 
+      // Flag for onboarding tour — only new gym owners see the tour
+      localStorage.setItem("gymflow-show-tour", "true");
+
       // Fetch profile immediately to hydrate user data before navigation
       try {
         const profile = await authService.getMe();

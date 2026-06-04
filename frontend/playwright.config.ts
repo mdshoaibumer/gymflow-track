@@ -38,6 +38,6 @@ export default defineConfig({
     command: `npx next dev --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });

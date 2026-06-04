@@ -41,6 +41,9 @@ class User(BaseModel):
     sessions_revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    tour_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     gym = relationship("Gym", back_populates="users")

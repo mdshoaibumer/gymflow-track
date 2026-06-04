@@ -21,9 +21,10 @@ CSV Import Flow (recommended):
 import json
 import logging
 from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -100,6 +101,37 @@ async def onboarding_status(
     gym_name = gym.name if gym else "Your Gym"
     result = await get_onboarding_status(db, current_user.gym_id, gym_name)
     return result
+
+
+@router.get("/onboarding/tour-status")
+async def get_tour_status(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if the current user has completed the onboarding tour."""
+    from app.models.user import User
+
+    user = (await db.execute(
+        select(User).where(User.id == current_user.user_id)
+    )).scalar_one()
+    return {"tour_completed": user.tour_completed_at is not None}
+
+
+@router.post("/onboarding/tour-complete")
+async def mark_tour_complete(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark the onboarding tour as completed for the current user."""
+    from app.models.user import User
+
+    await db.execute(
+        update(User)
+        .where(User.id == current_user.user_id)
+        .values(tour_completed_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+    return {"tour_completed": True}
 
 
 @router.post("/onboarding/demo-data", response_model=DemoDataResponse)

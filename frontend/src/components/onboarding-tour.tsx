@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { onboardingService } from "@/services/onboarding.service";
 
 interface TourStep {
   title: string;
@@ -46,24 +47,51 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 const STORAGE_KEY = "gymflow-tour-completed";
+const SHOW_TOUR_KEY = "gymflow-show-tour";
 
 export function OnboardingTour() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    // Check if tour has been completed
-    const completed = localStorage.getItem(STORAGE_KEY);
-    if (!completed) {
-      // Delay showing tour to let the page load
-      const timer = setTimeout(() => setIsOpen(true), 1500);
-      return () => clearTimeout(timer);
+    // Check if tour should show: localStorage flag set during registration,
+    // but verify with backend in case it was already completed on another device
+    const shouldShow = localStorage.getItem(SHOW_TOUR_KEY);
+    const completedLocally = localStorage.getItem(STORAGE_KEY);
+
+    if (completedLocally) return; // Already done on this device
+
+    if (shouldShow) {
+      // Verify with backend — prevents re-showing on new devices
+      onboardingService
+        .getTourStatus()
+        .then((res) => {
+          if (res.tour_completed) {
+            // Already completed on another device — sync local state
+            localStorage.setItem(STORAGE_KEY, "true");
+            localStorage.removeItem(SHOW_TOUR_KEY);
+          } else {
+            // First time — show tour after delay
+            const timer = setTimeout(() => setIsOpen(true), 1500);
+            return () => clearTimeout(timer);
+          }
+        })
+        .catch(() => {
+          // API unavailable — fallback to showing tour
+          const timer = setTimeout(() => setIsOpen(true), 1500);
+          return () => clearTimeout(timer);
+        });
     }
   }, []);
 
   const handleComplete = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, "true");
+    localStorage.removeItem(SHOW_TOUR_KEY);
     setIsOpen(false);
+    // Persist to backend so other devices won't show tour again
+    onboardingService.markTourComplete().catch(() => {
+      // Non-critical — tour won't re-show on this device regardless
+    });
   }, []);
 
   const handleNext = useCallback(() => {

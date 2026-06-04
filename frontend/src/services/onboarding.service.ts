@@ -133,4 +133,10 @@ export const onboardingService = {
 
   getMetrics: () =>
     request.get<PilotMetrics>("/admin/metrics"),
+
+  getTourStatus: () =>
+    request.get<{ tour_completed: boolean }>("/onboarding/tour-status"),
+
+  markTourComplete: () =>
+    request.post<{ tour_completed: boolean }>("/onboarding/tour-complete", {}),
 };

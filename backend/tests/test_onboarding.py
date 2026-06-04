@@ -1,5 +1,5 @@
 """
-Tests for Onboarding endpoints — status, demo data, CSV import, feedback.
+Tests for Onboarding endpoints — status, demo data, CSV import, feedback, tour.
 
 Coverage:
 1. GET /onboarding/status — progress tracking
@@ -9,7 +9,9 @@ Coverage:
 5. POST /onboarding/import/upload — actual import
 6. POST /feedback — submit feedback
 7. GET /onboarding/admin/metrics — pilot metrics (OWNER only)
-8. RBAC enforcement
+8. GET /onboarding/tour-status — check tour completion
+9. POST /onboarding/tour-complete — mark tour done (cross-device sync)
+10. RBAC enforcement
 """
 
 import io
@@ -263,3 +265,71 @@ class TestPilotMetrics:
             "/api/v1/onboarding/admin/metrics", headers=staff_headers
         )
         assert response.status_code == 403
+
+
+class TestTourStatus:
+    """Test GET /api/v1/onboarding/tour-status and POST /api/v1/onboarding/tour-complete."""
+
+    async def test_tour_not_completed_by_default(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        response = await client.get(
+            "/api/v1/onboarding/tour-status", headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["tour_completed"] is False
+
+    async def test_mark_tour_complete(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        response = await client.post(
+            "/api/v1/onboarding/tour-complete", headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["tour_completed"] is True
+
+    async def test_tour_status_after_completion(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        # Complete the tour
+        await client.post(
+            "/api/v1/onboarding/tour-complete", headers=auth_headers
+        )
+        # Verify status reflects completion
+        response = await client.get(
+            "/api/v1/onboarding/tour-status", headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["tour_completed"] is True
+
+    async def test_unauthenticated_rejected(self, client: AsyncClient):
+        response = await client.get("/api/v1/onboarding/tour-status")
+        assert response.status_code in (401, 403)
+
+        response = await client.post("/api/v1/onboarding/tour-complete")
+        assert response.status_code in (401, 403)
+
+    async def test_staff_can_complete_tour(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """All roles should be able to complete the tour — it's per-user."""
+        response = await client.post(
+            "/api/v1/onboarding/tour-complete", headers=staff_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["tour_completed"] is True
+
+    async def test_tour_completion_is_per_user(
+        self, client: AsyncClient, auth_headers: dict, other_auth_headers: dict
+    ):
+        """Completing tour for one user doesn't affect another."""
+        # Owner completes tour
+        await client.post(
+            "/api/v1/onboarding/tour-complete", headers=auth_headers
+        )
+        # Other user should still show tour not completed
+        response = await client.get(
+            "/api/v1/onboarding/tour-status", headers=other_auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["tour_completed"] is False

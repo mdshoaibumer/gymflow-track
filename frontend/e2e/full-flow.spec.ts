@@ -51,10 +51,17 @@ async function registerViaAPI(
 // ── Helper: Login via the UI ──────────────────────────────────────────
 async function loginUser(page: Page, email: string) {
   await page.goto("/login");
+  // Ensure tour won't interfere with test interactions
+  await page.evaluate(() => localStorage.setItem("gymflow-tour-completed", "true")).catch(() => {});
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: /sign in/i }).click();
   await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
+  // Dismiss tour overlay if it somehow appears
+  const tourClose = page.locator("[aria-label='Close tour']");
+  if (await tourClose.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await tourClose.click();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -65,6 +72,7 @@ test.describe("Registration Flow", () => {
 
   test("can register a new gym and redirects to setup", async ({ page }) => {
     await page.goto("/register");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel("Gym Name").fill("Iron Paradise Gym");
     await page.getByLabel("Your Name").fill("Rajesh Kumar");
     await page.getByLabel("WhatsApp Number").fill("9876543210");
@@ -72,7 +80,7 @@ test.describe("Registration Flow", () => {
     await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
     await page.getByRole("button", { name: /create account/i }).click();
 
-    await page.waitForURL(/setup|dashboard/, { timeout: 30000 });
+    await page.waitForURL(/setup|dashboard/, { timeout: 45000 });
     const url = page.url();
     expect(url).toMatch(/setup|dashboard/);
   });
