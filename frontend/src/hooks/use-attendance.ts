@@ -11,8 +11,8 @@ export function useAttendanceToday() {
     queryKey: ["attendance", "today"],
     queryFn: () => attendanceService.getToday(),
     enabled: !!token,
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
     refetchIntervalInBackground: false,
   });
 }

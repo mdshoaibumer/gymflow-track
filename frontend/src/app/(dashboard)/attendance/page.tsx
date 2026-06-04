@@ -72,17 +72,21 @@ function AttendanceQRDialog() {
   useEffect(() => {
     if (!open) return;
     fetchQRData();
-    const interval = setInterval(fetchQRData, 30_000);
-    return () => clearInterval(interval);
   }, [open, fetchQRData]);
 
   useEffect(() => {
     if (!open) return;
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 30));
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          fetchQRData();
+          return 30;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, [open]);
+  }, [open, fetchQRData]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

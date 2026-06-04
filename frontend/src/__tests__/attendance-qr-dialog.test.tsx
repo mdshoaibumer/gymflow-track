@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AttendancePage from "@/app/(dashboard)/attendance/page";
 
@@ -217,5 +217,56 @@ describe("AttendanceQRDialog", () => {
         screen.getByText(/\/gym-display\?gymId=gym-123/)
       ).toBeInTheDocument();
     });
+  });
+
+  it("fetches a new QR code when the countdown timer reaches zero", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    const updatedQRData = {
+      ...mockQRData,
+      code: "XYZ789",
+      refresh_in_seconds: 30,
+    };
+
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...mockQRData, refresh_in_seconds: 3 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => updatedQRData,
+      });
+
+    render(<AttendancePage />);
+
+    await user.click(screen.getByRole("button", { name: /generate qr/i }));
+
+    // Wait for initial fetch to display the first code
+    await waitFor(() => {
+      expect(screen.getByText("ABC123")).toBeInTheDocument();
+    });
+
+    // First fetch happened on dialog open
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    // Advance timer by 3 seconds (the refresh_in_seconds returned by server)
+    // The timer fires every 1s and calls fetchQRData when timeLeft reaches 0
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    // Timer should have triggered a new fetch when it hit 0
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    // The new code should be displayed
+    await waitFor(() => {
+      expect(screen.getByText("XYZ789")).toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
   });
 });
