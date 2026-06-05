@@ -527,6 +527,6 @@ async def test_self_service_duplicate_same_day(
 @pytest.mark.asyncio
 async def test_all_checkin_sources_are_valid_enum_values():
     """All CheckInSource values are valid — ensures enum sync between Python and DB."""
-    expected = {"qr", "manual", "whatsapp_qr", "self_service"}
+    expected = {"qr", "manual", "whatsapp_qr", "self_service", "biometric"}
     actual = {s.value for s in CheckInSource}
     assert expected == actual
