@@ -22,6 +22,7 @@ from app.core.cache import get_cache_backend
 from app.core.security import create_access_token, decode_token, hash_password
 from app.models.auth_token import PasswordResetToken
 from app.models.user import User, UserRole
+from app.routers.auth import _LOGIN_MAX_ATTEMPTS as _LOGIN_ATTEMPTS_TO_TRIGGER
 
 
 # =============================================================================
@@ -395,9 +396,6 @@ class TestAuthRateLimiting:
                 # but internally rate limited
                 assert response.status_code == 200
 
-
-# Login lockout threshold from the router
-from app.routers.auth import _LOGIN_MAX_ATTEMPTS as _LOGIN_ATTEMPTS_TO_TRIGGER
 
 
 # =============================================================================
