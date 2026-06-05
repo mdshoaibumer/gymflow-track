@@ -31,7 +31,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_admin
-from app.core.billing_dependencies import require_qr_attendance
 from app.models.biometric import BiometricDevice
 from app.schemas.biometric import (
     BiometricCheckInRequest,

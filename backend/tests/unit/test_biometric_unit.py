@@ -12,18 +12,16 @@ Tests:
 import base64
 import os
 import pytest
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from app.schemas.biometric import (
     BiometricCheckInRequest,
-    DeviceHeartbeatRequest,
     EnrollTemplateRequest,
     RegisterDeviceRequest,
     UpdateDeviceRequest,
 )
-from app.models.biometric import BiometricDevice, BiometricType, DeviceStatus
+from app.models.biometric import BiometricType, DeviceStatus
 
 
 # === Schema Validation ===
