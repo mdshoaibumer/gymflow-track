@@ -17,7 +17,7 @@ const mockedUseInstallPrompt = vi.mocked(useInstallPrompt);
 
 describe("InstallAppBanner", () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     mockPromptInstall.mockResolvedValue(true);
     mockedUseInstallPrompt.mockReturnValue({
       isInstallable: true,
@@ -28,7 +28,7 @@ describe("InstallAppBanner", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   it("should render the install banner when installable", () => {
@@ -62,7 +62,7 @@ describe("InstallAppBanner", () => {
   });
 
   it("should not render when previously dismissed", () => {
-    localStorage.setItem("pwa-install-dismissed", "true");
+    sessionStorage.setItem("pwa-install-dismissed", "true");
 
     const { container } = render(<InstallAppBanner />);
     expect(container.firstChild).toBeNull();
@@ -77,13 +77,13 @@ describe("InstallAppBanner", () => {
     expect(mockPromptInstall).toHaveBeenCalled();
   });
 
-  it("should dismiss and set localStorage when X is clicked", () => {
+  it("should dismiss and set sessionStorage when X is clicked", () => {
     render(<InstallAppBanner />);
 
     const dismissBtn = screen.getByRole("button", { name: /Dismiss/i });
     fireEvent.click(dismissBtn);
 
-    expect(localStorage.getItem("pwa-install-dismissed")).toBe("true");
+    expect(sessionStorage.getItem("pwa-install-dismissed")).toBe("true");
   });
 
   it("should hide banner after user declines install prompt", async () => {
