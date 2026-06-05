@@ -337,6 +337,7 @@ export default function ExpensesPage() {
             </div>
           ) : expenses.length === 0 ? (
             <EmptyState
+              icon={Wallet}
               title="No expenses recorded"
               description="Start by adding a category and recording your first expense."
             />
