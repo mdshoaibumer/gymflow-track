@@ -11,7 +11,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import { memberService, type Member, type CreateMemberPayload } from "@/services/member.service";
@@ -107,6 +107,7 @@ export default function MembersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string } | null>(null);
   const editFormRef = useRef<HTMLDivElement>(null);
 
   // Bulk selection
@@ -672,18 +673,27 @@ export default function MembersPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1 flex items-center gap-3">
-                      <Link href={`/members/${member.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (mobilePhotoUrl) {
+                            setPreviewPhoto({ url: mobilePhotoUrl, name: member.name });
+                          }
+                        }}
+                        className={mobilePhotoUrl ? "cursor-pointer" : "cursor-default"}
+                        aria-label={mobilePhotoUrl ? `View ${member.name}'s photo` : undefined}
+                      >
                         <motion.span
                           layoutId={`member-avatar-${member.id}`}
-                          className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 ring-2 ring-border/50"
+                          className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 ring-2 ring-border/50"
                         >
                           {mobilePhotoUrl ? (
-                            <Image src={mobilePhotoUrl} alt="" width={40} height={40} className="h-full w-full object-cover" loading="lazy" />
+                            <Image src={mobilePhotoUrl} alt="" width={48} height={48} className="h-full w-full object-cover" loading="lazy" />
                           ) : (
                             <User className="h-5 w-5 text-muted-foreground" />
                           )}
                         </motion.span>
-                      </Link>
+                      </button>
                       <div className="min-w-0 flex-1">
                         <Link
                           href={`/members/${member.id}`}
@@ -743,6 +753,48 @@ export default function MembersPage() {
           />
         </>
       )}
+
+      {/* Photo Preview Modal (Mobile) */}
+      <AnimatePresence>
+        {previewPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setPreviewPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative max-w-xs w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setPreviewPhoto(null)}
+                className="absolute -top-10 right-0 rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30 transition-colors"
+                aria-label="Close preview"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="overflow-hidden rounded-xl shadow-2xl">
+                <Image
+                  src={previewPhoto.url}
+                  alt={previewPhoto.name}
+                  width={320}
+                  height={320}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <p className="mt-3 text-center text-sm font-medium text-white">
+                {previewPhoto.name}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Dialog */}
       {deletingMember && (

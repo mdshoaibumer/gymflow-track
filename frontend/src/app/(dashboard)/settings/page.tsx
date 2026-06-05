@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Building2, Save, Loader2, MessageSquare, RotateCcw } from "lucide-react";
+import { Building2, Save, Loader2, MessageSquare, RotateCcw, Download, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useGym, useUpdateGym } from "@/hooks/use-gym";
 import type { GymUpdatePayload } from "@/services/gym.service";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { CustomFieldsManager } from "@/components/settings/custom-fields-manager";
 import { MembershipPlansManager } from "@/components/settings/membership-plans-manager";
 import { GymLogoUpload } from "@/components/settings/gym-logo-upload";
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { data: gym, isLoading } = useGym();
   const updateMutation = useUpdateGym();
+  const { isInstallable, isInstalled, promptInstall } = useInstallPrompt();
 
   // Role-based route protection
   useEffect(() => {
@@ -232,6 +234,49 @@ export default function SettingsPage() {
             <span className="text-sm">Theme</span>
             <ThemeToggle />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Install App */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+              <Smartphone className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Install App</CardTitle>
+              <CardDescription>
+                {isInstalled
+                  ? "GymFlow is installed on your device."
+                  : "Install GymFlow on your device for quick access and offline support."}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isInstalled ? (
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <span className="h-2 w-2 rounded-full bg-green-500" />
+              App is installed
+            </div>
+          ) : isInstallable ? (
+            <Button
+              onClick={async () => {
+                const accepted = await promptInstall();
+                if (accepted) {
+                  toast.success("App installed successfully!");
+                }
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Install GymFlow App
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              To install, open this site in Chrome or Safari and use the browser&apos;s &quot;Add to Home Screen&quot; option from the menu.
+            </p>
+          )}
         </CardContent>
       </Card>
 

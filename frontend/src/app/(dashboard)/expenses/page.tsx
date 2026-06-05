@@ -126,10 +126,10 @@ export default function ExpensesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Track and manage all your gym expenses
           </p>
         </div>
@@ -137,16 +137,19 @@ export default function ExpensesPage() {
           <RoleGate allowed={["owner"]}>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setModal({ type: "add-category" })}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
-              Add Category
+              <span className="hidden sm:inline">Add Category</span>
+              <span className="sm:hidden">Category</span>
             </Button>
           </RoleGate>
           <RoleGate allowed={["owner", "admin"]}>
-            <Button onClick={() => setModal({ type: "add-expense" })}>
+            <Button size="sm" onClick={() => setModal({ type: "add-expense" })}>
               <Plus className="mr-2 h-4 w-4" />
-              Record Expense
+              <span className="hidden sm:inline">Record Expense</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </RoleGate>
         </div>
@@ -154,14 +157,14 @@ export default function ExpensesPage() {
 
       {/* Dashboard Cards */}
       {dashLoading ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-28" />
           ))}
         </div>
       ) : dashboard ? (
         <motion.div
-          className="grid gap-4 md:grid-cols-4"
+          className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -306,7 +309,7 @@ export default function ExpensesPage() {
 
       {/* Expense List */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-sm font-medium">Expense Records</CardTitle>
           <Select
             value={filterCategory}
@@ -315,7 +318,7 @@ export default function ExpensesPage() {
               setPage(0);
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
@@ -347,27 +350,27 @@ export default function ExpensesPage() {
                 {expenses.map((expense) => (
                   <div
                     key={expense.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    className="flex items-start sm:items-center justify-between gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       <span
-                        className="h-3 w-3 rounded-full"
+                        className="h-3 w-3 rounded-full flex-shrink-0 mt-1 sm:mt-0"
                         style={{
                           backgroundColor: expense.category_color || "#6B7280",
                         }}
                       />
-                      <div>
-                        <div className="font-medium text-sm">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">
                           {expense.category_name || "Uncategorized"}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground truncate">
                           {expense.expense_date}
                           {expense.description && ` — ${expense.description}`}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-sm">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                      <span className="font-semibold text-sm whitespace-nowrap">
                         {formatPaise(expense.amount_in_paise)}
                       </span>
                       <RoleGate allowed={["owner"]}>

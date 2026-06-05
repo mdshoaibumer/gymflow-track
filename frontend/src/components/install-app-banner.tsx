@@ -12,7 +12,7 @@ export function InstallAppBanner() {
   const { isInstallable, isInstalled, promptInstall } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === "undefined") return true;
-    return localStorage.getItem("pwa-install-dismissed") === "true";
+    return sessionStorage.getItem("pwa-install-dismissed") === "true";
   });
 
   // Don't show if: already installed, not installable, or user dismissed
@@ -28,7 +28,7 @@ export function InstallAppBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem("pwa-install-dismissed", "true");
+    sessionStorage.setItem("pwa-install-dismissed", "true");
   };
 
   return (
