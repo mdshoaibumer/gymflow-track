@@ -82,7 +82,68 @@
 
 ## Future Tables (Phase 2+)
 
-- `payments` — Payment records per member
-- `attendance` — Check-in/check-out logs
 - `plans` — Membership plan definitions
 - `whatsapp_messages` — Message delivery logs
+
+---
+
+## Implemented Tables (Not in Original Schema)
+
+The following tables were added through Alembic migrations as features were built:
+
+### payments
+Payment records per member. Stores amount in paise (integer), supports void/refund.
+
+### attendance
+Check-in/check-out logs with dedup (one per member per day). Supports sources: `qr`, `manual`, `whatsapp_qr`, `self_service`, `biometric`.
+
+### biometric_devices
+Registered biometric hardware devices (fingerprint scanners, face cameras) per gym. Each device has a bcrypt-hashed API key for authentication.
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| gym_id | UUID | FK → gyms.id, NOT NULL |
+| device_name | VARCHAR(100) | NOT NULL |
+| device_model | VARCHAR(100) | NULLABLE |
+| serial_number | VARCHAR(100) | NULLABLE |
+| location | VARCHAR(200) | NULLABLE |
+| api_key_hash | VARCHAR(128) | NOT NULL |
+| api_key_prefix | VARCHAR(12) | NOT NULL |
+| biometric_type | ENUM(fingerprint, face) | NOT NULL |
+| status | ENUM(active, inactive, revoked) | NOT NULL, DEFAULT active |
+| last_heartbeat_at | TIMESTAMPTZ | NULLABLE |
+| min_match_score | FLOAT | NOT NULL, DEFAULT 0.80 |
+| created_at | TIMESTAMPTZ | NOT NULL |
+| updated_at | TIMESTAMPTZ | NOT NULL |
+
+### biometric_templates
+Encrypted biometric templates (AES-256-GCM) for member enrollment.
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| gym_id | UUID | FK → gyms.id, NOT NULL |
+| member_id | UUID | FK → members.id, NOT NULL |
+| device_id | UUID | FK → biometric_devices.id, NULLABLE |
+| template_data | BYTEA | NOT NULL (encrypted) |
+| encryption_iv | BYTEA(16) | NOT NULL |
+| biometric_type | ENUM(fingerprint, face) | NOT NULL |
+| quality_score | FLOAT | NULLABLE |
+| template_format | VARCHAR(50) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT true |
+| enrolled_at | TIMESTAMPTZ | NOT NULL |
+| deactivated_at | TIMESTAMPTZ | NULLABLE |
+| created_at | TIMESTAMPTZ | NOT NULL |
+| updated_at | TIMESTAMPTZ | NOT NULL |
+
+### Other implemented tables
+- `notifications` — WhatsApp/email notification queue and delivery logs
+- `assets` / `maintenance_records` — Equipment lifecycle tracking
+- `member_invoices` — Auto-generated invoices with PDF support
+- `subscription_plans` / `gym_subscriptions` / `invoices` — Platform billing
+- `audit_logs` / `gym_audit_logs` — Full audit trail
+- `whatsapp_configs` — Per-gym WhatsApp provider credentials
+- `gym_membership_plans` — Per-gym membership plan definitions
+- `expenses` / `expense_categories` — Expense tracking with custom fields
+- `custom_fields` — Per-gym configurable member data fields

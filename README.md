@@ -48,10 +48,10 @@ Modern, WhatsApp-first gym management platform for small and medium Indian gyms.
 │   │   ├── middleware/       # Rate limit, security headers, subscription enforcement
 │   │   ├── models/           # SQLAlchemy ORM models
 │   │   ├── repositories/     # Data access layer (tenant-scoped queries)
-│   │   ├── routers/          # API route handlers (18 modules)
+│   │   ├── routers/          # API route handlers (19 modules)
 │   │   ├── schemas/          # Pydantic request/response schemas
 │   │   └── services/         # Business logic layer (27 services)
-│   ├── alembic/              # Database migrations (26 versioned migrations)
+│   ├── alembic/              # Database migrations (31 versioned migrations)
 │   └── tests/                # Pytest test suite (60+ test files)
 ├── frontend/                 # Next.js 15 application
 │   ├── src/
@@ -127,6 +127,7 @@ Copy `.env.example` (dev) or `.env.example.production` (prod) for the full list.
 | `SENTRY_DSN` | Sentry error tracking DSN | _(empty)_ |
 | `RESEND_API_KEY` | Resend email service API key | _(empty)_ |
 | `COOKIE_SECURE` | `true` in production (HTTPS required) | `false` |
+| `BIOMETRIC_ENCRYPTION_KEY` | AES-256 key for biometric templates (base64, 32 bytes) | _(empty)_ |
 
 ## Features
 
@@ -141,6 +142,7 @@ Copy `.env.example` (dev) or `.env.example.production` (prod) for the full list.
 - **QR Attendance** — HMAC-signed QR codes, manual check-in, dedup
 - **Self-Service Check-in** — Kiosk mode for gyms (public URL per gym)
 - **WhatsApp QR Attendance** — Check-in via WhatsApp message
+- **Biometric Attendance** — Fingerprint & face recognition device integration (AES-256-GCM encrypted templates, device-side 1:N matching, vendor-agnostic)
 - **Equipment Tracking** — Asset lifecycle, maintenance records, warranty alerts
 - **WhatsApp Reminders** — Expiry, overdue, welcome notifications (scheduled)
 - **Gym Display** — Public-facing gym information page

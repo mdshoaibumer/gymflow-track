@@ -57,10 +57,24 @@
 - Workout planning / exercise tracking
 - Calorie / nutrition tracking
 - AI chatbot or recommendations
-- Biometric integrations
 - Native mobile apps (responsive web only)
 - Social features / community
-- Franchise / multi-branch management
 - Video content / streaming
 
-**Rationale:** Our target users are non-technical gym owners who need simple ops tools. Every feature we add must serve the "manage members + collect money" workflow.
+**Rationale:** Our target users are non-technical gym owners who need simple ops tools. Every feature we add must serve the "manage members + collect money + track attendance" workflow.
+
+---
+
+## Completed (Beyond Original Roadmap)
+
+- [x] QR Attendance (HMAC-signed, staff scan)
+- [x] Self-Service Check-in (kiosk mode, rotating codes)
+- [x] WhatsApp QR Attendance
+- [x] Biometric Attendance Integration (fingerprint + face recognition)
+- [x] Equipment & Asset Tracking
+- [x] Subscription Billing (Razorpay)
+- [x] Multi-branch management (Elite plan)
+- [x] Expense Tracking
+- [x] Custom Fields per Gym
+- [x] CSV/Excel Import (Hindi/Hinglish support)
+- [x] Super Admin Control Center
