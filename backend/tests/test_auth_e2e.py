@@ -397,7 +397,7 @@ class TestAuthRateLimiting:
 
 
 # Login lockout threshold from the router
-_LOGIN_ATTEMPTS_TO_TRIGGER = 10
+from app.routers.auth import _LOGIN_MAX_ATTEMPTS as _LOGIN_ATTEMPTS_TO_TRIGGER
 
 
 # =============================================================================
