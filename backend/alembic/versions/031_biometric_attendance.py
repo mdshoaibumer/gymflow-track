@@ -28,8 +28,8 @@ def upgrade() -> None:
     op.execute("ALTER TYPE checkinsource ADD VALUE IF NOT EXISTS 'biometric'")
 
     # 2. Create new enum types
-    op.execute("CREATE TYPE biometrictype AS ENUM ('fingerprint', 'face')")
-    op.execute("CREATE TYPE devicestatus AS ENUM ('active', 'inactive', 'revoked')")
+    op.execute("CREATE TYPE IF NOT EXISTS biometrictype AS ENUM ('fingerprint', 'face')")
+    op.execute("CREATE TYPE IF NOT EXISTS devicestatus AS ENUM ('active', 'inactive', 'revoked')")
 
     # 3. Create biometric_devices table
     op.create_table(
