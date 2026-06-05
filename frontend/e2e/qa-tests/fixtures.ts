@@ -12,7 +12,7 @@ import { test as base, expect, type Page, type APIRequestContext } from "@playwr
 // ── Constants ─────────────────────────────────────────────────────────
 export const API_BASE = "http://localhost:8000/api/v1";
 export const TEST_PASSWORD = "StrongPass1A";
-export const SUPER_ADMIN_EMAIL = "admin@gymflow.dev";
+export const SUPER_ADMIN_EMAIL = "admin@gymflowtrack.in";
 export const SUPER_ADMIN_PASSWORD = "SuperAdmin@2026!";
 
 const RUN_ID = Date.now();

@@ -32,8 +32,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=staging
-      - DEBUG=false
+      - APP_ENV=development
+      - SUPER_ADMIN_PASSWORD=SuperAdmin@2026!
+      - DEBUG=true
       - DATABASE_URL=postgresql+asyncpg://gymflowtrack:gymflowtrack@db:5432/gymflowtrack
       - DATABASE_URL_SYNC=postgresql://gymflowtrack:gymflowtrack@db:5432/gymflowtrack
       - REDIS_URL=redis://redis:6379/0
@@ -46,7 +47,7 @@ services:
       - LOG_LEVEL=INFO
       - RATE_LIMIT_AUTH=99999
       - RATE_LIMIT_API=99999
-    command: sh -c "alembic upgrade head && python seed_test.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --limit-max-requests 10000 --timeout-graceful-shutdown 30 --access-log --proxy-headers --forwarded-allow-ips '*'"
+    command: sh -c "alembic upgrade head && python -m app.scripts.seed_super_admin && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --limit-max-requests 10000 --timeout-graceful-shutdown 30 --access-log --proxy-headers --forwarded-allow-ips '*'"
     depends_on:
       db:
         condition: service_healthy

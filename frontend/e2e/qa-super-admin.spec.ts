@@ -12,12 +12,12 @@
  * Prerequisites:
  *   - Backend on :8000 (python run_sqlite_server.py)
  *   - Frontend on :3000 (npm run dev)
- *   - Super admin seeded: admin@gymflow.dev / SuperAdmin@2026!
+ *   - Super admin seeded: admin@gymflowtrack.in / SuperAdmin@2026!
  */
 import { test, expect, type Page, type BrowserContext, type APIRequestContext } from "@playwright/test";
 
 const API_BASE = "http://localhost:8000/api/v1";
-const ADMIN_EMAIL = "admin@gymflow.dev";
+const ADMIN_EMAIL = "admin@gymflowtrack.in";
 const ADMIN_PASSWORD = "SuperAdmin@2026!";
 
 // ── Helpers ──────────────────────────────────────────────────────────

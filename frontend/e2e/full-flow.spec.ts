@@ -73,7 +73,7 @@ test.describe("Registration Flow", () => {
   test("can register a new gym and redirects to setup", async ({ page }) => {
     await page.goto("/register");
     await page.waitForLoadState("networkidle");
-    await page.getByLabel("Gym Name").fill("Iron Paradise Gym");
+    await page.getByLabel("Gym Name").fill(`Iron Paradise Gym ${RUN_ID}`);
     await page.getByLabel("Your Name").fill("Rajesh Kumar");
     await page.getByLabel("WhatsApp Number").fill("9876543210");
     await page.getByLabel(/email/i).fill(REG_EMAIL);
@@ -87,7 +87,7 @@ test.describe("Registration Flow", () => {
 
   test("duplicate email shows error", async ({ page, request }) => {
     // Ensure the email is registered (may already be from previous test)
-    try { await registerViaAPI(request, { gym_name: "Dup Gym", owner_name: "Dup", phone: "9876540099", email: REG_EMAIL }); } catch { /* already exists */ }
+    try { await registerViaAPI(request, { gym_name: `Dup Gym ${RUN_ID}`, owner_name: "Dup", phone: "9876540099", email: REG_EMAIL }); } catch { /* already exists */ }
 
     // Try registering again with the same email via UI
     await page.goto("/register");
@@ -115,7 +115,7 @@ test.describe("Login Flow", () => {
 
   test.beforeAll(async ({ request }) => {
     await registerViaAPI(request, {
-      gym_name: "Login Test Gym",
+      gym_name: `Login Test Gym ${RUN_ID}`,
       owner_name: "Login Tester",
       phone: "9876500010",
       email: LOGIN_EMAIL,
@@ -146,7 +146,7 @@ test.describe("Authenticated Navigation", () => {
 
   test.beforeAll(async ({ request }) => {
     await registerViaAPI(request, {
-      gym_name: "Nav Test Gym",
+      gym_name: `Nav Test Gym ${RUN_ID}`,
       owner_name: "Nav Tester",
       phone: "9876500001",
       email: NAV_EMAIL,
@@ -210,7 +210,7 @@ test.describe("Member Management", () => {
 
   test.beforeAll(async ({ request }) => {
     await registerViaAPI(request, {
-      gym_name: "Member Test Gym",
+      gym_name: `Member Test Gym ${RUN_ID}`,
       owner_name: "Member Tester",
       phone: "9876500002",
       email: MEMBER_EMAIL,
@@ -269,7 +269,7 @@ test.describe("Logout Flow", () => {
 
   test.beforeAll(async ({ request }) => {
     await registerViaAPI(request, {
-      gym_name: "Logout Test Gym",
+      gym_name: `Logout Test Gym ${RUN_ID}`,
       owner_name: "Logout Tester",
       phone: "9876500003",
       email: LOGOUT_EMAIL,

@@ -12,7 +12,8 @@
  */
 import { test, expect, type Page, type BrowserContext, type APIRequestContext } from "@playwright/test";
 
-// Each describe block is serial internally, but blocks are independent
+// Each describe block is serial internally, but blocks are independent unless we configure the whole file
+test.describe.configure({ mode: "serial" });
 
 // ── Constants ─────────────────────────────────────────────────────────
 const RUN_ID = Date.now();
@@ -238,9 +239,7 @@ test.describe("1. LOGIN TESTING", () => {
     await loginViaUI(page, OWNER_EMAIL);
     await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
     // Logout via API
-    await page.evaluate(() => fetch("http://localhost:8000/api/v1/auth/logout", {
-      method: "POST", credentials: "include"
-    }));
+    await page.request.post(`${API_BASE}/auth/logout`);
     await page.goto("/login");
     await page.waitForTimeout(1000);
     // Login again
@@ -500,9 +499,7 @@ test.describe("3. SESSION & AUTHORIZATION", () => {
     await page.goto("/members");
     await page.waitForTimeout(3000);
     // Logout via API
-    await page.evaluate(() => fetch("http://localhost:8000/api/v1/auth/logout", {
-      method: "POST", credentials: "include"
-    }));
+    await page.request.post(`${API_BASE}/auth/logout`);
     // Navigate to login
     await page.goto("/login");
     await page.waitForTimeout(2000);
@@ -560,9 +557,7 @@ test.describe("4. RBAC & ACCESS CONTROL", () => {
     await page.goto("/login");
     const result = await page.evaluate(async () => {
       try {
-        const resp = await fetch("http://localhost:8000/api/v1/members", {
-          credentials: "include",
-        });
+        const resp = await fetch("/api/v1/members");
         return { status: resp.status };
       } catch (e) {
         return { error: String(e) };
@@ -585,9 +580,7 @@ test.describe("4. RBAC & ACCESS CONTROL", () => {
     await loginViaUI(page, OWNER_EMAIL);
     await page.waitForURL(/dashboard|setup/, { timeout: 30000 });
     // Logout
-    await page.evaluate(() => fetch("http://localhost:8000/api/v1/auth/logout", {
-      method: "POST", credentials: "include"
-    }));
+    await page.request.post(`${API_BASE}/auth/logout`);
     await page.goto("/login");
     await page.waitForTimeout(1000);
     // Try protected route
@@ -677,9 +670,7 @@ test.describe("5. SECURITY — TOKEN & COOKIE INSPECTION", () => {
       c.name.includes("token") || c.name.includes("access") || c.name.includes("refresh")
     );
     // Logout
-    await page.evaluate(() => fetch("http://localhost:8000/api/v1/auth/logout", {
-      method: "POST", credentials: "include"
-    }));
+    await page.request.post(`${API_BASE}/auth/logout`);
     await page.waitForTimeout(1000);
     const cookiesAfter = await context.cookies();
     const authCookiesAfter = cookiesAfter.filter(c =>
@@ -986,9 +977,7 @@ test.describe("8. MULTI-TAB TESTING", () => {
     await page2.goto("/dashboard");
     await page2.waitForTimeout(5000);
     // Logout from tab 1 via API
-    await page1.evaluate(() => fetch("http://localhost:8000/api/v1/auth/logout", {
-      method: "POST", credentials: "include"
-    }));
+    await page1.request.post(`${API_BASE}/auth/logout`);
     await page1.goto("/login");
     // Give BroadcastChannel time to sync
     await page2.waitForTimeout(3000);
