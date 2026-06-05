@@ -150,7 +150,7 @@ class BiometricTemplate(BaseModel):
     encryption_iv: Mapped[bytes] = mapped_column(LargeBinary(16), nullable=False)
 
     biometric_type: Mapped[BiometricType] = mapped_column(
-        PgEnum(BiometricType, name="biometrictype", create_type=False), nullable=False
+        PgEnum(BiometricType, name="biometrictype"), nullable=False
     )
 
     # Template metadata
