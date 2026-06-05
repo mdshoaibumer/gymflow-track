@@ -38,7 +38,7 @@ router = APIRouter()
 
 # Login-specific rate limiting: stricter than the general auth rate limiter.
 # Tracks per-IP failed login attempts with progressive cooldown.
-_LOGIN_MAX_ATTEMPTS = 10      # allow more attempts for real users behind shared IPs
+_LOGIN_MAX_ATTEMPTS = settings.RATE_LIMIT_AUTH if hasattr(settings, "RATE_LIMIT_AUTH") else 10
 _LOGIN_WINDOW_SECONDS = 300   # 5-minute sliding window for failure tracking
 _LOGIN_LOCKOUT_SECONDS = 60   # shorter lockout — balances security vs. user friction
 

@@ -27,10 +27,8 @@ def upgrade() -> None:
     # 1. Add 'biometric' to checkinsource enum
     op.execute("ALTER TYPE checkinsource ADD VALUE IF NOT EXISTS 'biometric'")
 
-    # 2. Create new enum types
-    op.execute("CREATE TYPE IF NOT EXISTS biometrictype AS ENUM ('fingerprint', 'face')")
-    op.execute("CREATE TYPE IF NOT EXISTS devicestatus AS ENUM ('active', 'inactive', 'revoked')")
-
+    # 2. Add ENUMs automatically via SQLAlchemy create_table
+    
     # 3. Create biometric_devices table
     op.create_table(
         "biometric_devices",
@@ -44,12 +42,12 @@ def upgrade() -> None:
         sa.Column("api_key_prefix", sa.String(12), nullable=False),
         sa.Column(
             "biometric_type",
-            sa.Enum("fingerprint", "face", name="biometrictype", create_type=False),
+            sa.Enum("fingerprint", "face", name="biometrictype"),
             nullable=False,
         ),
         sa.Column(
             "status",
-            sa.Enum("active", "inactive", "revoked", name="devicestatus", create_type=False),
+            sa.Enum("active", "inactive", "revoked", name="devicestatus"),
             nullable=False,
             server_default="active",
         ),
@@ -76,7 +74,7 @@ def upgrade() -> None:
         sa.Column("encryption_iv", sa.LargeBinary, nullable=False),
         sa.Column(
             "biometric_type",
-            sa.Enum("fingerprint", "face", name="biometrictype", create_type=False),
+            sa.Enum("fingerprint", "face", name="biometrictype"),
             nullable=False,
         ),
         sa.Column("quality_score", sa.Float, nullable=True),

@@ -118,19 +118,18 @@ class AuthService:
             email=data.email,
             city=data.city,
         )
-        gym = await self.gym_repo.create(gym)
-
-        # Create owner user
-        user = User(
-            gym_id=gym.id,
-            name=data.owner_name,
-            email=data.email,
-            phone=data.phone,
-            password_hash=hash_password(data.password),
-            role=UserRole.OWNER,
-        )
-
         try:
+            gym = await self.gym_repo.create(gym)
+
+            # Create owner user
+            user = User(
+                gym_id=gym.id,
+                name=data.owner_name,
+                email=data.email,
+                phone=data.phone,
+                password_hash=hash_password(data.password),
+                role=UserRole.OWNER,
+            )
             user = await self.user_repo.create(user)
 
             # Create trial subscription for the new gym
