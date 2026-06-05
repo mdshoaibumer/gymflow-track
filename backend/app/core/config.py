@@ -98,6 +98,11 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_SECRET: str = ""
     RAZORPAY_WEBHOOK_SECRET: str = ""
 
+    # === Biometric Attendance ===
+    # AES-256 encryption key for biometric templates (base64 encoded, 32 bytes).
+    # Generate with: python -c "import os, base64; print(base64.b64encode(os.urandom(32)).decode())"
+    BIOMETRIC_ENCRYPTION_KEY: str = ""
+
     # === Billing ===
     TRIAL_DAYS: int = 30
 

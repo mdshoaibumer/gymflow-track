@@ -31,7 +31,7 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.subscription_enforcement import SubscriptionEnforcementMiddleware
 from app.middleware.body_size_limit import BodySizeLimitMiddleware
 from app.middleware.prometheus import PrometheusMiddleware, metrics_endpoint
-from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin, custom_fields, invoices, whatsapp_config, gym_display, membership_plans, expenses
+from app.routers import auth, gyms, members, payments, dashboard, notifications, attendance, assets, onboarding, billing, users, reports, analytics, admin, custom_fields, invoices, whatsapp_config, gym_display, membership_plans, expenses, biometric
 
 # Configure structured logging BEFORE anything else
 setup_logging()
@@ -229,6 +229,7 @@ app.include_router(invoices.router, prefix="/api/v1", tags=["Invoices"])
 app.include_router(whatsapp_config.router, prefix="/api/v1/whatsapp", tags=["WhatsApp Configuration"])
 app.include_router(gym_display.router, prefix="/api/v1", tags=["Gym Display & Attendance QR"])
 app.include_router(expenses.router, prefix="/api/v1/expenses", tags=["Expenses"])
+app.include_router(biometric.router, prefix="/api/v1/biometric", tags=["Biometric Attendance"])
 
 # Serve uploaded files (member photos, etc.)
 # The uploads directory is created on first photo upload; ensure mount doesn't

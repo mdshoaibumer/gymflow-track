@@ -22,6 +22,7 @@ from app.models.member_invoice import MemberInvoice
 from app.models.whatsapp_config import WhatsAppConfig
 from app.models.membership_plan import GymMembershipPlan
 from app.models.expense import Expense, ExpenseCategory, ExpenseCategoryField
+from app.models.biometric import BiometricDevice, BiometricTemplate
 
 __all__ = [
     "BaseModel",
@@ -53,4 +54,6 @@ __all__ = [
     "Expense",
     "ExpenseCategory",
     "ExpenseCategoryField",
+    "BiometricDevice",
+    "BiometricTemplate",
 ]

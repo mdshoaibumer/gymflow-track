@@ -161,6 +161,7 @@ def _feature_dependency(feature_name: str, display_name: str, required_plan: str
 
 # Feature gate dependencies — use as route dependencies
 require_qr_attendance = _feature_dependency("qr_attendance", "QR Attendance", "pro")
+require_biometric_attendance = _feature_dependency("biometric_attendance", "Biometric Attendance", "pro")
 require_advanced_analytics = _feature_dependency("advanced_analytics", "Advanced Analytics", "pro")
 require_export_reports = _feature_dependency("export_reports", "Export Reports", "pro")
 require_multi_branch = _feature_dependency("multi_branch", "Multi-Branch Management", "elite")
