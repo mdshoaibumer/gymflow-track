@@ -168,8 +168,8 @@ export default function ExpensesPage() {
           <DashboardCard
             title="This Month"
             value={formatPaise(dashboard.total_this_month_paise)}
-            icon={<Wallet className="h-5 w-5" />}
-            subtitle={
+            icon={Wallet}
+            description={
               monthChange !== 0
                 ? `${monthChange > 0 ? "+" : ""}${monthChange}% vs last month`
                 : "Same as last month"
@@ -178,18 +178,20 @@ export default function ExpensesPage() {
           <DashboardCard
             title="Last Month"
             value={formatPaise(dashboard.total_last_month_paise)}
-            icon={<Calendar className="h-5 w-5" />}
+            icon={Calendar}
+            description="Previous month total"
           />
           <DashboardCard
             title="Categories"
             value={String(dashboard.category_count)}
-            icon={<FolderOpen className="h-5 w-5" />}
+            icon={FolderOpen}
+            description="Active expense categories"
           />
           <DashboardCard
             title="Budget Alerts"
             value={String(dashboard.budget_alerts.length)}
-            icon={<AlertTriangle className="h-5 w-5" />}
-            subtitle={
+            icon={AlertTriangle}
+            description={
               dashboard.budget_alerts.length > 0
                 ? `${dashboard.budget_alerts[0]?.category_name} over budget`
                 : "All within limits"
