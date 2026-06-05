@@ -4,16 +4,12 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
-  TrendingUp,
-  TrendingDown,
   Wallet,
   FolderOpen,
   AlertTriangle,
   Calendar,
-  Pencil,
   Trash2,
 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import {
   useExpenseDashboard,
   useExpenses,
@@ -138,7 +134,7 @@ export default function ExpensesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <RoleGate allowedRoles={["owner"]}>
+          <RoleGate allowed={["owner"]}>
             <Button
               variant="outline"
               onClick={() => setModal({ type: "add-category" })}
@@ -147,7 +143,7 @@ export default function ExpensesPage() {
               Add Category
             </Button>
           </RoleGate>
-          <RoleGate allowedRoles={["owner", "admin"]}>
+          <RoleGate allowed={["owner", "admin"]}>
             <Button onClick={() => setModal({ type: "add-expense" })}>
               <Plus className="mr-2 h-4 w-4" />
               Record Expense
@@ -371,7 +367,7 @@ export default function ExpensesPage() {
                       <span className="font-semibold text-sm">
                         {formatPaise(expense.amount_in_paise)}
                       </span>
-                      <RoleGate allowedRoles={["owner"]}>
+                      <RoleGate allowed={["owner"]}>
                         <Button
                           variant="ghost"
                           size="icon"

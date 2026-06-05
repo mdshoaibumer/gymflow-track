@@ -235,7 +235,8 @@ class ExpenseService:
             f"Expense recorded: ₹{data.amount_in_paise / 100:.2f} in "
             f"'{category.name}' for gym {gym_id}"
         )
-        return expense
+        # Reload with category relationship for response serialization
+        return await self.expense_repo.get_by_id(expense.id, gym_id)
 
     async def update_expense(
         self, gym_id: UUID, expense_id: UUID, data: ExpenseUpdate
@@ -263,7 +264,8 @@ class ExpenseService:
             expense.custom_data = data.custom_data
 
         await self.db.flush()
-        return expense
+        # Reload with category relationship for response serialization
+        return await self.expense_repo.get_by_id(expense_id, gym_id)
 
     async def delete_expense(self, gym_id: UUID, expense_id: UUID) -> None:
         """Delete an expense record."""

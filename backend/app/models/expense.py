@@ -146,5 +146,5 @@ class Expense(BaseModel):
     )
 
     # Relationships
-    category = relationship("ExpenseCategory", back_populates="expenses", lazy="joined")
+    category = relationship("ExpenseCategory", back_populates="expenses", lazy="raise")
     gym = relationship("Gym", lazy="raise")
