@@ -21,6 +21,7 @@ from app.models.asset import Asset, MaintenanceRecord
 from app.models.member_invoice import MemberInvoice
 from app.models.whatsapp_config import WhatsAppConfig
 from app.models.membership_plan import GymMembershipPlan
+from app.models.expense import Expense, ExpenseCategory, ExpenseCategoryField
 
 __all__ = [
     "BaseModel",
@@ -49,4 +50,7 @@ __all__ = [
     "MemberInvoice",
     "WhatsAppConfig",
     "GymMembershipPlan",
+    "Expense",
+    "ExpenseCategory",
+    "ExpenseCategoryField",
 ]

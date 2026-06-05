@@ -20,6 +20,7 @@ import {
   Lock,
   ChevronsLeft,
   ChevronsRight,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const navItems: NavItem[] = [
   { href: "/attendance", label: "Attendance", icon: CalendarCheck, requiredFeature: "qr_attendance" },
   { href: "/reports", label: "Reports", icon: FileSpreadsheet, roles: ["owner", "admin"], requiredFeature: "export_reports" },
   { href: "/equipment", label: "Equipment", icon: Wrench },
+  { href: "/expenses", label: "Expenses", icon: Wallet, roles: ["owner", "admin", "staff"] },
   { href: "/notifications", label: "Reminders", icon: Bell },
   { href: "/staff", label: "Staff", icon: ShieldCheck, roles: ["owner", "admin"] },
   { href: "/billing/manage", label: "Billing", icon: Receipt, roles: ["owner"] },
