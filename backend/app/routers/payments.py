@@ -42,7 +42,7 @@ async def list_payments(
     method: PaymentMethod | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -54,7 +54,7 @@ async def list_payments(
     - method: cash, upi, card, bank_transfer, other
     - date_from/date_to: date range
 
-    All roles can view payments (read access).
+    OWNER and ADMIN only.
     """
     service = PaymentService(db)
     return await service.list_payments(
@@ -72,10 +72,10 @@ async def list_payments(
 @router.get("/{payment_id}", response_model=PaymentResponse)
 async def get_payment(
     payment_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a specific payment by ID. All roles can view."""
+    """Get a specific payment by ID. OWNER and ADMIN only."""
     service = PaymentService(db)
     return await service.get_payment(payment_id, current_user.gym_id)
 

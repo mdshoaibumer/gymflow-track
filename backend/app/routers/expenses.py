@@ -2,7 +2,9 @@
 Expense Management API routes.
 
 RBAC:
-- GET endpoints: All authenticated roles (STAFF can view expenses)
+- GET dashboard: OWNER only (financial overview)
+- GET list/detail: ADMIN+ (operational expense management)
+- GET categories: All authenticated roles (labels only)
 - POST/PUT (create, update): ADMIN+
 - DELETE: OWNER only
 - Category management: OWNER only
@@ -43,10 +45,10 @@ router = APIRouter()
 
 @router.get("/dashboard", response_model=ExpenseDashboardResponse)
 async def get_expense_dashboard(
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get expense dashboard with breakdown, trends, recurring status, and budget alerts."""
+    """Get expense dashboard with breakdown, trends, recurring status, and budget alerts. OWNER only."""
     service = ExpenseService(db)
     return await service.get_dashboard(current_user.gym_id)
 
@@ -150,10 +152,10 @@ async def list_expenses(
     category_id: UUID | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """List expenses with optional filters."""
+    """List expenses with optional filters. ADMIN/OWNER only."""
     service = ExpenseService(db)
     expenses, total = await service.list_expenses(
         current_user.gym_id, skip, limit, category_id, date_from, date_to
@@ -181,10 +183,10 @@ async def create_expense(
 @router.get("/{expense_id}", response_model=ExpenseResponse)
 async def get_expense(
     expense_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a specific expense record."""
+    """Get a specific expense record. ADMIN/OWNER only."""
     service = ExpenseService(db)
     expense = await service.expense_repo.get_by_id(expense_id, current_user.gym_id)
     if not expense:
