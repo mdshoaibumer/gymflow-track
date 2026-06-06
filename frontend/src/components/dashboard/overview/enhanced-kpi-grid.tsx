@@ -58,12 +58,16 @@ const KPI_CONFIG: Record<
 
 interface EnhancedKPIGridProps {
   periodDays: number;
+  enabled?: boolean;
 }
 
-export function EnhancedKPIGrid({ periodDays }: EnhancedKPIGridProps) {
-  const { data, isLoading, isError } = useDashboardKPIs({
-    period_days: periodDays,
-  });
+export function EnhancedKPIGrid({ periodDays, enabled = true }: EnhancedKPIGridProps) {
+  const { data, isLoading, isError } = useDashboardKPIs(
+    { period_days: periodDays },
+    enabled,
+  );
+
+  if (!enabled) return null;
 
   if (isLoading) {
     return (

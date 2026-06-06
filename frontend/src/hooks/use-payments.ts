@@ -14,13 +14,13 @@ import { toast } from "sonner";
 
 // ---- Dashboard ----
 
-export function useDashboardMetrics() {
+export function useDashboardMetrics(enabled = true) {
   const token = useAuthStore((s) => s.token);
   const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
     queryKey: ["dashboard", "metrics", gymId],
     queryFn: () => dashboardService.getMetrics(),
-    enabled: !!token && !!gymId,
+    enabled: !!token && !!gymId && enabled,
     staleTime: 30_000,
   });
 }
@@ -42,7 +42,7 @@ export function useRecentPayments(limit = 5) {
   return useQuery({
     queryKey: ["dashboard", "recent-payments", limit, gymId],
     queryFn: () => dashboardService.getRecentPayments(limit),
-    enabled: !!token && !!gymId,
+    enabled: !!token && !!gymId && limit > 0,
     staleTime: 30_000,
   });
 }

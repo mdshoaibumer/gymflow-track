@@ -44,13 +44,13 @@ export function useMembershipDistribution() {
   });
 }
 
-export function useDashboardKPIs(params: DashboardKPIsParams = {}) {
+export function useDashboardKPIs(params: DashboardKPIsParams = {}, enabled = true) {
   const token = useAuthStore((s) => s.token);
   const gymId = useAuthStore((s) => s.user?.gym_id);
   return useQuery({
     queryKey: ["analytics", "dashboard-kpis", params, gymId],
     queryFn: () => analyticsService.getDashboardKPIs(params),
-    enabled: !!token && !!gymId,
+    enabled: !!token && !!gymId && enabled,
     staleTime: 30_000,
     retry: 2,
   });

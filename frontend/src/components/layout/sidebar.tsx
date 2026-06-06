@@ -44,11 +44,11 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/members", label: "Members", icon: Users },
-  { href: "/payments", label: "Payments", icon: CreditCard },
+  { href: "/payments", label: "Payments", icon: CreditCard, roles: ["owner", "admin"] },
   { href: "/attendance", label: "Attendance", icon: CalendarCheck, requiredFeature: "qr_attendance" },
   { href: "/reports", label: "Reports", icon: FileSpreadsheet, roles: ["owner", "admin"], requiredFeature: "export_reports" },
   { href: "/equipment", label: "Equipment", icon: Wrench },
-  { href: "/expenses", label: "Expenses", icon: Wallet, roles: ["owner", "admin", "staff"] },
+  { href: "/expenses", label: "Expenses", icon: Wallet, roles: ["owner", "admin"] },
   { href: "/notifications", label: "Reminders", icon: Bell },
   { href: "/staff", label: "Staff", icon: ShieldCheck, roles: ["owner", "admin"] },
   { href: "/billing/manage", label: "Billing", icon: Receipt, roles: ["owner"] },

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 import {
   TrendingUp,
   AlertCircle,
@@ -68,6 +69,7 @@ const item = {
 };
 
 export default function DashboardPage() {
+  const { isAdminOrAbove } = useAuth();
   const [filters, setFilters] = useState<DashboardFilterState>(() =>
     getFilterState("30d"),
   );
@@ -77,9 +79,9 @@ export default function DashboardPage() {
     setFilters(state);
   }, []);
 
-  const { data: metrics } = useDashboardMetrics();
+  const { data: metrics } = useDashboardMetrics(isAdminOrAbove);
   const { data: expiring } = useExpiringMembers(7);
-  const { data: recentPayments } = useRecentPayments(5);
+  const { data: recentPayments } = useRecentPayments(isAdminOrAbove ? 5 : 0);
   const { data: notifStats } = useNotificationStats();
   const { data: attendanceStats } = useAttendanceStats();
   const { data: trendData } = useAttendanceTrend(14);
@@ -96,26 +98,32 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight font-display text-gradient-subtle">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Welcome back! Here&apos;s your gym analytics overview.
+            {isAdminOrAbove
+              ? "Welcome back! Here\u2019s your gym analytics overview."
+              : "Welcome back! Here\u2019s your operational overview."}
           </p>
         </div>
-        <DashboardFilters value={filters} onChange={handleFilterChange} />
+        {isAdminOrAbove && <DashboardFilters value={filters} onChange={handleFilterChange} />}
       </motion.div>
 
-      {/* Enhanced KPI Cards */}
-      <motion.div variants={item}>
-        <EnhancedKPIGrid periodDays={filters.periodDays} />
-      </motion.div>
+      {/* Enhanced KPI Cards — admin/owner only */}
+      {isAdminOrAbove && (
+        <motion.div variants={item}>
+          <EnhancedKPIGrid periodDays={filters.periodDays} enabled={isAdminOrAbove} />
+        </motion.div>
+      )}
 
-      {/* Analytics Charts Row */}
-      <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <RevenueTrendChart dateFrom={filters.dateFrom} dateTo={filters.dateTo} />
-        </div>
-        <div className="lg:col-span-2">
-          <MembershipDistributionChart />
-        </div>
-      </motion.div>
+      {/* Analytics Charts Row — admin/owner only */}
+      {isAdminOrAbove && (
+        <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <RevenueTrendChart dateFrom={filters.dateFrom} dateTo={filters.dateTo} />
+          </div>
+          <div className="lg:col-span-2">
+            <MembershipDistributionChart />
+          </div>
+        </motion.div>
+      )}
 
       {/* Attendance Quick Stats */}
       {attendanceStats && (
@@ -147,7 +155,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Expiring + Recent Payments Lists */}
-      <motion.div variants={item} className="grid gap-6 lg:grid-cols-2">
+      <motion.div variants={item} className={`grid gap-6 ${isAdminOrAbove ? "lg:grid-cols-2" : ""}`}>
         {/* Expiring Memberships */}
         <Card>
           <CardHeader>
@@ -204,7 +212,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Payments List */}
+        {/* Recent Payments List — admin/owner only */}
+        {isAdminOrAbove && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Payment Activity</CardTitle>
@@ -244,6 +253,7 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+        )}
       </motion.div>
 
       {/* Alert Cards */}
@@ -280,8 +290,8 @@ export default function DashboardPage() {
             </>
           )}
 
-        {/* Dues */}
-        {metrics && metrics.pending_dues_count > 0 && (
+        {/* Dues — admin/owner only */}
+        {isAdminOrAbove && metrics && metrics.pending_dues_count > 0 && (
           <Link href="/payments?status=pending">
             <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
               <CardContent className="p-4">
