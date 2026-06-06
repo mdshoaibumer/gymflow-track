@@ -449,16 +449,29 @@ export default function PaymentsPage() {
                       </Badge>
                       <StatusBadge status={payment.payment_status} />
                     </div>
-                    {isAdminOrAbove && payment.payment_status === "completed" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive h-7 px-2 text-xs"
-                        onClick={() => setVoidTarget(payment)}
-                      >
-                        <Ban className="mr-1 h-3 w-3" />
-                        Void
-                      </Button>
+                    {isAdminOrAbove && payment.payment_status !== "refunded" && payment.payment_status !== "failed" && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setEditTarget(payment)}
+                        >
+                          <Pencil className="mr-1 h-3 w-3" />
+                          Edit
+                        </Button>
+                        {payment.payment_status === "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive h-7 px-2 text-xs"
+                            onClick={() => setVoidTarget(payment)}
+                          >
+                            <Ban className="mr-1 h-3 w-3" />
+                            Void
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                   {payment.payment_status === "refunded" && payment.void_reason && (
