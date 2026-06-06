@@ -125,6 +125,6 @@ describe("EnhancedKPIGrid", () => {
 
     render(<EnhancedKPIGrid periodDays={14} />);
 
-    expect(mockUseDashboardKPIs).toHaveBeenCalledWith({ period_days: 14 });
+    expect(mockUseDashboardKPIs).toHaveBeenCalledWith({ period_days: 14 }, true);
   });
 });
