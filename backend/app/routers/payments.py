@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import CurrentUser, get_current_user, require_admin
+from app.core.dependencies import CurrentUser, require_admin
 from app.models.payment import PaymentMethod, PaymentStatus
 from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentResponse, PaymentUpdateRequest, VoidPaymentRequest
 from app.services.payment_service import PaymentService
