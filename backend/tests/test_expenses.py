@@ -553,25 +553,25 @@ class TestExpenseCRUD:
 class TestExpenseRBAC:
     """Tests for role-based access control on expense endpoints."""
 
-    async def test_staff_can_list_expenses(
+    async def test_staff_cannot_list_expenses(
         self, client: AsyncClient, staff_headers: dict, sample_expense: dict
     ):
-        """Staff can view (GET) expenses."""
+        """Staff cannot view expenses (financial data) — 403."""
         response = await client.get(
             "/api/v1/expenses",
             headers=staff_headers,
         )
-        assert response.status_code == 200
+        assert response.status_code == 403
 
-    async def test_staff_can_view_dashboard(
+    async def test_staff_cannot_view_dashboard(
         self, client: AsyncClient, staff_headers: dict
     ):
-        """Staff can view expense dashboard."""
+        """Staff cannot view expense dashboard (OWNER only) — 403."""
         response = await client.get(
             "/api/v1/expenses/dashboard",
             headers=staff_headers,
         )
-        assert response.status_code == 200
+        assert response.status_code == 403
 
     async def test_staff_cannot_create_expense(
         self, client: AsyncClient, staff_headers: dict, expense_category: dict

@@ -399,12 +399,12 @@ class TestPaymentRBAC:
         )
         assert response.status_code == 403
 
-    async def test_staff_can_view_payments(
+    async def test_staff_cannot_view_payments(
         self, client: AsyncClient, staff_headers: dict
     ):
-        """STAFF can view (read) payments."""
+        """STAFF cannot view payments (financial data) — 403."""
         response = await client.get("/api/v1/payments", headers=staff_headers)
-        assert response.status_code == 200
+        assert response.status_code == 403
 
     async def test_admin_can_record_payment(
         self, client: AsyncClient, admin_headers: dict, sample_member: Member

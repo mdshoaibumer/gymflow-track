@@ -142,13 +142,14 @@ class TestDashboardMetrics:
         assert data["active_members"] >= 2
         assert data["expired_members"] >= 1
 
-    async def test_all_roles_can_view(
+    async def test_staff_cannot_view_metrics(
         self, client: AsyncClient, staff_headers: dict
     ):
+        """STAFF role cannot access dashboard metrics (contains revenue) — 403."""
         response = await client.get(
             "/api/v1/dashboard/metrics", headers=staff_headers
         )
-        assert response.status_code == 200
+        assert response.status_code == 403
 
     async def test_unauthenticated_rejected(self, client: AsyncClient):
         response = await client.get("/api/v1/dashboard/metrics")
@@ -216,3 +217,43 @@ class TestRecentPayments:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
+
+    async def test_staff_cannot_view_recent_payments(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """STAFF cannot view recent payments (financial data) — 403."""
+        response = await client.get(
+            "/api/v1/dashboard/recent-payments", headers=staff_headers
+        )
+        assert response.status_code == 403
+
+
+class TestDashboardRBAC:
+    """Test role-based access for dashboard endpoints."""
+
+    async def test_staff_can_view_expiring(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """STAFF can still view expiring memberships (operational data)."""
+        response = await client.get(
+            "/api/v1/dashboard/expiring?days=7", headers=staff_headers
+        )
+        assert response.status_code == 200
+
+    async def test_admin_can_view_metrics(
+        self, client: AsyncClient, admin_headers: dict
+    ):
+        """ADMIN can access dashboard metrics."""
+        response = await client.get(
+            "/api/v1/dashboard/metrics", headers=admin_headers
+        )
+        assert response.status_code == 200
+
+    async def test_admin_can_view_recent_payments(
+        self, client: AsyncClient, admin_headers: dict
+    ):
+        """ADMIN can access recent payments."""
+        response = await client.get(
+            "/api/v1/dashboard/recent-payments", headers=admin_headers
+        )
+        assert response.status_code == 200

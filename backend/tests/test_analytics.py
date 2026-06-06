@@ -6,7 +6,7 @@ Coverage:
 2. GET /analytics/revenue-summary — summary stats
 3. GET /analytics/membership-distribution — plan breakdown
 4. GET /analytics/dashboard-kpis — KPI cards with trends
-5. RBAC — all authenticated roles can view
+5. RBAC — OWNER and ADMIN can view, STAFF is denied
 6. Edge case — empty gym with no data
 """
 
@@ -117,14 +117,13 @@ class TestRevenueTrend:
         )
         assert response.status_code == 200
 
-    async def test_staff_can_view(
-        self, client: AsyncClient, staff_headers: dict
-    ):
+    async def test_staff_cannot_view_revenue(self, client: AsyncClient, staff_headers: dict):
+        """STAFF role cannot access revenue analytics — 403."""
         response = await client.get(
             "/api/v1/analytics/revenue-trend?granularity=monthly",
             headers=staff_headers,
         )
-        assert response.status_code == 200
+        assert response.status_code == 403
 
 
 class TestRevenueSummary:
@@ -188,3 +187,53 @@ class TestDashboardKPIs:
     async def test_unauthenticated_rejected(self, client: AsyncClient):
         response = await client.get("/api/v1/analytics/dashboard-kpis")
         assert response.status_code in (401, 403)
+
+
+class TestAnalyticsRBAC:
+    """Test that STAFF cannot access any financial analytics endpoints."""
+
+    async def test_staff_denied_revenue_summary(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """STAFF cannot access revenue summary."""
+        response = await client.get(
+            "/api/v1/analytics/revenue-summary", headers=staff_headers
+        )
+        assert response.status_code == 403
+
+    async def test_staff_denied_membership_distribution(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """STAFF cannot access membership distribution (shows revenue per plan)."""
+        response = await client.get(
+            "/api/v1/analytics/membership-distribution", headers=staff_headers
+        )
+        assert response.status_code == 403
+
+    async def test_staff_denied_dashboard_kpis(
+        self, client: AsyncClient, staff_headers: dict
+    ):
+        """STAFF cannot access dashboard KPIs (contains revenue)."""
+        response = await client.get(
+            "/api/v1/analytics/dashboard-kpis", headers=staff_headers
+        )
+        assert response.status_code == 403
+
+    async def test_admin_can_access_revenue_trend(
+        self, client: AsyncClient, admin_headers: dict
+    ):
+        """ADMIN can access revenue analytics."""
+        response = await client.get(
+            "/api/v1/analytics/revenue-trend?granularity=monthly",
+            headers=admin_headers,
+        )
+        assert response.status_code == 200
+
+    async def test_admin_can_access_revenue_summary(
+        self, client: AsyncClient, admin_headers: dict
+    ):
+        """ADMIN can access revenue summary."""
+        response = await client.get(
+            "/api/v1/analytics/revenue-summary", headers=admin_headers
+        )
+        assert response.status_code == 200
