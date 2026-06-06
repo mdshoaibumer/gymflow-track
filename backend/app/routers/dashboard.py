@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import CurrentUser, get_current_user
+from app.core.dependencies import CurrentUser, get_current_user, require_admin
 from app.schemas.dashboard import (
     DashboardMetrics,
     ExpiringMemberResponse,
@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.get("/metrics", response_model=DashboardMetrics)
 async def get_dashboard_metrics(
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -46,7 +46,7 @@ async def get_expiring_memberships(
 @router.get("/recent-payments", response_model=list[RecentPaymentResponse])
 async def get_recent_payments(
     limit: int = Query(10, ge=1, le=50),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """Most recent completed payments for the dashboard feed."""
