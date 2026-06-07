@@ -80,14 +80,9 @@ const SidebarContent = memo(function SidebarContent({ showClose = false, collaps
     <>
       <div className={cn("flex h-14 items-center justify-between", collapsed ? "px-2" : "px-5")}>
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-glow transition-all duration-300 group-hover:shadow-[0_0_16px_-2px_hsl(var(--primary)/0.3)] group-hover:scale-105">
-            <span className="text-sm font-bold text-primary-foreground">G</span>
+          <div className={cn("flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105", collapsed ? "h-10 w-10" : "h-12 w-32")}>
+            <img src="/logo.png" alt="GymFlow Logo" className={cn("h-full w-full", collapsed ? "object-cover object-[20%_50%] scale-[2]" : "object-contain scale-[1.1]")} />
           </div>
-          {!collapsed && (
-            <span className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors duration-200">
-              GymFlow
-            </span>
-          )}
         </Link>
         {showClose && (
           <Button

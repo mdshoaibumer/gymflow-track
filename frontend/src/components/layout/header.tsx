@@ -59,10 +59,9 @@ export function Header() {
 
       {/* Mobile logo */}
       <div className="flex items-center gap-2 md:hidden">
-        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-          <span className="text-[11px] font-bold text-primary-foreground">G</span>
+        <div className="flex h-8 items-center justify-center">
+          <img src="/logo.png" alt="GymFlow Logo" className="h-full w-auto object-contain origin-left" />
         </div>
-        <span className="text-sm font-semibold text-foreground">GymFlow</span>
       </div>
 
       {/* Desktop search trigger */}

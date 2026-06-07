@@ -86,8 +86,8 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-bold text-gradient font-display">
-            GymFlow Track
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="GymFlow Track" className="h-12 w-auto object-contain" />
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -485,8 +485,8 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 sm:grid-cols-4">
             <div className="sm:col-span-2">
-              <Link href="/" className="text-xl font-bold text-gradient font-display">
-                GymFlow Track
+              <Link href="/" className="flex items-center gap-2">
+                <img src="/logo.png" alt="GymFlow Track" className="h-12 w-auto object-contain" />
               </Link>
               <p className="mt-2 text-sm text-muted-foreground max-w-xs">
                 Modern gym management software built for Indian fitness businesses.

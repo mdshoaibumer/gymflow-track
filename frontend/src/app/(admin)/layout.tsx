@@ -84,8 +84,8 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside className="hidden w-64 flex-col border-r bg-card md:flex">
         <div className="flex h-16 items-center gap-2 border-b px-6">
-          <Shield className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold text-primary">GymFlow Track Admin</span>
+          <img src="/logo.png" alt="GymFlow Track" className="h-10 w-auto object-contain" />
+          <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-md">Admin</span>
         </div>
         <nav className="flex-1 space-y-1 p-4">
           {adminNavItems.map((item) => {
@@ -130,8 +130,8 @@ export default function AdminLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile header */}
         <header className="flex h-14 items-center gap-3 border-b px-4 md:hidden">
-          <Shield className="h-5 w-5 text-primary" />
-          <span className="font-bold text-primary">GymFlow Track Admin</span>
+          <img src="/logo.png" alt="GymFlow Track" className="h-8 w-auto object-contain" />
+          <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-md">Admin</span>
         </header>
 
         {/* Mobile nav */}

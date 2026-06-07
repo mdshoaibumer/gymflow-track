@@ -133,8 +133,8 @@ export default function LoginPage() {
         </svg>
         {/* Content */}
         <div className="relative z-10 max-w-md px-12">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-8 animate-glow-pulse">
-            <span className="text-2xl font-bold text-primary">G</span>
+          <div className="flex h-14 items-center justify-start mb-8 animate-glow-pulse">
+            <img src="/logo.png" alt="GymFlow Track" className="h-full object-contain" />
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground leading-tight">Manage your gym,<br />effortlessly.</h2>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed">Track members, automate billing, monitor attendance — all in one powerful dashboard built for Indian gym owners.</p>
@@ -167,8 +167,8 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_40%,hsl(var(--primary)/0.04),transparent)] lg:hidden" />
       <div className="relative w-full max-w-[380px] animate-fade-in-up">
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-glow animate-glow-pulse mb-5">
-            <span className="text-lg font-bold text-primary-foreground">G</span>
+          <div className="flex h-14 items-center justify-center mb-6 animate-glow-pulse">
+            <img src="/logo.png" alt="GymFlow Track" className="h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold tracking-tight font-display">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-1.5">Sign in to your GymFlow Track account</p>

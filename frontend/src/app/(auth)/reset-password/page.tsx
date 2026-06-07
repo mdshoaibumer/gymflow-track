@@ -63,8 +63,8 @@ function ResetPasswordContent() {
       <div className="w-full max-w-sm animate-fade-in-up">
         <Card>
           <CardHeader className="text-center">
-            <Link href="/" className="text-2xl font-bold text-primary mb-2 block">
-              GymFlow Track
+            <Link href="/" className="flex justify-center mb-4">
+              <img src="/logo.png" alt="GymFlow Track" className="h-14 w-auto object-contain" />
             </Link>
             <CardTitle className="text-xl">Set New Password</CardTitle>
             <CardDescription>Enter your reset token and new password</CardDescription>
