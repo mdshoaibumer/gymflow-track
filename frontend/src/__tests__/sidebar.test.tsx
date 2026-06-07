@@ -40,11 +40,11 @@ vi.mock("framer-motion", () => ({
 import { Sidebar } from "@/components/layout/sidebar";
 
 describe("Sidebar", () => {
-  it("renders the app name", () => {
+  it("renders the app logo", () => {
     render(<Sidebar />);
-    // Desktop sidebar renders "GymFlow" — use getAllByText since mobile overlay may also render
-    const elements = screen.getAllByText("GymFlow");
-    expect(elements.length).toBeGreaterThan(0);
+    // Desktop sidebar renders logo image with alt text
+    const logo = screen.getByAltText("GymFlow Logo");
+    expect(logo).toBeInTheDocument();
   });
 
   it("renders navigation links", () => {

@@ -80,8 +80,13 @@ const SidebarContent = memo(function SidebarContent({ showClose = false, collaps
     <>
       <div className={cn("flex h-14 items-center justify-between", collapsed ? "px-2" : "px-5")}>
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className={cn("flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105", collapsed ? "h-10 w-10" : "h-12 w-32")}>
-            <img src="/logo.png" alt="GymFlow Logo" className={cn("h-full w-full", collapsed ? "object-cover object-[20%_50%] scale-[2]" : "object-contain scale-[1.1]")} />
+          <div className={cn("flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105", collapsed ? "h-8 w-8" : "h-12 w-32")}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="GymFlow Logo"
+              className="h-full w-full object-contain scale-[1.1]"
+            />
           </div>
         </Link>
         {showClose && (

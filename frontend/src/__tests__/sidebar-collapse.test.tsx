@@ -42,7 +42,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 describe("Sidebar", () => {
   it("renders the brand logo", () => {
     render(<TooltipProvider><Sidebar /></TooltipProvider>);
-    expect(screen.getByText("G")).toBeInTheDocument();
+    expect(screen.getByAltText("GymFlow Logo")).toBeInTheDocument();
   });
 
   it("renders navigation items for owner role", () => {
@@ -95,8 +95,8 @@ describe("Sidebar - Collapsed State", () => {
     const { TooltipProvider: TP } = await import("@/components/ui/tooltip");
     render(<TP><CollapsedSidebar /></TP>);
     
-    // When collapsed, GymFlow text should not be visible in the desktop sidebar
-    // The component hides labels with {!collapsed && ...}
+    // When collapsed, GymFlow logo should be smaller in the desktop sidebar
+    // The component adjusts size with {collapsed ? "h-8 w-8" : "h-12 w-32"}
     const expandButton = screen.getByLabelText("Expand sidebar");
     expect(expandButton).toBeInTheDocument();
   });

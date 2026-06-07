@@ -59,9 +59,12 @@ export function Header() {
 
       {/* Mobile logo */}
       <div className="flex items-center gap-2 md:hidden">
-        <div className="flex h-8 items-center justify-center">
-          <img src="/logo.png" alt="GymFlow Logo" className="h-full w-auto object-contain origin-left" />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="GymFlow Logo"
+          className="h-7 object-contain"
+        />
       </div>
 
       {/* Desktop search trigger */}
