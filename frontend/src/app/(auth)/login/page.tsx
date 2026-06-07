@@ -170,7 +170,7 @@ export default function LoginPage() {
           <div className="flex h-16 w-40 items-center justify-center mb-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/icon.png"
               alt="GymFlow Logo"
               className="h-full w-full object-contain"
             />

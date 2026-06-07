@@ -205,11 +205,11 @@ export function RevenueTrendChart({ dateFrom, dateTo }: RevenueTrendChartProps) 
 
 function SummaryChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted/50 px-3 py-2">
+    <div className="rounded-lg bg-muted/50 px-3 py-2 border border-border/50 hover:border-primary/15 hover:bg-muted/70 transition-all duration-200">
       <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
         {label}
       </p>
-      <p className="text-sm font-semibold mt-0.5">{value}</p>
+      <p className="text-sm font-semibold mt-0.5 tabular-nums">{value}</p>
     </div>
   );
 }

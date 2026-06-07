@@ -61,7 +61,7 @@ export function Header() {
       <div className="flex items-center gap-2 md:hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo.png"
+          src="/icon.png"
           alt="GymFlow Logo"
           className="h-7 object-contain"
         />

@@ -33,9 +33,14 @@ export function AttendanceTrendChart({ trendData, prefersReducedMotion }: Attend
   );
 
   return (
-    <Card className="chart-container-premium">
-      <CardHeader>
-        <CardTitle>Attendance Trend</CardTitle>
+    <Card className="chart-container-premium fitness-card">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          Attendance Trend
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+            14 days
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (

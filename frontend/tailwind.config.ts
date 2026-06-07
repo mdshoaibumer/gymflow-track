@@ -175,6 +175,10 @@ const config: Config = {
           "50%": { backgroundPosition: "100% 50%" },
           "100%": { backgroundPosition: "0% 50%" },
         },
+        "ring-pulse": {
+          "0%": { transform: "scale(1)", opacity: "0.6" },
+          "100%": { transform: "scale(1.4)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -196,6 +200,7 @@ const config: Config = {
         "slide-down-fade": "slide-down-fade 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
         "breathe": "breathe 3s ease-in-out infinite",
         "border-flow": "border-flow 4s ease infinite",
+        "ring-pulse": "ring-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       transitionTimingFunction: {
         "ease-spring": "cubic-bezier(0.16, 1, 0.3, 1)",

@@ -83,7 +83,7 @@ const SidebarContent = memo(function SidebarContent({ showClose = false, collaps
           <div className={cn("flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-105", collapsed ? "h-8 w-8" : "h-12 w-32")}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/icon.png"
               alt="GymFlow Logo"
               className="h-full w-full object-contain scale-[1.1]"
             />

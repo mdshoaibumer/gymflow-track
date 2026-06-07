@@ -71,7 +71,7 @@ export function EnhancedKPIGrid({ periodDays, enabled = true }: EnhancedKPIGridP
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <KPICardSkeleton key={i} />
         ))}
@@ -85,7 +85,7 @@ export function EnhancedKPIGrid({ periodDays, enabled = true }: EnhancedKPIGridP
 
   return (
     <motion.div
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       initial="hidden"
       animate="show"
       variants={{
@@ -126,24 +126,27 @@ function EnhancedKPICard({ kpi }: { kpi: KPICard }) {
   return (
     <motion.div
       variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 28 } } }}
+      whileHover={{ y: -2, transition: { type: "spring", stiffness: 400, damping: 25 } }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.1 }}
     >
-    <Card className="group relative hover:shadow-soft-md transition-all duration-300 ease-spring dark:dark-depth-card will-animate gradient-border overflow-hidden">
-      {/* Subtle ambient glow on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-accent-warm/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl" />
-      <CardContent className="p-4 animate-content-show relative">
+    <Card className="group relative border hover:shadow-soft-md hover:border-primary/15 transition-all duration-300 overflow-hidden fitness-card fitness-card-violet">
+      {/* Animated gradient border on hover */}
+      <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-primary/[0.03] via-transparent to-accent-warm/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <CardContent className="p-4 relative">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate pr-2">
             {kpi.label}
           </p>
-          <div className={cn("rounded-xl bg-muted/50 p-2 flex-shrink-0 group-hover:bg-primary/8 group-hover:scale-110 group-hover:shadow-[0_0_12px_-3px_hsl(var(--primary)/0.2)] transition-all duration-300 ease-spring")}>
+          <div className={cn("rounded-xl bg-muted/50 p-2 flex-shrink-0 group-hover:bg-primary/8 group-hover:scale-110 transition-all duration-300")}>
             <Icon className={cn("h-3.5 w-3.5", config.color)} />
           </div>
         </div>
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-2xl font-bold tracking-tight truncate">
+            <p className="text-2xl font-bold tracking-tight truncate tabular-nums">
               <AnimatedNumber value={numericValue} formatFn={formatFn} duration={800} />
             </p>
             <div className="mt-2 flex items-center gap-1.5">
@@ -206,28 +209,69 @@ function KPICardSkeleton() {
   );
 }
 
-/** Generates a deterministic pseudo-sparkline based on value and growth */
+/** Generates a deterministic SVG sparkline with gradient fill — enhanced with glow */
 function MiniSparkline({ value, growth }: { value: number; growth?: number | null }) {
-  // Generate 7 bars representing a mini trend
   const trend = growth ?? 0;
-  const bars: number[] = [];
+  const points: number[] = [];
   const seed = Math.abs(value % 100) + 1;
-  for (let i = 0; i < 7; i++) {
-    // Create a plausible upward/downward trend shape
-    const base = 30 + (trend >= 0 ? (i / 6) * 50 : (1 - i / 6) * 50);
-    const noise = ((seed * (i + 1) * 7) % 20) - 10;
-    bars.push(Math.min(100, Math.max(15, base + noise)));
+  const count = 10;
+
+  for (let i = 0; i < count; i++) {
+    const base = 55 + (trend >= 0 ? (i / (count - 1)) * 35 : (1 - i / (count - 1)) * 35);
+    const noise = ((seed * (i + 1) * 7) % 25) - 12;
+    points.push(Math.min(95, Math.max(10, base + noise)));
   }
 
+  const width = 72;
+  const height = 32;
+  const stepX = width / (count - 1);
+
+  // Build SVG path
+  const pathPoints = points.map((p, i) => {
+    const x = i * stepX;
+    const y = height - (p / 100) * height;
+    return `${x},${y}`;
+  });
+
+  const linePath = `M${pathPoints.join(" L")}`;
+  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+
+  const isPositive = trend >= 0;
+  const gradientId = `spark-${seed}-${Math.abs(Math.round(trend))}`;
+
   return (
-    <div className="sparkline-container flex-shrink-0" aria-hidden="true">
-      {bars.map((h, i) => (
-        <div
-          key={i}
-          className="sparkline-bar"
-          style={{ height: `${h}%` }}
-        />
-      ))}
-    </div>
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className="sparkline-svg flex-shrink-0"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={isPositive ? "hsl(142, 71%, 45%)" : "hsl(0, 72%, 51%)"} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={isPositive ? "hsl(142, 71%, 45%)" : "hsl(0, 72%, 51%)"} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={areaPath}
+        fill={`url(#${gradientId})`}
+      />
+      <path
+        d={linePath}
+        fill="none"
+        stroke={isPositive ? "hsl(142, 71%, 45%)" : "hsl(0, 72%, 51%)"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={width}
+        cy={height - (points[count - 1] / 100) * height}
+        r="2"
+        fill={isPositive ? "hsl(142, 71%, 45%)" : "hsl(0, 72%, 51%)"}
+        className="animate-pulse-soft"
+      />
+    </svg>
   );
 }

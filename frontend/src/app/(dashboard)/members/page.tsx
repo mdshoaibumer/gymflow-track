@@ -11,7 +11,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare, X } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, UserPlus, Download, User, CheckSquare, X, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember, useMemberTabSync } from "@/hooks/use-members";
 import { memberService, type Member, type CreateMemberPayload } from "@/services/member.service";
@@ -108,6 +108,7 @@ export default function MembersPage() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string } | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const editFormRef = useRef<HTMLDivElement>(null);
 
   // Bulk selection
@@ -482,6 +483,23 @@ export default function MembersPage() {
           onChange={handleFilterChange}
           onClear={handleClearAllFilters}
         />
+        {/* View Toggle */}
+        <div className="ml-auto hidden md:flex items-center border rounded-lg p-0.5">
+          <button
+            onClick={() => setViewMode("table")}
+            className={`p-1.5 rounded-md transition-colors cursor-pointer ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Table view"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded-md transition-colors cursor-pointer ${viewMode === "grid" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            aria-label="Grid view"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Usage warning */}
@@ -626,6 +644,7 @@ export default function MembersPage() {
       ) : (
         <>
           {/* Desktop Table */}
+          {viewMode === "table" && (
           <Card className="hidden md:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -661,6 +680,67 @@ export default function MembersPage() {
               </div>
             </CardContent>
           </Card>
+          )}
+
+          {/* Desktop Card Grid View */}
+          {viewMode === "grid" && (
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {members.map((member) => {
+              const gridPhotoUrl = member.photo_url
+                ? `${member.photo_url}?v=${member.version || 0}`
+                : null;
+              const memberEnd = member.membership_end ? new Date(member.membership_end) : null;
+              const daysLeft = memberEnd ? Math.max(0, Math.ceil((memberEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
+              const statusRingClass = member.membership_status === "active" ? "ring-emerald-500" : member.membership_status === "expired" ? "ring-red-400" : member.membership_status === "frozen" ? "ring-cyan-400" : "ring-gray-400";
+
+              return (
+                <motion.div
+                  key={member.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                >
+                  <Card className="border hover:shadow-soft-md hover:border-primary/10 transition-all duration-300 group cursor-pointer">
+                    <CardContent className="p-4">
+                      <Link href={`/members/${member.id}`} className="block">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className={`h-11 w-11 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 ring-2 ring-offset-1 ring-offset-background ${statusRingClass}`}>
+                            {gridPhotoUrl ? (
+                              <Image src={gridPhotoUrl} alt="" width={44} height={44} className="h-full w-full object-cover" loading="lazy" />
+                            ) : (
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{member.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {member.membership_plan || "No plan"} · <span className="capitalize">{member.membership_status}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{daysLeft > 0 ? `${daysLeft}d left` : member.membership_status === "active" ? "Active" : "Expired"}</span>
+                          <span className="font-medium text-foreground tabular-nums">{formatPaise(member.amount_paid)}</span>
+                        </div>
+                      </Link>
+                      {isAdminOrAbove && (
+                        <div className="mt-3 pt-2 border-t border-dashed flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); setShowCreateForm(false); setEditingMember(member); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.preventDefault(); setDeletingMember(member); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+          )}
 
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">

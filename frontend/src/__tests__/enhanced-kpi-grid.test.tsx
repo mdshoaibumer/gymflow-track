@@ -127,4 +127,100 @@ describe("EnhancedKPIGrid", () => {
 
     expect(mockUseDashboardKPIs).toHaveBeenCalledWith({ period_days: 14 }, true);
   });
+
+  it("renders SVG sparklines for each KPI card", () => {
+    mockUseDashboardKPIs.mockReturnValue({
+      data: {
+        kpis: [
+          { key: "active_members", label: "Active Members", value: 142, unit: "count", growth_percent: 5.2 },
+          { key: "attendance_today", label: "Today", value: 28, unit: "count", growth_percent: -2.1 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useDashboardKPIs>);
+
+    const { container } = render(<EnhancedKPIGrid periodDays={30} />);
+
+    // Each KPI card should have an SVG sparkline
+    const sparklines = container.querySelectorAll(".sparkline-svg");
+    expect(sparklines.length).toBe(2);
+  });
+
+  it("sparkline SVG contains gradient, area path, line path, and end dot", () => {
+    mockUseDashboardKPIs.mockReturnValue({
+      data: {
+        kpis: [
+          { key: "active_members", label: "Members", value: 100, unit: "count", growth_percent: 10 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useDashboardKPIs>);
+
+    const { container } = render(<EnhancedKPIGrid periodDays={30} />);
+
+    const svg = container.querySelector(".sparkline-svg");
+    expect(svg).toBeTruthy();
+    // Should have gradient definition
+    expect(svg!.querySelector("defs linearGradient")).toBeTruthy();
+    // Should have 2 paths: area fill and line stroke
+    expect(svg!.querySelectorAll("path").length).toBe(2);
+    // Should have end dot circle
+    expect(svg!.querySelector("circle")).toBeTruthy();
+  });
+
+  it("sparkline uses green color for positive growth", () => {
+    mockUseDashboardKPIs.mockReturnValue({
+      data: {
+        kpis: [
+          { key: "active_members", label: "Members", value: 100, unit: "count", growth_percent: 15 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useDashboardKPIs>);
+
+    const { container } = render(<EnhancedKPIGrid periodDays={30} />);
+
+    const svg = container.querySelector(".sparkline-svg");
+    const linePath = svg!.querySelectorAll("path")[1];
+    expect(linePath.getAttribute("stroke")).toContain("142");
+  });
+
+  it("sparkline uses red color for negative growth", () => {
+    mockUseDashboardKPIs.mockReturnValue({
+      data: {
+        kpis: [
+          { key: "active_members", label: "Members", value: 100, unit: "count", growth_percent: -10 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useDashboardKPIs>);
+
+    const { container } = render(<EnhancedKPIGrid periodDays={30} />);
+
+    const svg = container.querySelector(".sparkline-svg");
+    const linePath = svg!.querySelectorAll("path")[1];
+    // Red color (hsl 0, 72%, 51%)
+    expect(linePath.getAttribute("stroke")).toContain("0");
+  });
+
+  it("renders fitness-card class on KPI cards", () => {
+    mockUseDashboardKPIs.mockReturnValue({
+      data: {
+        kpis: [
+          { key: "active_members", label: "Members", value: 100, unit: "count", growth_percent: 5 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useDashboardKPIs>);
+
+    const { container } = render(<EnhancedKPIGrid periodDays={30} />);
+
+    const fitnessCards = container.querySelectorAll("[class*='fitness-card']");
+    expect(fitnessCards.length).toBeGreaterThan(0);
+  });
 });

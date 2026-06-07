@@ -97,10 +97,14 @@ export default function DashboardPage() {
       <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight font-display text-gradient-subtle">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1 flex items-center gap-2">
             {isAdminOrAbove
               ? "Welcome back! Here\u2019s your gym analytics overview."
               : "Welcome back! Here\u2019s your operational overview."}
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
           </p>
         </div>
         {isAdminOrAbove && <DashboardFilters value={filters} onChange={handleFilterChange} />}
@@ -125,7 +129,7 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Attendance Quick Stats */}
+      {/* Attendance Quick Stats — Premium Fitness Bento */}
       {attendanceStats && (
         <motion.div variants={item} className="grid gap-4 sm:grid-cols-3">
           <DashboardCard
@@ -133,18 +137,21 @@ export default function DashboardPage() {
             value={String(attendanceStats.checked_in_today)}
             description="Total check-ins"
             icon={CalendarCheck}
+            className="fitness-card fitness-card-blue"
           />
           <DashboardCard
             title="In Gym Now"
             value={String(attendanceStats.currently_in_gym)}
             description={<LiveIndicator label="Active right now" />}
             icon={Dumbbell}
+            className="fitness-card fitness-card-emerald"
           />
           <DashboardCard
             title="This Week"
             value={String(attendanceStats.total_this_week)}
             description="Total visits"
             icon={TrendingUp}
+            className="fitness-card fitness-card-violet"
           />
         </motion.div>
       )}
@@ -214,9 +221,16 @@ export default function DashboardPage() {
 
         {/* Recent Payments List — admin/owner only */}
         {isAdminOrAbove && (
-        <Card>
+        <Card className="fitness-card">
           <CardHeader>
-            <CardTitle className="text-base">Payment Activity</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              Payment Activity
+              {recentPayments && recentPayments.length > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-medium">
+                  {recentPayments.length} recent
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {!recentPayments ? (

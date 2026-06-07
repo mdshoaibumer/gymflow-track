@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText, Download, Snowflake, Play, RefreshCw, Activity } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText,
+  Download, Snowflake, Play, RefreshCw, Activity, TrendingUp,
+  Flame, Clock, MoreHorizontal,
+} from "lucide-react";
 import { useMember, useMemberTimeline } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
@@ -18,9 +22,11 @@ import { Button } from "@/components/ui/button";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { MemberPhotoUpload } from "@/components/members/member-photo-upload";
 import { MembershipOverrideForm } from "@/components/members/membership-override-form";
+import { AttendanceHeatmap } from "@/components/members/attendance-heatmap";
 import { RoleGate } from "@/components/role-gate";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "outline"> = {
   active: "success",
@@ -29,6 +35,62 @@ const statusVariant: Record<string, "success" | "destructive" | "warning" | "sec
   pending: "secondary",
   cancelled: "outline",
 };
+
+const statusColor: Record<string, string> = {
+  active: "ring-emerald-500",
+  expired: "ring-red-400",
+  frozen: "ring-cyan-400",
+  pending: "ring-gray-400",
+  cancelled: "ring-gray-300",
+};
+
+const statusBorderColor: Record<string, string> = {
+  active: "border-l-emerald-500",
+  expired: "border-l-red-400",
+  frozen: "border-l-cyan-400",
+  pending: "border-l-gray-400",
+  cancelled: "border-l-gray-300",
+};
+
+// --- Progress Ring SVG Component — Premium Fitness Style ---
+function ProgressRing({ progress, size = 48, strokeWidth = 4 }: { progress: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (Math.min(Math.max(progress, 0), 100) / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="rotate-[-90deg]">
+      <defs>
+        <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor={progress > 50 ? "#10b981" : progress > 20 ? "#f59e0b" : "#ef4444"} />
+          <stop offset="100%" stopColor={progress > 50 ? "#34d399" : progress > 20 ? "#fbbf24" : "#f87171"} />
+        </linearGradient>
+      </defs>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        className="text-muted/30"
+      />
+      <motion.circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="url(#progress-gradient)"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeLinecap="round"
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: offset }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+      />
+    </svg>
+  );
+}
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +103,33 @@ export default function MemberDetailPage() {
   const { data: timelineData } = useMemberTimeline(id);
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"payments" | "attendance" | "invoices" | "timeline">("payments");
+  const [showCustomFields, setShowCustomFields] = useState(false);
+
+  // Computed stats
+  const payments = paymentData?.payments ?? [];
+  const invoices = invoiceData?.invoices ?? [];
+  const totalPaid = payments.reduce((sum, p) => sum + (p.amount_in_paise ?? 0), 0);
+  const attendanceCount = attendanceData?.attendance?.length ?? 0;
+
+  // Membership progress calculation
+  const membershipProgress = useMemo(() => {
+    if (!member?.membership_start || !member?.membership_end) return 0;
+    const start = new Date(member.membership_start).getTime();
+    const end = new Date(member.membership_end).getTime();
+    const now = Date.now();
+    if (now >= end) return 0;
+    if (now <= start) return 100;
+    const total = end - start;
+    const remaining = end - now;
+    return Math.round((remaining / total) * 100);
+  }, [member?.membership_start, member?.membership_end]);
+
+  const daysRemaining = useMemo(() => {
+    if (!member?.membership_end) return 0;
+    const end = new Date(member.membership_end).getTime();
+    const diff = end - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }, [member?.membership_end]);
 
   if (isLoading) {
     return (
@@ -63,8 +152,12 @@ export default function MemberDetailPage() {
     );
   }
 
-  const payments = paymentData?.payments ?? [];
-  const invoices = invoiceData?.invoices ?? [];
+  const tabs = [
+    { key: "payments" as const, label: "Payments", count: payments.length, icon: CreditCard },
+    { key: "attendance" as const, label: "Attendance", count: attendanceCount, icon: CalendarCheck },
+    { key: "invoices" as const, label: "Invoices", count: invoices.length, icon: FileText },
+    { key: "timeline" as const, label: "Timeline", count: timelineData?.events?.length ?? 0, icon: Activity },
+  ];
 
   return (
     <motion.div
@@ -73,197 +166,357 @@ export default function MemberDetailPage() {
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+      {/* ═══════ HERO SECTION ═══════ */}
+      <div className="relative">
+        <Button variant="ghost" size="icon" className="absolute -left-1 -top-1 z-10" asChild>
           <Link href="/members">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <motion.div layoutId={`member-avatar-${member.id}`}>
-          <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
-        </motion.div>
-        <div>
-          <motion.h1
-            layoutId={`member-name-${member.id}`}
-            className="text-2xl font-bold tracking-tight"
-          >
-            {member.name}
-          </motion.h1>
-          <p className="text-sm text-muted-foreground">{member.phone}</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <WhatsAppReminderButton
-            member={{
-              name: member.name,
-              phone: member.phone,
-              membership_end: member.membership_end,
-              membership_plan: member.membership_plan,
-              amount_due: member.amount_paid,
-            }}
-          />
-          <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize">
-            {member.membership_status}
-          </Badge>
-        </div>
+
+        <Card className="overflow-hidden border-0 shadow-none bg-gradient-to-br from-card via-card to-muted/20 glass-premium">
+          <CardContent className="p-6 pt-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              {/* Avatar with status ring + pulse for active */}
+              <motion.div
+                layoutId={`member-avatar-${member.id}`}
+                className={cn(
+                  "relative rounded-full ring-[3px] ring-offset-2 ring-offset-background",
+                  statusColor[member.membership_status] ?? "ring-gray-400",
+                  member.membership_status === "active" && "pulse-ring",
+                )}
+              >
+                <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
+                {member.membership_status === "active" && (
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background" />
+                )}
+              </motion.div>
+
+              {/* Name + compact metadata */}
+              <div className="flex-1 min-w-0">
+                <motion.h1
+                  layoutId={`member-name-${member.id}`}
+                  className="text-2xl font-bold tracking-tight truncate"
+                >
+                  {member.name}
+                </motion.h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {member.phone}
+                  {member.email && <span> · {member.email}</span>}
+                  {member.membership_plan && (
+                    <span> · <span className="font-medium text-foreground/80">{member.membership_plan}</span></span>
+                  )}
+                </p>
+              </div>
+
+              {/* Status badge */}
+              <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize text-xs">
+                {member.membership_status}
+              </Badge>
+            </div>
+
+            {/* Actions row */}
+            <div className="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-border/50">
+              <Button
+                size="sm"
+                onClick={() => router.push(`/payments?member_id=${member.id}`)}
+                className="cursor-pointer"
+              >
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Renew
+              </Button>
+              <WhatsAppReminderButton
+                member={{
+                  name: member.name,
+                  phone: member.phone,
+                  membership_end: member.membership_end,
+                  membership_plan: member.membership_plan,
+                  amount_due: member.amount_paid,
+                }}
+              />
+              <RoleGate allowed={["owner", "admin"]}>
+                <Button
+                  size="sm"
+                  variant={member.membership_status === "frozen" ? "default" : "outline"}
+                  disabled={freezeLoading}
+                  className="cursor-pointer"
+                  onClick={async () => {
+                    setFreezeLoading(true);
+                    try {
+                      const newStatus = member.membership_status === "frozen" ? "active" : "frozen";
+                      await memberService.overrideMembership(member.id, { membership_status: newStatus });
+                      queryClient.invalidateQueries({ queryKey: ["member", id] });
+                      toast.success(`Member ${newStatus === "frozen" ? "frozen" : "unfrozen"} successfully`);
+                    } catch {
+                      toast.error("Failed to update membership status");
+                    } finally {
+                      setFreezeLoading(false);
+                    }
+                  }}
+                >
+                  {member.membership_status === "frozen" ? (
+                    <><Play className="mr-1.5 h-3.5 w-3.5" /> Unfreeze</>
+                  ) : (
+                    <><Snowflake className="mr-1.5 h-3.5 w-3.5" /> Freeze</>
+                  )}
+                </Button>
+              </RoleGate>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      {/* ═══════ STATS ROW — BENTO FITNESS CARDS ═══════ */}
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
+      >
+        {/* Days Remaining — with animated progress ring */}
+        <motion.div variants={{ hidden: { opacity: 0, y: 16, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } } }}>
+          <Card className="border fitness-card fitness-card-violet group hover:shadow-soft-md transition-all duration-300">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="relative flex-shrink-0">
+                <ProgressRing progress={membershipProgress} size={48} strokeWidth={3.5} />
+                <Clock className="absolute inset-0 m-auto h-4 w-4 text-muted-foreground group-hover:text-violet-500 transition-colors duration-300" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold tabular-nums leading-none">{daysRemaining}</p>
+                <p className="text-xs text-muted-foreground mt-1">Days Left</p>
+                {member.membership_end && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    {new Date(member.membership_end).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Total Paid — emerald accent */}
+        <motion.div variants={{ hidden: { opacity: 0, y: 16, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } } }}>
+          <Card className="border fitness-card fitness-card-emerald group hover:shadow-soft-md transition-all duration-300">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-emerald-500/10 p-2.5 flex-shrink-0 group-hover:bg-emerald-500/15 group-hover:scale-110 transition-all duration-300">
+                <CreditCard className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold tabular-nums leading-none truncate">{formatPaise(totalPaid)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Total Paid</p>
+                {payments.length > 0 && (
+                  <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-0.5 font-medium">
+                    {payments.length} transaction{payments.length !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Attendance — blue accent with mini trend */}
+        <motion.div variants={{ hidden: { opacity: 0, y: 16, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } } }}>
+          <Card className="border fitness-card fitness-card-blue group hover:shadow-soft-md transition-all duration-300">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-blue-500/10 p-2.5 flex-shrink-0 group-hover:bg-blue-500/15 group-hover:scale-110 transition-all duration-300">
+                <TrendingUp className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold tabular-nums leading-none">{attendanceCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">Total Visits</p>
+                {attendanceCount > 0 && daysRemaining > 0 && (
+                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 mt-0.5 font-medium">
+                    ~{Math.round(attendanceCount / Math.max(1, Math.ceil((Date.now() - new Date(member.membership_start || Date.now()).getTime()) / (1000 * 60 * 60 * 24 * 7))))}x/week
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Streak / Consistency — orange fire accent */}
+        <motion.div variants={{ hidden: { opacity: 0, y: 16, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } } }}>
+          <Card className="border fitness-card fitness-card-orange group hover:shadow-soft-md transition-all duration-300">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-amber-500/10 p-2.5 flex-shrink-0 group-hover:bg-amber-500/15 group-hover:scale-110 transition-all duration-300">
+                <Flame className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400 group-hover:animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold tabular-nums leading-none">{payments.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Payments</p>
+                {member.membership_status === "active" && (
+                  <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5 font-medium flex items-center gap-0.5">
+                    <span className="streak-flame">🔥</span> Active
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* ═══════ DETAIL CARDS (2 columns) — Premium Fitness Style ═══════ */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Personal Info Card */}
+        <Card className="border fitness-card fitness-card-violet group hover:shadow-soft-md transition-all duration-300">
           <CardHeader className="flex flex-row items-center gap-2 pb-2">
-            <User className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-lg bg-violet-500/10 p-1.5 group-hover:bg-violet-500/15 transition-colors duration-300">
+              <User className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+            </div>
             <CardTitle className="text-sm font-medium">Personal Info</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <div>
-              <span className="text-muted-foreground">Email: </span>
-              {member.email || "—"}
+          <CardContent className="space-y-2 text-sm">
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+              <span className="text-muted-foreground">Gender</span>
+              <span>{member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : "—"}</span>
+              <span className="text-muted-foreground">Date of Birth</span>
+              <span>{member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN") : "—"}</span>
+              <span className="text-muted-foreground">Batch</span>
+              <span>{member.batch ? member.batch.charAt(0).toUpperCase() + member.batch.slice(1) : "—"}</span>
+              <span className="text-muted-foreground">Emergency</span>
+              <span>{member.emergency_contact || "—"}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Gender: </span>
-              {member.gender ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1) : "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Date of Birth: </span>
-              {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString("en-IN") : "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Batch: </span>
-              {member.batch ? member.batch.charAt(0).toUpperCase() + member.batch.slice(1) : "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Emergency Contact: </span>
-              {member.emergency_contact || "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Amount Paid: </span>
-              {formatPaise(member.amount_paid)}
-            </div>
-            {member.custom_fields && Object.entries(member.custom_fields).map(([key, value]) => (
-              <div key={key}>
-                <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}: </span>
-                {value ?? "—"}
+
+            {/* Attendance Heatmap — Fitness Signature */}
+            {attendanceData?.attendance && attendanceData.attendance.length > 0 && (
+              <div className="pt-3 border-t border-border/50">
+                <AttendanceHeatmap attendance={attendanceData.attendance} weeks={8} />
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-2 pb-2">
-            <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-sm font-medium">Membership</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <div>
-              <span className="text-muted-foreground">Plan: </span>
-              {member.membership_plan || "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Start: </span>
-              {member.membership_start
-                ? new Date(member.membership_start).toLocaleDateString("en-IN")
-                : "—"}
-            </div>
-            <div>
-              <span className="text-muted-foreground">End: </span>
-              {member.membership_end
-                ? new Date(member.membership_end).toLocaleDateString("en-IN")
-                : "—"}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-2 pb-2">
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-sm font-medium">Payments Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <div>
-              <span className="text-muted-foreground">Total payments: </span>
-              {payments.length}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Total paid: </span>
-              ₹
-              {(
-                payments.reduce((sum, p) => sum + (p.amount_in_paise ?? 0), 0) / 100
-              ).toLocaleString("en-IN")}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="default"
-          onClick={() => router.push(`/payments?member_id=${member.id}`)}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Renew Membership
-        </Button>
-        <RoleGate allowed={["owner", "admin"]}>
-          <Button
-            variant={member.membership_status === "frozen" ? "default" : "outline"}
-            disabled={freezeLoading}
-            onClick={async () => {
-              setFreezeLoading(true);
-              try {
-                const newStatus = member.membership_status === "frozen" ? "active" : "frozen";
-                await memberService.overrideMembership(member.id, { membership_status: newStatus });
-                queryClient.invalidateQueries({ queryKey: ["member", id] });
-                toast.success(`Member ${newStatus === "frozen" ? "frozen" : "unfrozen"} successfully`);
-              } catch {
-                toast.error("Failed to update membership status");
-              } finally {
-                setFreezeLoading(false);
-              }
-            }}
-          >
-            {member.membership_status === "frozen" ? (
+            )}
+            {member.custom_fields && Object.keys(member.custom_fields).length > 0 && (
               <>
-                <Play className="mr-2 h-4 w-4" />
-                Unfreeze
-              </>
-            ) : (
-              <>
-                <Snowflake className="mr-2 h-4 w-4" />
-                Freeze
+                <button
+                  onClick={() => setShowCustomFields(!showCustomFields)}
+                  className="text-xs text-primary hover:underline cursor-pointer mt-2 flex items-center gap-1"
+                >
+                  {showCustomFields ? "Hide" : "Show"} custom fields ({Object.keys(member.custom_fields).length})
+                  <motion.span
+                    animate={{ rotate: showCustomFields ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="inline-block"
+                  >
+                    ▼
+                  </motion.span>
+                </button>
+                <AnimatePresence>
+                  {showCustomFields && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pt-2 border-t border-dashed">
+                        {Object.entries(member.custom_fields).map(([key, value]) => (
+                          <React.Fragment key={key}>
+                            <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                            <span>{value ?? "—"}</span>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </>
             )}
-          </Button>
-        </RoleGate>
+          </CardContent>
+        </Card>
+
+        {/* Membership Card with Timeline Bar — Premium */}
+        <Card className={cn("border-l-4 fitness-card group hover:shadow-soft-md transition-all duration-300", statusBorderColor[member.membership_status] ?? "border-l-gray-300")}>
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <div className="rounded-lg bg-primary/10 p-1.5 group-hover:bg-primary/15 transition-colors duration-300">
+              <CalendarCheck className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <CardTitle className="text-sm font-medium">Membership</CardTitle>
+            <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize text-[10px] ml-auto">
+              {member.membership_status}
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+              <span className="text-muted-foreground">Plan</span>
+              <span className="font-medium">{member.membership_plan || "—"}</span>
+              <span className="text-muted-foreground">Start</span>
+              <span>{member.membership_start ? new Date(member.membership_start).toLocaleDateString("en-IN") : "—"}</span>
+              <span className="text-muted-foreground">End</span>
+              <span>{member.membership_end ? new Date(member.membership_end).toLocaleDateString("en-IN") : "—"}</span>
+            </div>
+
+            {/* Membership Timeline Bar — Premium Fitness Style */}
+            {member.membership_start && member.membership_end && (
+              <div className="pt-2">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                  <span>{new Date(member.membership_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                  <span className={cn(
+                    "font-medium px-1.5 py-0.5 rounded-full text-[9px]",
+                    daysRemaining > 14 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                      : daysRemaining > 0 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                      : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
+                  )}>
+                    {daysRemaining > 0 ? `${daysRemaining}d left` : "Expired"}
+                  </span>
+                  <span>{new Date(member.membership_end).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden progress-fitness">
+                  <motion.div
+                    className={cn(
+                      "h-full rounded-full",
+                      membershipProgress > 50
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                        : membershipProgress > 20
+                        ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                        : "bg-gradient-to-r from-red-500 to-red-400",
+                    )}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${100 - membershipProgress}%` }}
+                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b">
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "payments" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("payments")}
-        >
-          Payment History
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "attendance" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("attendance")}
-        >
-          Attendance History
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "invoices" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("invoices")}
-        >
-          Invoices
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "timeline" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("timeline")}
-        >
-          <Activity className="inline-block h-3.5 w-3.5 mr-1" />
-          Timeline
-        </button>
+      {/* ═══════ ANIMATED TABS ═══════ */}
+      <div className="relative">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none border-b" role="tablist">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                className={cn(
+                  "relative px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 min-h-[44px]",
+                  activeTab === tab.key ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className={cn(
+                    "text-[10px] rounded-full px-1.5 py-0.5 font-semibold tabular-nums leading-none",
+                    activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                  )}>
+                    {tab.count}
+                  </span>
+                )}
+                {activeTab === tab.key && (
+                  <motion.div
+                    layoutId="member-tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Payment History */}

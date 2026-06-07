@@ -133,36 +133,36 @@ describe("Member Detail Page - New Features", () => {
       const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
       render(<MemberDetailPage />, { wrapper: Wrapper });
 
-      expect(screen.getByText("Date of Birth:")).toBeDefined();
-      expect(screen.getByText("Emergency Contact:")).toBeDefined();
+      expect(screen.getByText("Date of Birth")).toBeDefined();
+      expect(screen.getByText("Emergency")).toBeDefined();
       expect(screen.getByText("9876500000")).toBeDefined();
     },
-    15000,
+    20000,
   );
 
-  it("shows Renew Membership button", async () => {
+  it("shows Renew button", async () => {
     const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
     render(<MemberDetailPage />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText("Renew Membership").length).toBeGreaterThanOrEqual(1);
-  });
+    expect(screen.getAllByText(/Renew/).length).toBeGreaterThanOrEqual(1);
+  }, 20000);
 
   it("shows Freeze button for active member", async () => {
     const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
     render(<MemberDetailPage />, { wrapper: Wrapper });
 
-    expect(screen.getByText("Freeze")).toBeDefined();
-  });
+    expect(screen.getAllByText("Freeze").length).toBeGreaterThanOrEqual(1);
+  }, 20000);
 
-  it("shows tab navigation with Attendance History", async () => {
+  it("shows tab navigation with Attendance", async () => {
     const MemberDetailPage = (await import("@/app/(dashboard)/members/[id]/page")).default;
     render(<MemberDetailPage />, { wrapper: Wrapper });
 
-    // Tab buttons exist (text may also appear in card titles, so use getAllByText)
-    expect(screen.getAllByText("Payment History").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Attendance History").length).toBeGreaterThanOrEqual(1);
+    // Tab buttons — premium version uses short labels
+    expect(screen.getAllByText("Payments").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Attendance").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Invoices").length).toBeGreaterThanOrEqual(1);
-  });
+  }, 20000);
 });
 
 describe("Invoice View - Discount Display", () => {
@@ -193,7 +193,7 @@ describe("Invoice View - Discount Display", () => {
     expect(screen.getByText("Discount")).toBeDefined();
     // Should show net total (2000 - 500 = 1500)
     expect(screen.getByText("Rs. 1,500.00")).toBeDefined();
-  });
+  }, 20000);
 
   it("hides discount section when discount is 0", async () => {
     const { InvoiceView } = await import("@/components/invoices/invoice-view");

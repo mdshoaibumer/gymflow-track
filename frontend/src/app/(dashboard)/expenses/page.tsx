@@ -128,7 +128,7 @@ export default function ExpensesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Expenses</h1>
           <p className="text-muted-foreground text-sm">
             Track and manage all your gym expenses
           </p>

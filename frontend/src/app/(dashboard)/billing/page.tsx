@@ -142,7 +142,7 @@ export default function PricingPage() {
       className="space-y-6"
     >
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Plans & Pricing</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gradient-subtle">Plans & Pricing</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Simple, transparent pricing for your gym. No hidden fees.
         </p>
@@ -172,7 +172,7 @@ export default function PricingPage() {
           return (
             <Card
               key={plan.id}
-              className={`relative flex flex-col ${isPopular ? "border-primary shadow-lg ring-1 ring-primary/20" : ""}`}
+              className={`relative flex flex-col transition-all duration-200 hover:shadow-soft-md hover:-translate-y-0.5 ${isPopular ? "border-primary shadow-soft-lg ring-1 ring-primary/20" : "border hover:border-primary/15"}`}
             >
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -185,7 +185,7 @@ export default function PricingPage() {
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription className="min-h-[40px]">{plan.description}</CardDescription>
                 <div className="mt-4">
-                  <span className="text-3xl font-bold">
+                  <span className="text-3xl font-bold tabular-nums">
                     {formatPaise(plan.price_in_paise)}
                   </span>
                   <span className="text-muted-foreground">/month</span>

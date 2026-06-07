@@ -102,7 +102,7 @@ export default function RegisterPage() {
         <Card>
           <CardHeader className="text-center">
             <Link href="/" className="flex justify-center mb-4">
-              <img src="/logo.png" alt="GymFlow Track" className="h-14 w-auto object-contain" />
+              <img src="/icon.png" alt="GymFlow Track" className="h-14 w-auto object-contain" />
             </Link>
             <CardTitle className="text-xl">Register your gym</CardTitle>
             <CardDescription>Get started in under 10 minutes</CardDescription>
