@@ -21,6 +21,7 @@ class GymAuditAction(str, PyEnum):
     PAYMENT_EDITED = "payment_edited"
     MEMBERSHIP_OVERRIDE = "membership_override"
     MEMBER_FINANCIAL_RECOMPUTE = "member_financial_recompute"
+    DUE_WAIVED = "due_waived"
 
 
 class GymAuditLog(BaseModel):

@@ -160,6 +160,7 @@ from app.models.auth_token import RefreshToken, PasswordResetToken  # noqa
 from app.models.audit_log import AuditLog  # noqa
 from app.models.platform_settings import PlatformSettings  # noqa
 from app.models.custom_field import GymCustomField  # noqa
+from app.models.due import MemberDue, DuePayment  # noqa
 
 import asyncio
 

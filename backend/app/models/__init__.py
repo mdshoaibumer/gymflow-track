@@ -23,6 +23,7 @@ from app.models.whatsapp_config import WhatsAppConfig
 from app.models.membership_plan import GymMembershipPlan
 from app.models.expense import Expense, ExpenseCategory, ExpenseCategoryField
 from app.models.biometric import BiometricDevice, BiometricTemplate
+from app.models.due import MemberDue, DuePayment, DueStatus
 
 __all__ = [
     "BaseModel",
@@ -56,4 +57,7 @@ __all__ = [
     "ExpenseCategoryField",
     "BiometricDevice",
     "BiometricTemplate",
+    "MemberDue",
+    "DuePayment",
+    "DueStatus",
 ]

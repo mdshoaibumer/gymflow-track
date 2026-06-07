@@ -28,6 +28,7 @@ from app.repositories.payment_repository import PaymentRepository
 from app.schemas.payment import PaymentCreateRequest, PaymentListResponse, PaymentUpdateRequest, VoidPaymentRequest
 from app.services.membership_service import MembershipService
 from app.services.invoice_service import InvoiceService
+from app.services.due_service import DueService
 
 
 class PaymentService:
@@ -37,6 +38,7 @@ class PaymentService:
         self.member_repo = MemberRepository(db)
         self.membership_service = MembershipService(db)
         self.invoice_service = InvoiceService(db)
+        self.due_service = DueService(db)
 
     async def record_payment(
         self, gym_id: UUID, user_id: UUID, data: PaymentCreateRequest
@@ -128,6 +130,16 @@ class PaymentService:
         # Auto-generate invoice for completed payments
         if payment.payment_status == PaymentStatus.COMPLETED:
             await self.invoice_service.generate_invoice(payment, gym_id)
+
+        # Auto-create due if this is a partial payment against a known plan
+        if payment.payment_status == PaymentStatus.COMPLETED and data.membership_plan:
+            await self.due_service.maybe_create_due(
+                gym_id=gym_id,
+                member_id=member.id,
+                payment=payment,
+                plan_name=data.membership_plan,
+                discount_paise=data.discount_in_paise,
+            )
 
         return payment
 
@@ -332,6 +344,9 @@ class PaymentService:
 
         # Recompute member financial totals from ledger
         await self._recompute_member_financials(payment.member_id, gym_id, user_id)
+
+        # Reverse any linked due payments
+        await self.due_service.reverse_payment(payment_id, gym_id)
 
         # Create audit log entry
         audit_entry = GymAuditLog(

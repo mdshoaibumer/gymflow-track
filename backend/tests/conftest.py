@@ -44,6 +44,7 @@ from app.models.asset import Asset, MaintenanceRecord  # noqa: F401 — ensure m
 from app.models.feedback import Feedback  # noqa: F401 — ensure model is registered
 from app.models.membership_plan import GymMembershipPlan  # noqa: F401 — ensure model is registered
 from app.models.expense import Expense, ExpenseCategory, ExpenseCategoryField  # noqa: F401 — ensure model is registered
+from app.models.due import MemberDue, DuePayment  # noqa: F401 — ensure model is registered
 from app.models.subscription import (  # noqa: F401
     BillingStatus, GymSubscription, Invoice, PlanTier, SubscriptionPlan,
 )
