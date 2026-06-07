@@ -473,14 +473,15 @@ export function MemberForm({
                 id={`cf_${cf.field_key}`}
                 type={cf.field_type === "number" ? "number" : cf.field_type === "date" ? "date" : "text"}
                 value={(cfValues[cf.field_key] as string) ?? ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const raw = e.target.value;
                   setCfValues({
                     ...cfValues,
                     [cf.field_key]: cf.field_type === "number"
-                      ? (e.target.value ? Number(e.target.value) : null)
-                      : (e.target.value || null),
-                  })
-                }
+                      ? (raw === "" ? null : parseInt(raw, 10) || 0)
+                      : (raw || null),
+                  });
+                }}
                 placeholder={cf.label}
               />
             )}

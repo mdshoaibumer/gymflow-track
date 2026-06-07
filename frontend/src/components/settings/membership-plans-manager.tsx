@@ -155,8 +155,13 @@ export function MembershipPlansManager() {
                   <Input
                     type="number"
                     min="1"
-                    value={editDuration}
-                    onChange={(e) => setEditDuration(Number(e.target.value) || 1)}
+                    value={editDuration || ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") { setEditDuration(1); return; }
+                      const num = parseInt(raw, 10);
+                      if (!isNaN(num) && num >= 0) setEditDuration(num);
+                    }}
                   />
                 </div>
                 <div className="space-y-1">
@@ -164,8 +169,14 @@ export function MembershipPlansManager() {
                   <Input
                     type="number"
                     min="1"
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(Number(e.target.value) || 0)}
+                    value={editAmount || ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") { setEditAmount(0); return; }
+                      const num = parseInt(raw, 10);
+                      if (!isNaN(num) && num >= 0) setEditAmount(num);
+                    }}
+                    placeholder="e.g. 3000"
                   />
                 </div>
               </div>
@@ -251,8 +262,13 @@ export function MembershipPlansManager() {
                   type="number"
                   min="1"
                   value={newAmount || ""}
-                  onChange={(e) => setNewAmount(Number(e.target.value) || 0)}
-                  placeholder="1000"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") { setNewAmount(0); return; }
+                    const num = parseInt(raw, 10);
+                    if (!isNaN(num) && num >= 0) setNewAmount(num);
+                  }}
+                  placeholder="e.g. 3000"
                 />
               </div>
             </div>

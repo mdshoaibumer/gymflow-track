@@ -131,8 +131,13 @@ export default function SettingsPage() {
                 type="number"
                 min={1}
                 max={90}
-                value={getValue("default_trial_days", 3)}
-                onChange={(e) => updateField("default_trial_days", Number(e.target.value))}
+                value={getValue("default_trial_days", 3) || ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") { updateField("default_trial_days", 0); return; }
+                  const num = parseInt(raw, 10);
+                  if (!isNaN(num) && num >= 0) updateField("default_trial_days", num);
+                }}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -146,8 +151,13 @@ export default function SettingsPage() {
                 type="number"
                 min={0}
                 max={30}
-                value={getValue("grace_period_days", 7)}
-                onChange={(e) => updateField("grace_period_days", Number(e.target.value))}
+                value={getValue("grace_period_days", 7) || ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") { updateField("grace_period_days", 0); return; }
+                  const num = parseInt(raw, 10);
+                  if (!isNaN(num) && num >= 0) updateField("grace_period_days", num);
+                }}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -161,8 +171,13 @@ export default function SettingsPage() {
                 type="number"
                 min={1}
                 max={10}
-                value={getValue("max_payment_retries", 3)}
-                onChange={(e) => updateField("max_payment_retries", Number(e.target.value))}
+                value={getValue("max_payment_retries", 3) || ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") { updateField("max_payment_retries", 0); return; }
+                  const num = parseInt(raw, 10);
+                  if (!isNaN(num) && num >= 0) updateField("max_payment_retries", num);
+                }}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -179,8 +194,13 @@ export default function SettingsPage() {
               id="max-gyms"
               type="number"
               min={1}
-              value={getValue("max_gyms", 10000)}
-              onChange={(e) => updateField("max_gyms", Number(e.target.value))}
+              value={getValue("max_gyms", 10000) || ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") { updateField("max_gyms", 0); return; }
+                const num = parseInt(raw, 10);
+                if (!isNaN(num) && num >= 0) updateField("max_gyms", num);
+              }}
               className="mt-1 w-48"
             />
             <p className="mt-1 text-xs text-muted-foreground">

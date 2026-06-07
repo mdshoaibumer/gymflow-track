@@ -584,8 +584,13 @@ export default function GymDetailPage() {
                   type="number"
                   min={1}
                   max={90}
-                  value={trialDays}
-                  onChange={(e) => setTrialDays(Number(e.target.value))}
+                  value={trialDays || ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") { setTrialDays(0); return; }
+                    const num = parseInt(raw, 10);
+                    if (!isNaN(num) && num >= 0) setTrialDays(num);
+                  }}
                   className="mt-1"
                 />
               </div>

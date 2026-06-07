@@ -582,15 +582,16 @@ function AddExpenseModal({
                       type={field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
                       placeholder={field.label}
                       value={(customData[field.field_key] as string) || ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const raw = e.target.value;
                         setCustomData((prev) => ({
                           ...prev,
                           [field.field_key]:
                             field.field_type === "number"
-                              ? Number(e.target.value)
-                              : e.target.value,
-                        }))
-                      }
+                              ? (raw === "" ? null : parseInt(raw, 10) || 0)
+                              : raw,
+                        }));
+                      }}
                     />
                   )}
                 </div>
