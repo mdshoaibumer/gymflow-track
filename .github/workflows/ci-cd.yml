@@ -191,6 +191,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+        with:
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["mirror.gcr.io"]
+        env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
 
       - name: Build backend image
         uses: docker/build-push-action@v6
