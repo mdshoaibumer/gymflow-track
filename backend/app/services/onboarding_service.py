@@ -38,6 +38,7 @@ from app.core.exceptions import ValidationError
 from app.models.asset import Asset, AssetCategory, AssetStatus
 from app.models.feedback import Feedback, FeedbackCategory
 from app.models.member import Gender, Member, MembershipStatus
+from app.models.due import DueStatus, MemberDue
 
 logger = logging.getLogger("gymflow.onboarding")
 
@@ -116,6 +117,38 @@ _DEMO_EQUIPMENT = [
     ("Yoga Mats (10)", "YM-001", AssetCategory.ACCESSORIES, "Generic", 300000),
 ]
 
+# Expense categories with sample expenses (category_name, icon, color, is_recurring, sample_expenses)
+_DEMO_EXPENSE_CATEGORIES = [
+    ("Rent", "🏠", "#6366f1", True, [
+        ("Monthly rent - June", 5000000),   # ₹50,000
+        ("Monthly rent - May", 5000000),
+    ]),
+    ("Electricity", "⚡", "#eab308", True, [
+        ("EB bill June", 1800000),   # ₹18,000
+        ("EB bill May", 1650000),
+    ]),
+    ("Staff Salary", "👤", "#22c55e", True, [
+        ("Trainer salary - Ramesh", 2500000),  # ₹25,000
+        ("Receptionist salary - Meena", 1500000),
+        ("Housekeeping - Raju", 1000000),
+    ]),
+    ("Maintenance", "🔧", "#f97316", False, [
+        ("Treadmill belt replacement", 350000),  # ₹3,500
+        ("AC servicing", 250000),
+    ]),
+    ("Supplies", "📦", "#06b6d4", False, [
+        ("Cleaning supplies", 150000),  # ₹1,500
+        ("Paper towels & sanitizer", 80000),
+        ("Water cans (20L × 10)", 120000),
+    ]),
+]
+
+# Staff members to seed
+_DEMO_STAFF = [
+    ("Ramesh Trainer", "ramesh@demo.gymflow.in", "9000000001", "admin"),
+    ("Meena Front Desk", "meena@demo.gymflow.in", "9000000002", "staff"),
+]
+
 
 async def seed_demo_data(
     db: AsyncSession,
@@ -125,6 +158,10 @@ async def seed_demo_data(
     include_equipment: bool = True,
     include_attendance: bool = True,
     include_feedback: bool = True,
+    include_expenses: bool = True,
+    include_dues: bool = True,
+    include_staff: bool = True,
+    include_notifications: bool = True,
     member_count: int = 25,
 ) -> dict:
     """
@@ -139,6 +176,10 @@ async def seed_demo_data(
         "equipment_created": 0,
         "attendance_created": 0,
         "feedback_created": 0,
+        "expenses_created": 0,
+        "dues_created": 0,
+        "staff_created": 0,
+        "notifications_created": 0,
     }
     today = today_ist()
 
@@ -300,6 +341,179 @@ async def seed_demo_data(
                 )
                 db.add(fb)
                 result["feedback_created"] += 1
+        await db.flush()
+
+    # === Expenses ===
+    if include_expenses:
+        from app.models.expense import ExpenseCategory, Expense
+
+        existing_cats = (await db.execute(
+            select(func.count()).select_from(ExpenseCategory).where(ExpenseCategory.gym_id == gym_id)
+        )).scalar_one()
+
+        if existing_cats == 0:
+            from app.models.user import User
+            user_result = await db.execute(select(User).where(User.gym_id == gym_id).limit(1))
+            user = user_result.scalar_one_or_none()
+
+            for order, (cat_name, icon, color, is_recurring, expenses) in enumerate(_DEMO_EXPENSE_CATEGORIES):
+                category = ExpenseCategory(
+                    id=uuid4(),
+                    gym_id=gym_id,
+                    name=cat_name,
+                    icon=icon,
+                    color=color,
+                    is_recurring=is_recurring,
+                    recurring_day=1 if is_recurring else None,
+                    sort_order=order,
+                    is_active=True,
+                )
+                db.add(category)
+                await db.flush()
+
+                for desc, amount_paise in expenses:
+                    days_ago = random.randint(1, 45)
+                    expense = Expense(
+                        id=uuid4(),
+                        gym_id=gym_id,
+                        category_id=category.id,
+                        amount_in_paise=amount_paise,
+                        expense_date=today - timedelta(days=days_ago),
+                        description=desc,
+                        created_by=user.id if user else None,
+                    )
+                    db.add(expense)
+                    result["expenses_created"] += 1
+
+            await db.flush()
+
+    # === Dues (Outstanding Balances) ===
+    if include_dues and result["members_created"] > 0:
+        from app.models.payment import Payment, PaymentMethod, PaymentStatus
+
+        # Select a few members to have partial payments / outstanding dues
+        members_result = await db.execute(
+            select(Member).where(
+                Member.gym_id == gym_id,
+                Member.membership_status == MembershipStatus.ACTIVE,
+            ).limit(6)
+        )
+        due_members = list(members_result.scalars().all())
+
+        for i, member in enumerate(due_members[:5]):
+            plan_name = member.membership_plan or "Monthly"
+            plan_cost = member.amount_paid or 150000
+            # Create a due with partial payment
+            if i < 2:
+                # Fully pending — no payment at all
+                paid = 0
+                balance = plan_cost
+                status = DueStatus.PENDING
+            elif i < 4:
+                # Partial payment (50-75%)
+                paid = int(plan_cost * random.uniform(0.5, 0.75))
+                balance = plan_cost - paid
+                status = DueStatus.PARTIAL
+            else:
+                # Waived due for one member
+                paid = 0
+                balance = 0
+                status = DueStatus.WAIVED
+
+            due_date = today - timedelta(days=random.randint(10, 60))
+            due = MemberDue(
+                id=uuid4(),
+                gym_id=gym_id,
+                member_id=member.id,
+                plan_name=plan_name,
+                plan_amount_paise=plan_cost,
+                discount_paise=0,
+                effective_amount_paise=plan_cost,
+                total_paid_paise=paid,
+                balance_paise=balance,
+                due_date=due_date,
+                status=status,
+                waive_reason="Goodwill — long-time member" if status == DueStatus.WAIVED else None,
+            )
+            db.add(due)
+            result["dues_created"] += 1
+
+        await db.flush()
+
+    # === Staff Users ===
+    if include_staff:
+        from app.models.user import User, UserRole
+        from app.core.security import hash_password
+
+        existing_staff = (await db.execute(
+            select(func.count()).select_from(User).where(
+                User.gym_id == gym_id,
+                User.role.in_([UserRole.ADMIN, UserRole.STAFF]),
+            )
+        )).scalar_one()
+
+        if existing_staff == 0:
+            for name, email, phone, role_str in _DEMO_STAFF:
+                staff_user = User(
+                    id=uuid4(),
+                    gym_id=gym_id,
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    password_hash=hash_password("Demo@1234"),
+                    role=UserRole(role_str),
+                    is_active=True,
+                )
+                db.add(staff_user)
+                result["staff_created"] += 1
+
+            await db.flush()
+
+    # === Notifications (recent history) ===
+    if include_notifications and result["members_created"] > 0:
+        from app.models.notification import (
+            Notification, NotificationType, NotificationStatus, NotificationChannel,
+        )
+
+        members_result = await db.execute(
+            select(Member).where(Member.gym_id == gym_id).limit(8)
+        )
+        notif_members = list(members_result.scalars().all())
+
+        demo_notifications = [
+            (NotificationType.EXPIRY_7_DAYS, NotificationStatus.SENT, -5),
+            (NotificationType.EXPIRY_3_DAYS, NotificationStatus.SENT, -2),
+            (NotificationType.WELCOME, NotificationStatus.SENT, -10),
+            (NotificationType.PAYMENT_OVERDUE, NotificationStatus.FAILED, -1),
+            (NotificationType.RENEWAL_CONFIRMATION, NotificationStatus.SENT, -3),
+        ]
+
+        for member in notif_members[:5]:
+            notif_type, notif_status, days_offset = random.choice(demo_notifications)
+            scheduled = datetime.combine(
+                today + timedelta(days=days_offset),
+                time(9, 0),
+                tzinfo=IST,
+            )
+            notification = Notification(
+                id=uuid4(),
+                gym_id=gym_id,
+                member_id=member.id,
+                notification_type=notif_type,
+                channel=NotificationChannel.WHATSAPP,
+                status=notif_status,
+                scheduled_for=scheduled,
+                sent_at=scheduled if notif_status == NotificationStatus.SENT else None,
+                failure_reason="WhatsApp API timeout" if notif_status == NotificationStatus.FAILED else None,
+                payload={
+                    "member_name": member.name,
+                    "phone": member.phone,
+                    "plan": member.membership_plan,
+                },
+            )
+            db.add(notification)
+            result["notifications_created"] += 1
+
         await db.flush()
 
     logger.info(f"Demo data seeded for gym {gym_id}: {result}")

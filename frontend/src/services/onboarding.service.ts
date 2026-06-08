@@ -16,6 +16,12 @@ export interface DemoDataResult {
   members_created: number;
   payments_created: number;
   equipment_created: number;
+  attendance_created: number;
+  feedback_created: number;
+  expenses_created: number;
+  dues_created: number;
+  staff_created: number;
+  notifications_created: number;
 }
 
 export interface ImportRowPreview {
@@ -85,6 +91,12 @@ export const onboardingService = {
       include_members: true,
       include_payments: true,
       include_equipment: true,
+      include_attendance: true,
+      include_feedback: true,
+      include_expenses: true,
+      include_dues: true,
+      include_staff: true,
+      include_notifications: true,
       member_count: options?.member_count ?? 15,
     }),
 

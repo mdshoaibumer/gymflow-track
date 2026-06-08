@@ -23,6 +23,10 @@ class DemoDataRequest(BaseModel):
     include_equipment: bool = True
     include_attendance: bool = True
     include_feedback: bool = True
+    include_expenses: bool = True
+    include_dues: bool = True
+    include_staff: bool = True
+    include_notifications: bool = True
     member_count: int = Field(default=25, ge=5, le=50)
 
 
@@ -32,6 +36,10 @@ class DemoDataResponse(BaseModel):
     equipment_created: int
     attendance_created: int
     feedback_created: int
+    expenses_created: int
+    dues_created: int
+    staff_created: int
+    notifications_created: int
 
 
 # === CSV Import — Column Mapping ===

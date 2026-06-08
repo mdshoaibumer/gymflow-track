@@ -93,6 +93,75 @@ class TestDemoData:
         )
         assert response.status_code == 403
 
+    async def test_demo_data_includes_all_categories(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Verify demo data seeds all page categories: members, payments,
+        equipment, attendance, feedback, expenses, dues, staff, notifications."""
+        payload = {
+            "include_members": True,
+            "include_payments": True,
+            "include_equipment": True,
+            "include_attendance": True,
+            "include_feedback": True,
+            "include_expenses": True,
+            "include_dues": True,
+            "include_staff": True,
+            "include_notifications": True,
+            "member_count": 10,
+        }
+        response = await client.post(
+            "/api/v1/onboarding/demo-data",
+            json=payload,
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Core categories
+        assert data["members_created"] >= 10
+        assert data["payments_created"] >= 1
+        assert data["equipment_created"] >= 1
+        assert data["attendance_created"] >= 1
+        assert data["feedback_created"] >= 1
+        # New categories
+        assert data["expenses_created"] >= 5
+        assert data["dues_created"] >= 3
+        assert data["staff_created"] >= 2
+        assert data["notifications_created"] >= 3
+
+    async def test_demo_data_selective_seeding(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        """Verify individual category flags work independently."""
+        payload = {
+            "include_members": True,
+            "include_payments": False,
+            "include_equipment": False,
+            "include_attendance": False,
+            "include_feedback": False,
+            "include_expenses": True,
+            "include_dues": False,
+            "include_staff": True,
+            "include_notifications": False,
+            "member_count": 5,
+        }
+        response = await client.post(
+            "/api/v1/onboarding/demo-data",
+            json=payload,
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["members_created"] >= 5
+        assert data["payments_created"] == 0
+        assert data["equipment_created"] == 0
+        assert data["attendance_created"] == 0
+        assert data["feedback_created"] == 0
+        assert data["expenses_created"] >= 5
+        assert data["dues_created"] == 0
+        assert data["staff_created"] >= 2
+        assert data["notifications_created"] == 0
+
 
 class TestCSVImportDetect:
     """Test POST /api/v1/onboarding/import/detect."""
