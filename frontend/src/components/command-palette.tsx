@@ -18,6 +18,7 @@ import {
   Search,
   UserPlus,
   Plus,
+  HandCoins,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/auth-store";
@@ -62,6 +63,7 @@ export function CommandPalette() {
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, action: () => navigate("/dashboard"), group: "Navigation", keywords: "home overview analytics" },
     { id: "members", label: "Members", icon: Users, action: () => navigate("/members"), group: "Navigation", keywords: "member list" },
     { id: "payments", label: "Payments", icon: CreditCard, action: () => navigate("/payments"), group: "Navigation", keywords: "payment revenue money" },
+    { id: "collections", label: "Collections", icon: HandCoins, action: () => navigate("/collections"), group: "Navigation", keywords: "dues outstanding balance overdue collect pending", roles: ["owner", "admin"] },
     { id: "attendance", label: "Attendance", icon: CalendarCheck, action: () => navigate("/attendance"), group: "Navigation", keywords: "checkin check-in qr" },
     { id: "reports", label: "Reports", icon: FileSpreadsheet, action: () => navigate("/reports"), group: "Navigation", keywords: "report export csv", roles: ["owner", "admin"] },
     { id: "equipment", label: "Equipment", icon: Wrench, action: () => navigate("/equipment"), group: "Navigation", keywords: "asset maintenance" },
