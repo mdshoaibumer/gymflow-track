@@ -23,13 +23,13 @@ depends_on = None
 
 def upgrade() -> None:
     # 1. Create duestatus enum
-    duestatus = sa.Enum("pending", "partial", "paid", "waived", name="duestatus")
+    duestatus = sa.Enum("pending", "partial", "paid", "waived", name="duestatus", create_type=False)
     duestatus.create(op.get_bind(), checkfirst=True)
 
     # 2. Add 'due_waived' to gymauditaction enum
     op.execute("ALTER TYPE gymauditaction ADD VALUE IF NOT EXISTS 'due_waived'")
 
-    # 2. Create member_dues table
+    # 3. Create member_dues table
     op.create_table(
         "member_dues",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
