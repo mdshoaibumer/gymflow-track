@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, X, Check, RotateCcw, Loader2 } from "lucide-react";
+import { Camera, X, Check, RotateCcw, Loader2, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MemberCameraModalProps {
@@ -17,6 +17,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Start webcam stream when modal opens
@@ -53,7 +54,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
           video: {
             width: { ideal: 480 },
             height: { ideal: 480 },
-            facingMode: "user",
+            facingMode: facingMode,
           },
           audio: false,
         });
@@ -80,7 +81,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
       active = false;
       stopCamera();
     };
-  }, [isOpen]);
+  }, [isOpen, facingMode]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -106,9 +107,11 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
 
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      // Mirror the canvas image to match the video mirror effect for a natural selfie photo
-      ctx.translate(400, 0);
-      ctx.scale(-1, 1);
+      // Mirror only for front camera to match the video mirror effect for a natural selfie photo
+      if (facingMode === "user") {
+        ctx.translate(400, 0);
+        ctx.scale(-1, 1);
+      }
 
       // Draw centered video slice onto the canvas
       const sx = (video.videoWidth - size) / 2;
@@ -140,7 +143,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
     setPermissionState("loading");
     navigator.mediaDevices
       .getUserMedia({
-        video: { width: 480, height: 480, facingMode: "user" },
+        video: { width: 480, height: 480, facingMode: facingMode },
         audio: false,
       })
       .then((stream) => {
@@ -223,7 +226,7 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
                 autoPlay
                 playsInline
                 muted
-                className="h-full w-full object-cover scale-x-[-1]" // mirror effect
+                className={`h-full w-full object-cover ${facingMode === "user" ? "scale-x-[-1]" : ""}`}
               />
               {/* Circular alignment guide */}
               <div className="absolute inset-0 border-2 border-dashed border-white/60 rounded-full m-8 pointer-events-none z-20 flex items-center justify-center">
@@ -291,6 +294,17 @@ export function MemberCameraModal({ isOpen, onClose, onCapture }: MemberCameraMo
                 onClick={handleClose}
               >
                 Cancel
+              </Button>
+              <Button
+                variant="outline"
+                disabled={permissionState !== "granted"}
+                onClick={() => {
+                  setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+                }}
+                className="gap-2"
+                title="Switch camera"
+              >
+                <SwitchCamera className="h-4 w-4" />
               </Button>
               <Button
                 disabled={permissionState !== "granted"}

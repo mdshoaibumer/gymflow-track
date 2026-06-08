@@ -42,6 +42,7 @@
     }
   ],
   "categories": ["business", "fitness", "productivity"],
+  "permissions": ["camera"],
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false

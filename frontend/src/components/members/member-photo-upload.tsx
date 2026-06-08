@@ -9,7 +9,7 @@ import { MemberCameraModal } from "./member-camera-modal";
 import { PhotoPreviewModal } from "./photo-preview-modal";
 import { compressImage } from "@/lib/compress-image";
 
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
 interface MemberPhotoUploadProps {
   memberId: string;
@@ -38,7 +38,7 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
 
       // Client-side validation
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        alert("Please select a JPEG, PNG, or WebP image.");
+        alert("Please select a JPEG, PNG, WebP, or HEIC image.");
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
@@ -179,12 +179,11 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
         )}
       </div>
 
-      {/* Hidden file input */}
+      {/* Hidden file input — no capture attribute so mobile users can pick from gallery */}
       <input
         ref={fileInputRef}
         type="file"
-        accept=".jpg,.jpeg,.png,.webp"
-        capture="environment"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
         onChange={handleFileSelect}
         className="hidden"
         aria-label="Upload member photo"
