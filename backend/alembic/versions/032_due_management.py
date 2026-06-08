@@ -12,7 +12,7 @@ Adds:
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ENUM
 
 
 revision = "032_due_management"
@@ -20,11 +20,19 @@ down_revision = "031_biometric_attendance"
 branch_labels = None
 depends_on = None
 
+# Reference only – never auto-creates the type
+duestatus_enum = ENUM("pending", "partial", "paid", "waived", name="duestatus", create_type=False)
+
 
 def upgrade() -> None:
-    # 1. Create duestatus enum
-    duestatus = sa.Enum("pending", "partial", "paid", "waived", name="duestatus", create_type=False)
-    duestatus.create(op.get_bind(), checkfirst=True)
+    # 1. Create duestatus enum idempotently via raw SQL
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE duestatus AS ENUM ('pending', 'partial', 'paid', 'waived');
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END $$;
+    """))
 
     # 2. Add 'due_waived' to gymauditaction enum
     op.execute("ALTER TYPE gymauditaction ADD VALUE IF NOT EXISTS 'due_waived'")
@@ -42,7 +50,7 @@ def upgrade() -> None:
         sa.Column("total_paid_paise", sa.Integer, nullable=False, server_default="0"),
         sa.Column("balance_paise", sa.Integer, nullable=False),
         sa.Column("due_date", sa.Date, nullable=False),
-        sa.Column("status", duestatus, nullable=False, server_default="pending"),
+        sa.Column("status", duestatus_enum, nullable=False, server_default="pending"),
         sa.Column("waive_reason", sa.Text, nullable=True),
         sa.Column("waived_by", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
@@ -83,4 +91,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("due_payments")
     op.drop_table("member_dues")
-    sa.Enum(name="duestatus").drop(op.get_bind(), checkfirst=True)
+    op.execute(sa.text("DROP TYPE IF EXISTS duestatus"))
