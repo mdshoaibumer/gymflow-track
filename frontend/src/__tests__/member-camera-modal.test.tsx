@@ -138,4 +138,94 @@ describe("MemberCameraModal", () => {
       expect(captureBtn.closest("button")).toBeDisabled();
     }
   });
+
+  it("renders Switch Camera button for front/rear toggle", async () => {
+    render(<MemberCameraModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Switch camera")).toBeInTheDocument();
+    });
+  });
+
+  it("switch camera button is disabled when camera is not granted", () => {
+    mockGetUserMedia.mockReturnValue(new Promise(() => {})); // stays loading
+    render(<MemberCameraModal {...defaultProps} />);
+    const switchBtn = screen.queryByTitle("Switch camera");
+    if (switchBtn) {
+      expect(switchBtn.closest("button")).toBeDisabled();
+    }
+  });
+
+  it("toggles facingMode when switch camera is clicked", async () => {
+    render(<MemberCameraModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Capture Snap")).toBeInTheDocument();
+    });
+
+    // First call should be with facingMode: "user" (default)
+    expect(mockGetUserMedia).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video: expect.objectContaining({ facingMode: "user" }),
+      })
+    );
+
+    // Click switch camera
+    const switchBtn = screen.getByTitle("Switch camera");
+    fireEvent.click(switchBtn);
+
+    // Should re-call getUserMedia with "environment"
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalledWith(
+        expect.objectContaining({
+          video: expect.objectContaining({ facingMode: "environment" }),
+        })
+      );
+    });
+  });
+
+  it("applies mirror CSS class only for front camera (user facingMode)", async () => {
+    render(<MemberCameraModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Capture Snap")).toBeInTheDocument();
+    });
+
+    // Video should have scale-x-[-1] for front camera
+    const video = document.querySelector("video");
+    expect(video?.className).toContain("scale-x-[-1]");
+  });
+
+  it("requests camera with ideal 480x480 resolution", async () => {
+    render(<MemberCameraModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalledWith(
+        expect.objectContaining({
+          video: expect.objectContaining({
+            width: { ideal: 480 },
+            height: { ideal: 480 },
+          }),
+          audio: false,
+        })
+      );
+    });
+  });
+
+  it("stops all stream tracks on close", async () => {
+    const mockStop = vi.fn();
+    const trackStream = {
+      getTracks: () => [{ stop: mockStop }, { stop: mockStop }],
+    };
+    mockGetUserMedia.mockResolvedValue(trackStream);
+
+    render(<MemberCameraModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Capture Snap")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Close modal"));
+    expect(mockStop).toHaveBeenCalledTimes(2);
+  });
 });

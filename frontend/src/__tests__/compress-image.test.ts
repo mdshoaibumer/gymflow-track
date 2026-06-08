@@ -163,4 +163,64 @@ describe("compressImage", () => {
     const result = await compressImage(largeFile);
     expect(result).toBe(largeFile);
   });
+
+  it("handles HEIC files (iOS) by processing through canvas like any other image", async () => {
+    const heicFile = new File(["heicdata"], "IMG_0001.heic", { type: "image/heic" });
+    Object.defineProperty(heicFile, "size", { value: 3 * 1024 * 1024 });
+
+    const compressedBlob = new Blob(["compressed"], { type: "image/jpeg" });
+    Object.defineProperty(compressedBlob, "size", { value: 300 * 1024 });
+
+    mockCanvas.toBlob.mockImplementation(
+      (callback: (blob: Blob | null) => void) => {
+        callback(compressedBlob);
+      }
+    );
+
+    const result = await compressImage(heicFile);
+
+    expect(createImageBitmap).toHaveBeenCalledWith(heicFile);
+    expect(result.type).toBe("image/jpeg");
+    expect(result.name).toBe("IMG_0001.jpg"); // Extension changed to .jpg
+  });
+
+  it("renames output file extension from .heif to .jpg", async () => {
+    const heifFile = new File(["heifdata"], "photo.heif", { type: "image/heif" });
+    Object.defineProperty(heifFile, "size", { value: 2 * 1024 * 1024 });
+
+    const compressedBlob = new Blob(["compressed"], { type: "image/jpeg" });
+    Object.defineProperty(compressedBlob, "size", { value: 200 * 1024 });
+
+    mockCanvas.toBlob.mockImplementation(
+      (callback: (blob: Blob | null) => void) => {
+        callback(compressedBlob);
+      }
+    );
+
+    const result = await compressImage(heifFile);
+    expect(result.name).toBe("photo.jpg");
+  });
+
+  it("does not resize images already within 800px dimensions", async () => {
+    const largeFile = new File(["x"], "medium.jpg", { type: "image/jpeg" });
+    Object.defineProperty(largeFile, "size", { value: 600 * 1024 }); // Over 500KB target
+
+    mockBitmap.width = 700;
+    mockBitmap.height = 500;
+
+    const compressedBlob = new Blob(["compressed"], { type: "image/jpeg" });
+    Object.defineProperty(compressedBlob, "size", { value: 400 * 1024 });
+
+    mockCanvas.toBlob.mockImplementation(
+      (callback: (blob: Blob | null) => void) => {
+        callback(compressedBlob);
+      }
+    );
+
+    await compressImage(largeFile);
+
+    // Should keep original dimensions since both are under 800
+    expect(mockCanvas.width).toBe(700);
+    expect(mockCanvas.height).toBe(500);
+  });
 });
