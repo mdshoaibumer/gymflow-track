@@ -63,6 +63,14 @@ vi.mock("@/hooks/use-notifications", () => ({
   useNotificationStats: () => ({ data: null }),
 }));
 
+vi.mock("@/hooks/use-dues", () => ({
+  useDuesSummary: () => ({
+    data: mockIsAdminOrAbove
+      ? { total_members_with_dues: 15, total_outstanding_paise: 200000, collected_this_month_paise: 500000 }
+      : undefined,
+  }),
+}));
+
 vi.mock("@/hooks/use-analytics", () => ({
   useDashboardKPIs: () => ({
     data: mockIsAdminOrAbove
@@ -123,9 +131,10 @@ describe("Dashboard RBAC - Admin/Owner View", () => {
     expect(screen.getByText("Payment Activity")).toBeInTheDocument();
   });
 
-  it("shows pending dues alert for admin users", () => {
+  it("shows pending dues summary for admin users", () => {
     render(<DashboardPage />);
-    expect(screen.getByText(/Pending Due/)).toBeInTheDocument();
+    expect(screen.getByText(/Pending/)).toBeInTheDocument();
+    expect(screen.getByText(/from 15 members/)).toBeInTheDocument();
   });
 
   it("shows expiring memberships for admin users", () => {
@@ -166,9 +175,9 @@ describe("Dashboard RBAC - Staff View", () => {
     expect(screen.queryByText("Payment Activity")).not.toBeInTheDocument();
   });
 
-  it("does NOT show pending dues alert for staff users", () => {
+  it("does NOT show pending dues summary for staff users", () => {
     render(<DashboardPage />);
-    expect(screen.queryByText(/Pending Due/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/from 15 members/)).not.toBeInTheDocument();
   });
 
   it("DOES show expiring memberships for staff users", () => {

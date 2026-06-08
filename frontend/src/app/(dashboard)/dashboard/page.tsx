@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CalendarCheck,
   Dumbbell,
+  HandCoins,
 } from "lucide-react";
 import { WhatsAppReminderButton } from "@/components/whatsapp/whatsapp-reminder-button";
 import { DashboardCard } from "@/components/layout/dashboard-card";
@@ -25,6 +26,7 @@ import {
 } from "@/hooks/use-payments";
 import { useAttendanceStats, useAttendanceTrend } from "@/hooks/use-attendance";
 import { useNotificationStats } from "@/hooks/use-notifications";
+import { useDuesSummary } from "@/hooks/use-dues";
 import {
   DashboardFilters,
   getFilterState,
@@ -85,6 +87,7 @@ export default function DashboardPage() {
   const { data: notifStats } = useNotificationStats();
   const { data: attendanceStats } = useAttendanceStats();
   const { data: trendData } = useAttendanceTrend(14);
+  const { data: duesSummary } = useDuesSummary();
 
   return (
     <motion.div
@@ -304,18 +307,30 @@ export default function DashboardPage() {
             </>
           )}
 
-        {/* Dues — admin/owner only */}
-        {isAdminOrAbove && metrics && metrics.pending_dues_count > 0 && (
-          <Link href="/payments?status=pending">
-            <Card className="border-yellow-200 dark:border-yellow-900/50 bg-yellow-50/50 dark:bg-yellow-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
-              <CardContent className="p-4">
-                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">
-                  <AlertCircle className="inline h-4 w-4 mr-1" />
-                  {metrics.pending_dues_count} Pending Due{metrics.pending_dues_count !== 1 ? "s" : ""}
-                </p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
-                  Payments marked as pending — follow up for collection.
-                </p>
+        {/* Dues Summary — admin/owner only */}
+        {isAdminOrAbove && duesSummary && duesSummary.total_members_with_dues > 0 && (
+          <Link href="/collections">
+            <Card className="border-amber-200 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/80 to-orange-50/40 dark:from-amber-950/30 dark:to-orange-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+                  <HandCoins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-lg font-bold text-amber-900 dark:text-amber-300 tabular-nums">
+                    {formatPaise(duesSummary.total_outstanding_paise)} Pending
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+                    from {duesSummary.total_members_with_dues} member{duesSummary.total_members_with_dues !== 1 ? "s" : ""} — tap to collect
+                  </p>
+                </div>
+                {duesSummary.collected_this_month_paise > 0 && (
+                  <div className="hidden sm:block text-right shrink-0">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Collected</p>
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      {formatPaise(duesSummary.collected_this_month_paise)}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </Link>

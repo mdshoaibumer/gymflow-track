@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText,
   Download, Snowflake, Play, RefreshCw, Activity, TrendingUp,
-  Flame, Clock, MoreHorizontal,
+  Flame, Clock, MoreHorizontal, HandCoins,
 } from "lucide-react";
 import { useMember, useMemberTimeline } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";
 import { useMemberPayments } from "@/hooks/use-payments";
+import { useMemberDues } from "@/hooks/use-dues";
 import { useMemberInvoices } from "@/hooks/use-invoices";
 import { useMemberAttendance } from "@/hooks/use-attendance";
 import { memberService } from "@/services/member.service";
@@ -101,6 +102,7 @@ export default function MemberDetailPage() {
   const { data: invoiceData } = useMemberInvoices(id);
   const { data: attendanceData } = useMemberAttendance(id, 0, 50);
   const { data: timelineData } = useMemberTimeline(id);
+  const { data: memberDues } = useMemberDues(id);
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"payments" | "attendance" | "invoices" | "timeline">("payments");
   const [showCustomFields, setShowCustomFields] = useState(false);
@@ -110,6 +112,16 @@ export default function MemberDetailPage() {
   const invoices = invoiceData?.invoices ?? [];
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount_in_paise ?? 0), 0);
   const attendanceCount = attendanceData?.attendance?.length ?? 0;
+
+  // Outstanding dues calculation
+  const outstandingDues = useMemo(() => {
+    if (!memberDues) return { count: 0, totalPaise: 0 };
+    const pending = memberDues.filter(d => d.status === "pending" || d.status === "partial");
+    return {
+      count: pending.length,
+      totalPaise: pending.reduce((sum, d) => sum + d.balance_paise, 0),
+    };
+  }, [memberDues]);
 
   // Membership progress calculation
   const membershipProgress = useMemo(() => {
@@ -209,10 +221,21 @@ export default function MemberDetailPage() {
                 </p>
               </div>
 
-              {/* Status badge */}
-              <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize text-xs">
-                {member.membership_status}
-              </Badge>
+              {/* Status badge + Balance badge */}
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <Badge variant={statusVariant[member.membership_status] ?? "secondary"} className="capitalize text-xs">
+                  {member.membership_status}
+                </Badge>
+                {outstandingDues.totalPaise > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="text-xs font-semibold tabular-nums whitespace-nowrap"
+                    data-testid="balance-badge"
+                  >
+                    {formatPaise(outstandingDues.totalPaise)} due
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {/* Actions row */}
@@ -354,6 +377,27 @@ export default function MemberDetailPage() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {/* ═══════ OUTSTANDING DUES ALERT ═══════ */}
+      {outstandingDues.count > 0 && (
+        <Link href="/collections">
+          <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all duration-200">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
+                <HandCoins className="h-4.5 w-4.5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-800 dark:text-red-400">
+                  {formatPaise(outstandingDues.totalPaise)} Outstanding
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-500 mt-0.5">
+                  {outstandingDues.count} pending due{outstandingDues.count !== 1 ? "s" : ""} — tap to collect
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {/* ═══════ DETAIL CARDS (2 columns) — Premium Fitness Style ═══════ */}
       <div className="grid gap-4 md:grid-cols-2">
