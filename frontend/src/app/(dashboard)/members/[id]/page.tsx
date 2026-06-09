@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, User, CreditCard, CalendarCheck, FileText,
   Download, Snowflake, Play, RefreshCw, Activity, TrendingUp,
-  Flame, Clock, MoreHorizontal, HandCoins,
+  Flame, Clock, HandCoins,
 } from "lucide-react";
 import { useMember, useMemberTimeline } from "@/hooks/use-members";
 import { formatPaise } from "@/lib/utils";

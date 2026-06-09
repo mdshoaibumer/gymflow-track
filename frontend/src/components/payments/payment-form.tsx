@@ -54,6 +54,9 @@ export function PaymentForm({
   const isPending = watchedStatus === "pending";
   const showRenewal = true; // Always show plan section — needed for both completed & pending
 
+  // --- Membership plans from settings (API-backed) ---
+  const { data: plans = [] } = useMembershipPlans();
+
   // Live payment breakdown
   const watchedAmount = watch("amount") || 0;
   const watchedDiscount = watch("discount") || 0;
@@ -62,9 +65,6 @@ export function PaymentForm({
   const planPrice = selectedPlan?.amount ?? 0;
   const effectiveDue = planPrice > 0 ? planPrice - watchedDiscount : 0;
   const remainingBalance = effectiveDue > 0 ? effectiveDue - watchedAmount : 0;
-
-  // --- Membership plans from settings (API-backed) ---
-  const { data: plans = [] } = useMembershipPlans();
 
   const handlePlanSelect = (planId: string) => {
     const plan = plans.find((p) => p.id === planId);
