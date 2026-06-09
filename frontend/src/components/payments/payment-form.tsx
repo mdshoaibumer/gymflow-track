@@ -50,7 +50,18 @@ export function PaymentForm({
     },
   });
 
-  const showRenewal = watch("payment_status") === "completed";
+  const watchedStatus = watch("payment_status");
+  const isPending = watchedStatus === "pending";
+  const showRenewal = true; // Always show plan section — needed for both completed & pending
+
+  // Live payment breakdown
+  const watchedAmount = watch("amount") || 0;
+  const watchedDiscount = watch("discount") || 0;
+  const watchedPlan = watch("membership_plan");
+  const selectedPlan = plans.find((p) => p.name === watchedPlan);
+  const planPrice = selectedPlan?.amount ?? 0;
+  const effectiveDue = planPrice > 0 ? planPrice - watchedDiscount : 0;
+  const remainingBalance = effectiveDue > 0 ? effectiveDue - watchedAmount : 0;
 
   // --- Membership plans from settings (API-backed) ---
   const { data: plans = [] } = useMembershipPlans();
@@ -59,7 +70,7 @@ export function PaymentForm({
     const plan = plans.find((p) => p.id === planId);
     if (plan) {
       setValue("membership_plan", plan.name);
-      setValue("amount", plan.amount);
+      setValue("amount", isPending ? 0 : plan.amount);
       // Auto-calculate dates
       const today = new Date().toISOString().split("T")[0];
       const start = watch("membership_start") || today;
@@ -171,14 +182,19 @@ export function PaymentForm({
 
         {/* Amount */}
         <div className="space-y-1.5">
-          <Label>Amount (₹) *</Label>
+          <Label>Amount (₹) {isPending ? "" : "*"}</Label>
           <Input
             type="number"
             step="1"
-            min="1"
+            min="0"
             {...register("amount", { valueAsNumber: true })}
-            placeholder="2000"
+            placeholder={isPending ? "0" : "2000"}
           />
+          {isPending && (
+            <p className="text-xs text-muted-foreground">
+              Enter 0 if no advance collected. Full amount tracked in Collections.
+            </p>
+          )}
           {errors.amount && (
             <p className="text-xs text-destructive">
               {errors.amount.message}
@@ -226,8 +242,14 @@ export function PaymentForm({
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="completed">Completed</option>
-            <option value="pending">Pending (Due)</option>
+            <option value="pending">Pending (Pay Later)</option>
           </select>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isPending
+              ? "Member will pay later. Full plan amount will be tracked as outstanding in Collections."
+              : "Payment received. If amount is less than plan price, remaining balance auto-tracked in Collections."
+            }
+          </p>
         </div>
 
         {/* Date */}
@@ -248,6 +270,50 @@ export function PaymentForm({
             placeholder="Optional notes..."
           />
         </div>
+
+        {/* Payment Breakdown — shows when a plan is selected */}
+        {planPrice > 0 && (watchedAmount > 0 || isPending) && (
+          <div className="sm:col-span-2 rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 px-4 py-3 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Payment Breakdown</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Plan Price</span>
+              <span>₹{planPrice.toLocaleString("en-IN")}</span>
+            </div>
+            {watchedDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="text-emerald-600">-₹{watchedDiscount.toLocaleString("en-IN")}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-medium border-t border-muted-foreground/20 pt-1 mt-1">
+              <span className="text-muted-foreground">Effective Due</span>
+              <span>₹{effectiveDue.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{isPending ? "Advance Paid" : "Amount Paying Now"}</span>
+              <span>₹{watchedAmount.toLocaleString("en-IN")}</span>
+            </div>
+            {remainingBalance > 0 && (
+              <div className="flex justify-between text-sm font-semibold border-t border-muted-foreground/20 pt-1 mt-1">
+                <span className="text-amber-600 dark:text-amber-400">Outstanding Balance</span>
+                <span className="text-amber-600 dark:text-amber-400">₹{remainingBalance.toLocaleString("en-IN")}</span>
+              </div>
+            )}
+            {remainingBalance > 0 && (
+              <p className="text-xs text-muted-foreground mt-1.5 italic">
+                {isPending
+                  ? `💡 ₹${remainingBalance.toLocaleString("en-IN")} will appear in Collections. Collect when member pays.`
+                  : `💡 The remaining ₹${remainingBalance.toLocaleString("en-IN")} will be automatically tracked in Collections as an outstanding due.`
+                }
+              </p>
+            )}
+            {remainingBalance <= 0 && watchedAmount >= effectiveDue && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5 font-medium">
+                ✓ Fully paid — no outstanding balance.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Membership Renewal Section */}
         {showRenewal && (

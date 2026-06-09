@@ -192,15 +192,19 @@ export default function MemberDetailPage() {
               {/* Avatar with status ring + pulse for active */}
               <motion.div
                 layoutId={`member-avatar-${member.id}`}
-                className={cn(
-                  "relative rounded-full ring-[3px] ring-offset-2 ring-offset-background",
-                  statusColor[member.membership_status] ?? "ring-gray-400",
-                  member.membership_status === "active" && "pulse-ring",
-                )}
+                className="relative"
               >
-                <MemberPhotoUpload memberId={member.id} photoUrl={member.photo_url} />
+                <MemberPhotoUpload
+                  memberId={member.id}
+                  photoUrl={member.photo_url}
+                  avatarRingClassName={cn(
+                    "ring-[3px] ring-offset-2 ring-offset-background",
+                    statusColor[member.membership_status] ?? "ring-gray-400",
+                    member.membership_status === "active" && "pulse-ring",
+                  )}
+                />
                 {member.membership_status === "active" && (
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background" />
+                  <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background" />
                 )}
               </motion.div>
 

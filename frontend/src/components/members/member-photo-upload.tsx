@@ -8,15 +8,17 @@ import { useUploadMemberPhoto, useDeleteMemberPhoto } from "@/hooks/use-members"
 import { MemberCameraModal } from "./member-camera-modal";
 import { PhotoPreviewModal } from "./photo-preview-modal";
 import { compressImage } from "@/lib/compress-image";
+import { cn } from "@/lib/utils";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
 interface MemberPhotoUploadProps {
   memberId: string;
   photoUrl: string | null;
+  avatarRingClassName?: string;
 }
 
-export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps) {
+export function MemberPhotoUpload({ memberId, photoUrl, avatarRingClassName }: MemberPhotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState(false);
@@ -115,7 +117,10 @@ export function MemberPhotoUpload({ memberId, photoUrl }: MemberPhotoUploadProps
     <div className="flex flex-col items-center gap-3">
       {/* Photo display */}
       <div
-        className="relative h-24 w-24 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+        className={cn(
+          "relative h-24 w-24 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all",
+          avatarRingClassName
+        )}
         onClick={() => {
           if (displayUrl) setIsPhotoPreviewOpen(true);
         }}

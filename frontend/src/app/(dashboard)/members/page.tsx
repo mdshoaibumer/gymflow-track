@@ -214,6 +214,7 @@ export default function MembersPage() {
     values: MemberFormValues & { 
       custom_fields?: Record<string, string | number | null>;
       photoFile?: File | null;
+      photoRemoved?: boolean;
     }
   ) => {
     if (!editingMember || updateMutation.isPending) return;
@@ -250,6 +251,7 @@ export default function MembersPage() {
         updatedMember = await memberService.overrideMembership(editingMember.id, overridePayload);
       }
 
+      // Handle photo: upload new or delete existing
       if (updatedMember && values.photoFile) {
         try {
           await memberService.uploadPhoto(updatedMember.id, values.photoFile);
@@ -257,6 +259,14 @@ export default function MembersPage() {
         } catch (err) {
           console.error("Failed to upload member photo:", err);
           toast.error("Member updated successfully, but photo upload failed.");
+        }
+      } else if (values.photoRemoved && editingMember.photo_url) {
+        try {
+          await memberService.deletePhoto(editingMember.id);
+          toast.success("Member updated and photo removed!");
+        } catch (err) {
+          console.error("Failed to delete member photo:", err);
+          toast.error("Member updated successfully, but photo removal failed.");
         }
       } else {
         toast.success("Member updated successfully!");

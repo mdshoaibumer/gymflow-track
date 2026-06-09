@@ -38,6 +38,7 @@ interface MemberFormProps {
   onSubmit: (data: MemberFormValues & { 
     custom_fields?: Record<string, string | number | null>;
     photoFile?: File | null;
+    photoRemoved?: boolean;
   }) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
@@ -65,6 +66,7 @@ export function MemberForm({
   );
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState(false);
@@ -96,6 +98,7 @@ export function MemberForm({
 
   const handleRemovePhoto = () => {
     setPhotoFile(null);
+    setPhotoRemoved(true);
     if (photoPreview) {
       URL.revokeObjectURL(photoPreview);
       setPhotoPreview(null);
@@ -148,6 +151,7 @@ export function MemberForm({
         ...(data as MemberFormValues),
         custom_fields: Object.keys(cfValues).length > 0 ? cfValues : undefined,
         photoFile,
+        photoRemoved,
       };
       await onSubmit(payload);
     } catch (err) {
@@ -178,10 +182,10 @@ export function MemberForm({
             <div
               className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-dashed border-muted bg-muted/50 flex items-center justify-center flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
               onClick={() => {
-                const url = photoPreview || getFullAssetUrl(initialPhotoUrl ?? null);
+                const url = photoPreview || (!photoRemoved ? getFullAssetUrl(initialPhotoUrl ?? null) : null);
                 if (url) setIsPhotoPreviewOpen(true);
               }}
-              title={photoPreview || initialPhotoUrl ? "Click to view full photo" : undefined}
+              title={photoPreview || (!photoRemoved && initialPhotoUrl) ? "Click to view full photo" : undefined}
             >
               {photoPreview ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -190,7 +194,7 @@ export function MemberForm({
                   alt="Preview"
                   className="h-full w-full object-cover"
                 />
-              ) : initialPhotoUrl ? (
+              ) : !photoRemoved && initialPhotoUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={getFullAssetUrl(initialPhotoUrl)!}
@@ -221,7 +225,7 @@ export function MemberForm({
                   <Camera className="mr-1.5 h-3.5 w-3.5" />
                   Take Snap
                 </Button>
-                {(photoFile || initialPhotoUrl) && (
+                {(photoFile || (!photoRemoved && initialPhotoUrl)) && (
                   <Button
                     type="button"
                     variant="outline"

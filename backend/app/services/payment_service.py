@@ -100,11 +100,8 @@ class PaymentService:
             member.amount_paid = Member.amount_paid + payment.amount_in_paise
             await self.db.flush()
 
-        # Auto-renew membership if payment is completed and dates provided
-        if (
-            payment.payment_status == PaymentStatus.COMPLETED
-            and data.membership_end
-        ):
+        # Auto-renew membership if dates provided (both completed and pending)
+        if data.membership_end:
             await self.membership_service.renew_membership(
                 member=member,
                 new_end=data.membership_end,
@@ -131,8 +128,8 @@ class PaymentService:
         if payment.payment_status == PaymentStatus.COMPLETED:
             await self.invoice_service.generate_invoice(payment, gym_id)
 
-        # Auto-create due if this is a partial payment against a known plan
-        if payment.payment_status == PaymentStatus.COMPLETED and data.membership_plan:
+        # Auto-create due if this payment is partial or pending against a known plan
+        if data.membership_plan:
             await self.due_service.maybe_create_due(
                 gym_id=gym_id,
                 member_id=member.id,

@@ -108,11 +108,10 @@ class TestRecordPayment:
         assert member_data["membership_plan"] == "Quarterly"
         assert member_data["membership_status"] == "active"
 
-    async def test_record_payment_pending_does_not_renew(
+    async def test_record_payment_pending_renews_membership(
         self, client: AsyncClient, auth_headers: dict, sample_member: Member
     ):
-        """Pending payment does NOT auto-renew membership."""
-        original_end = str(sample_member.membership_end)
+        """Pending payment still activates/renews membership (pay-later scenario)."""
         new_end = date.today() + timedelta(days=90)
         response = await client.post(
             "/api/v1/payments",
@@ -128,11 +127,11 @@ class TestRecordPayment:
         assert response.status_code == 201
         assert response.json()["payment_status"] == "pending"
 
-        # Membership should NOT have changed
+        # Membership should have been renewed (member starts using gym immediately)
         member_resp = await client.get(
             f"/api/v1/members/{sample_member.id}", headers=auth_headers
         )
-        assert member_resp.json()["membership_end"] == original_end
+        assert member_resp.json()["membership_end"] == str(new_end)
 
     async def test_record_payment_nonexistent_member_returns_404(
         self, client: AsyncClient, auth_headers: dict
@@ -149,20 +148,40 @@ class TestRecordPayment:
         )
         assert response.status_code == 404
 
-    async def test_record_payment_zero_amount_rejected(
+    async def test_record_payment_zero_amount_completed_rejected(
         self, client: AsyncClient, auth_headers: dict, sample_member: Member
     ):
-        """Amount must be > 0 (Pydantic validation)."""
+        """Amount=0 is rejected for completed payments."""
         response = await client.post(
             "/api/v1/payments",
             json={
                 "member_id": str(sample_member.id),
                 "amount_in_paise": 0,
                 "payment_method": "cash",
+                "payment_status": "completed",
             },
             headers=auth_headers,
         )
         assert response.status_code == 422
+
+    async def test_record_payment_zero_amount_pending_accepted(
+        self, client: AsyncClient, auth_headers: dict, sample_member: Member
+    ):
+        """Amount=0 is allowed for pending payments (pay-later scenario)."""
+        response = await client.post(
+            "/api/v1/payments",
+            json={
+                "member_id": str(sample_member.id),
+                "amount_in_paise": 0,
+                "payment_method": "cash",
+                "payment_status": "pending",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["amount_in_paise"] == 0
+        assert data["payment_status"] == "pending"
 
 
 class TestListPayments:

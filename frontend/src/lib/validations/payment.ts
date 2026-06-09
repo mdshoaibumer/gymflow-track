@@ -4,7 +4,7 @@ export const paymentFormSchema = z.object({
   member_id: z.string().min(1, "Select a member"),
   amount: z
     .number({ message: "Enter a valid amount" })
-    .positive("Amount must be greater than 0"),
+    .min(0, "Amount cannot be negative"),
   discount: z
     .number()
     .min(0, "Discount cannot be negative")
@@ -20,6 +20,9 @@ export const paymentFormSchema = z.object({
   membership_plan: z.string().optional(),
   membership_start: z.string().optional(),
   membership_end: z.string().optional(),
-});
+}).refine(
+  (data) => data.payment_status === "pending" || data.amount > 0,
+  { message: "Amount must be greater than 0 for completed payments", path: ["amount"] }
+);
 
 export type PaymentFormValues = z.infer<typeof paymentFormSchema>;

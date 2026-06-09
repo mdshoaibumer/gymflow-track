@@ -73,6 +73,9 @@ class DueService:
         balance = effective_amount - amount_paid
         due_date = today_ist() + timedelta(days=30)
 
+        # Status: PENDING if nothing paid, PARTIAL if some amount paid
+        status = DueStatus.PENDING if amount_paid == 0 else DueStatus.PARTIAL
+
         due = MemberDue(
             gym_id=gym_id,
             member_id=member_id,
@@ -83,18 +86,19 @@ class DueService:
             total_paid_paise=amount_paid,
             balance_paise=balance,
             due_date=due_date,
-            status=DueStatus.PARTIAL,
+            status=status,
         )
         due = await self.due_repo.create(due)
 
-        # Link the initial payment to this due
-        link = DuePayment(
-            gym_id=gym_id,
-            due_id=due.id,
-            payment_id=payment.id,
-            amount_paise=amount_paid,
-        )
-        await self.due_repo.create_due_payment(link)
+        # Link the initial payment to this due (only if some amount was paid)
+        if amount_paid > 0:
+            link = DuePayment(
+                gym_id=gym_id,
+                due_id=due.id,
+                payment_id=payment.id,
+                amount_paise=amount_paid,
+            )
+            await self.due_repo.create_due_payment(link)
 
         return due
 

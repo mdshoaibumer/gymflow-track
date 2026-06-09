@@ -8,7 +8,7 @@ from app.models.payment import PaymentMethod, PaymentStatus
 
 class PaymentCreateRequest(BaseModel):
     member_id: UUID
-    amount_in_paise: int = Field(..., gt=0, description="Amount in paise (₹1 = 100)")
+    amount_in_paise: int = Field(..., ge=0, description="Amount in paise (₹1 = 100). 0 allowed for pending.")
     discount_in_paise: int = Field(0, ge=0, description="Discount in paise")
     payment_method: PaymentMethod
     payment_status: PaymentStatus | None = None  # defaults to COMPLETED
@@ -23,6 +23,14 @@ class PaymentCreateRequest(BaseModel):
     membership_start: date | None = None
     membership_end: date | None = None
     membership_plan: str | None = None
+
+    @model_validator(mode="after")
+    def validate_amount_for_status(self):
+        """Completed payments must have amount > 0."""
+        status = self.payment_status or PaymentStatus.COMPLETED
+        if status == PaymentStatus.COMPLETED and self.amount_in_paise <= 0:
+            raise ValueError("Completed payments must have amount greater than 0")
+        return self
 
 
 class VoidPaymentRequest(BaseModel):

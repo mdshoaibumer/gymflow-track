@@ -316,6 +316,109 @@ class TestAutoDueCreation:
         assert dues_response.status_code == 200
         assert len(dues_response.json()) == 0
 
+    async def test_pending_payment_zero_amount_creates_due(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        due_member: Member,
+        quarterly_plan: GymMembershipPlan,
+    ):
+        """₹0 pending payment on ₹3,000 plan → due with full ₹3,000 balance and 'pending' status."""
+        response = await client.post(
+            "/api/v1/payments",
+            json={
+                "member_id": str(due_member.id),
+                "amount_in_paise": 0,
+                "payment_method": "cash",
+                "payment_status": "pending",
+                "membership_plan": "Quarterly",
+                "membership_end": str(date.today() + timedelta(days=90)),
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+        # Due should be created with status "pending" and full balance
+        dues_response = await client.get(
+            f"/api/v1/dues/member/{due_member.id}",
+            headers=auth_headers,
+        )
+        assert dues_response.status_code == 200
+        dues = dues_response.json()
+        assert len(dues) == 1
+
+        due = dues[0]
+        assert due["plan_name"] == "Quarterly"
+        assert due["plan_amount_paise"] == 300000   # ₹3,000
+        assert due["effective_amount_paise"] == 300000
+        assert due["total_paid_paise"] == 0
+        assert due["balance_paise"] == 300000       # full amount outstanding
+        assert due["status"] == "pending"
+
+    async def test_pending_payment_partial_amount_creates_due(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        due_member: Member,
+        quarterly_plan: GymMembershipPlan,
+    ):
+        """₹1,000 pending payment on ₹3,000 plan → due with ₹2,000 balance and 'partial' status."""
+        response = await client.post(
+            "/api/v1/payments",
+            json={
+                "member_id": str(due_member.id),
+                "amount_in_paise": 100000,  # ₹1,000
+                "payment_method": "cash",
+                "payment_status": "pending",
+                "membership_plan": "Quarterly",
+                "membership_end": str(date.today() + timedelta(days=90)),
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+        dues_response = await client.get(
+            f"/api/v1/dues/member/{due_member.id}",
+            headers=auth_headers,
+        )
+        assert dues_response.status_code == 200
+        dues = dues_response.json()
+        assert len(dues) == 1
+
+        due = dues[0]
+        assert due["total_paid_paise"] == 100000    # ₹1,000
+        assert due["balance_paise"] == 200000       # ₹2,000
+        assert due["status"] == "partial"
+
+    async def test_pending_zero_renews_membership(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        due_member: Member,
+        quarterly_plan: GymMembershipPlan,
+    ):
+        """₹0 pending pay-later still activates the membership immediately."""
+        new_end = date.today() + timedelta(days=90)
+        response = await client.post(
+            "/api/v1/payments",
+            json={
+                "member_id": str(due_member.id),
+                "amount_in_paise": 0,
+                "payment_method": "cash",
+                "payment_status": "pending",
+                "membership_plan": "Quarterly",
+                "membership_end": str(new_end),
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+        member_resp = await client.get(
+            f"/api/v1/members/{due_member.id}", headers=auth_headers
+        )
+        assert member_resp.json()["membership_end"] == str(new_end)
+        assert member_resp.json()["membership_plan"] == "Quarterly"
+
 
 # === Test Due Payment ===
 
